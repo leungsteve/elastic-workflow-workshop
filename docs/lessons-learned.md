@@ -46,6 +46,45 @@ Patterns, gotchas, and recommendations discovered during development. Use this t
 
 **Solution:** Explicitly install: `pip install elasticsearch[async]` or `pip install aiohttp`
 
+### ES|QL LOOKUP JOIN Requires Index Mode
+**Problem:** LOOKUP JOIN queries fail with "Lookup Join requires a single lookup mode index"
+
+**Root Cause:** ES|QL LOOKUP JOIN only works against indices configured with `index.mode: lookup`
+
+**Solution:** Add settings to index mappings for indices that will be used in LOOKUP JOIN:
+
+```json
+{
+  "settings": {
+    "index": {
+      "mode": "lookup"
+    }
+  },
+  "mappings": {
+    "properties": { ... }
+  }
+}
+```
+
+**Note:** The `lookup` mode index cannot be used for regular indexing operations - it's optimized for JOIN lookups. Use it for reference data (users, businesses) that changes infrequently.
+
+### Streaming App Attacker Users
+**Problem:** Streaming app generates attack reviews with `attacker_*` user IDs, but LOOKUP JOIN finds no matching users
+
+**Root Cause:** The review_streamer.py creates reviews with dynamically generated user IDs but doesn't create corresponding user records in the users index
+
+**Workaround:** Either:
+1. Pre-create attacker users before running the streamer
+2. Manually bulk insert attacker users after injection:
+```bash
+curl -X POST "$ES_URL/users/_bulk" -d '
+{"index":{"_id":"attacker_xxx"}}
+{"user_id":"attacker_xxx","trust_score":0.15,"account_age_days":3}
+'
+```
+
+**Proper Fix:** Update review_streamer.py to create user documents when generating attack reviews.
+
 ---
 
 ## FastAPI + Jinja2 Web Apps
@@ -631,6 +670,46 @@ curl -X POST -H "Authorization: ApiKey $API_KEY" -H "kbn-xsrf: true" \
 | GET | `/api/agent_builder/agents` | List agents |
 | GET | `/api/agent_builder/conversations` | List conversations |
 | POST | `/api/agent_builder/converse` | Chat with agent |
+
+### Agent Builder Tool Schema (API vs UI)
+
+**Problem:** Creating tools via API failed with validation errors about missing `params` or `configuration`
+
+**Root Cause:** The API schema differs from what you might expect from the UI:
+
+```json
+// WRONG - won't work
+{
+  "id": "my_tool",
+  "type": "esql",
+  "esql": {
+    "query": "FROM reviews | LIMIT 10",
+    "parameters": []
+  }
+}
+
+// CORRECT - API schema
+{
+  "id": "my_tool",
+  "type": "esql",
+  "description": "Tool description",
+  "configuration": {
+    "query": "FROM reviews | WHERE business_id == \"{{business_id}}\" | LIMIT 10",
+    "params": {
+      "business_id": {
+        "type": "text",
+        "description": "The business ID to query"
+      }
+    }
+  }
+}
+```
+
+**Key Differences:**
+- Use `configuration.query` not `esql.query`
+- Use `configuration.params` object (keyed by param name) not `esql.parameters` array
+- Each param is an object with `type` and `description` properties
+- For no parameters, use `"params": {}` (empty object)
 
 ---
 
