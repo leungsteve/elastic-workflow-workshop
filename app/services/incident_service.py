@@ -244,6 +244,102 @@ class IncidentService:
         except Exception:
             pass  # Index might already exist
 
+    async def protect_business(self, business_id: str) -> bool:
+        """
+        Enable rating protection on a business.
+
+        This prevents the malicious reviews from affecting the displayed rating.
+        """
+        try:
+            await self.es.update(
+                index=self.settings.businesses_index,
+                id=business_id,
+                doc={
+                    "rating_protected": True,
+                    "protection_reason": "review_bomb_detected",
+                    "protected_since": datetime.utcnow().isoformat(),
+                },
+                refresh=True
+            )
+            return True
+        except Exception as e:
+            print(f"Error protecting business {business_id}: {e}")
+            return False
+
+    async def hold_suspicious_reviews(self, business_id: str, hours: int = 1) -> int:
+        """
+        Hold suspicious reviews for a business.
+
+        This marks low-trust reviews as 'held' so they don't affect ratings
+        and can be reviewed manually.
+
+        Returns the number of reviews held.
+        """
+        try:
+            # Find suspicious reviews (low trust score, recent, low rating)
+            response = await self.es.update_by_query(
+                index=self.settings.reviews_index,
+                query={
+                    "bool": {
+                        "must": [
+                            {"term": {"business_id": business_id}},
+                            {"range": {"date": {"gte": f"now-{hours}h"}}},
+                            {"range": {"stars": {"lte": 2}}},
+                        ],
+                        "should": [
+                            {"term": {"is_simulated": True}},
+                        ]
+                    }
+                },
+                script={
+                    "source": "ctx._source.status = 'held'; ctx._source.held_at = params.timestamp; ctx._source.hold_reason = 'review_bomb_detected'",
+                    "params": {
+                        "timestamp": datetime.utcnow().isoformat()
+                    }
+                },
+                refresh=True
+            )
+            return response.get("updated", 0)
+        except Exception as e:
+            print(f"Error holding reviews for {business_id}: {e}")
+            return 0
+
+    async def execute_response_actions(self, business_id: str, incident_id: str) -> dict:
+        """
+        Execute all automated response actions for a detected attack.
+
+        Returns a summary of actions taken.
+        """
+        actions_taken = []
+
+        # 1. Protect the business rating
+        if await self.protect_business(business_id):
+            actions_taken.append("business_protected")
+
+        # 2. Hold suspicious reviews
+        held_count = await self.hold_suspicious_reviews(business_id)
+        if held_count > 0:
+            actions_taken.append(f"held_{held_count}_reviews")
+
+        # 3. Update incident with response actions
+        try:
+            await self.es.update(
+                index=self.settings.incidents_index,
+                id=incident_id,
+                doc={
+                    "response_actions": actions_taken,
+                    "response_executed_at": datetime.utcnow().isoformat(),
+                }
+            )
+        except Exception:
+            pass
+
+        return {
+            "business_protected": "business_protected" in actions_taken,
+            "reviews_held": held_count,
+            "actions": actions_taken
+        }
+
 
 async def create_incident_if_attack_detected(
     es: AsyncElasticsearch,

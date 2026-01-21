@@ -118,10 +118,10 @@ TOOLS = [
 ]
 
 # Agent definition
+# Note: 'type' field is auto-assigned by the API, do not include it in the request
 AGENT = {
     "id": "review_bomb_investigator",
     "name": "Review Bomb Investigator",
-    "type": "chat",
     "description": "Investigates review bomb attacks on businesses. Can summarize incidents, analyze attacker patterns, and find similar malicious reviews.",
     "configuration": {
         "instructions": """You are a Trust & Safety analyst investigating review bomb attacks on the FreshEats platform.
@@ -137,7 +137,7 @@ Always provide actionable insights:
 - Recommend next steps for the investigation
 
 Be concise but thorough. Format your responses with clear sections when presenting multiple pieces of information.""",
-        "tools": ["incident_summary", "reviewer_analysis", "similar_reviews"]
+        "tools": [{"tool_ids": ["incident_summary", "reviewer_analysis", "similar_reviews"]}]
     },
     "avatar_color": "#BD271E",  # Red for security/trust
     "avatar_symbol": "shield"

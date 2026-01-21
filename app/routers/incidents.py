@@ -392,15 +392,31 @@ async def detect_attacks(
                         "suspicious_count": suspicious_count
                     })
 
-                    # Create incident
+                    # Create incident (returns None if incident already exists)
                     incident = await incident_service.create_incident_from_attack(stats)
                     if incident:
+                        # Execute automated response actions for new incident
+                        response_result = await incident_service.execute_response_actions(
+                            bid, incident.incident_id
+                        )
                         created_incidents.append({
                             "incident_id": incident.incident_id,
                             "business_id": incident.business_id,
                             "business_name": incident.business_name,
-                            "severity": incident.severity.value
+                            "severity": incident.severity.value,
+                            "response_actions": response_result
                         })
+                    else:
+                        # Incident already exists - still execute response actions
+                        # to catch any new reviews that need to be held
+                        existing_incident = await incident_service.check_existing_open_incident(bid)
+                        if existing_incident:
+                            response_result = await incident_service.execute_response_actions(
+                                bid, existing_incident.incident_id
+                            )
+                            # Add to detected attacks with response info
+                            detected_attacks[-1]["response_actions"] = response_result
+                            detected_attacks[-1]["existing_incident_id"] = existing_incident.incident_id
 
             except Exception as e:
                 # Continue checking other businesses
