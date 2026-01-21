@@ -24,8 +24,6 @@ In this challenge, you'll create a workflow that:
 4. Protects targeted businesses
 5. Creates incidents for investigation
 
-> **Note:** We'll use **Dev Tools** to create workflows via API commands. This is faster than navigating the UI and lets you quickly copy/paste the workflow definitions. The `kbn://` prefix tells Dev Tools to route the request to the Kibana API instead of Elasticsearch.
-
 ---
 
 ## How Workflows Work
@@ -59,14 +57,15 @@ Workflows are defined in YAML and consist of:
 
 ## Tasks
 
-### Task 1: Enable Workflows and Open Dev Tools (2 min)
-
-We'll use **Dev Tools** to create workflows quickly via API commands.
+### Task 1: Open the Workflows App (2 min)
 
 1. Open **Kibana** in your browser
-2. Navigate to **Dev Tools** (use the search bar and type "Dev Tools")
-3. First, enable the Workflows feature by running:
+2. In the left navigation, click the **Workflows** icon (or use the search bar and type "Workflows")
+3. You should see the Workflows management page
 
+If Workflows doesn't appear in the navigation, it may need to be enabled:
+1. Go to **Dev Tools** (search bar > "Dev Tools")
+2. Run this command to enable the feature:
 ```
 POST kbn://internal/kibana/settings
 {
@@ -75,32 +74,88 @@ POST kbn://internal/kibana/settings
   }
 }
 ```
-
-You should see `{"settings":{"workflows:ui:enabled":{"userValue":true}}}` in the response.
+3. Refresh the page and navigate to Workflows
 
 ---
 
 ### Task 2: Create the Review Bomb Detection Workflow (10 min)
 
-Run the following command in Dev Tools to create the workflow. The API expects the workflow definition as a YAML string in the `yaml` field.
+1. In the Workflows app, click **Create a new workflow**
+2. You'll see a YAML editor. **Delete any placeholder content** and paste the following workflow definition:
 
-```
-POST kbn://api/workflows
-{
-  "yaml": "name: Review Bomb Detection\ndescription: Detects coordinated review bombing attacks and automatically protects targeted businesses.\nenabled: true\ntriggers:\n  - type: scheduled\n    with:\n      every: 5m\nsteps:\n  - name: detect_review_bombs\n    type: elasticsearch.esql.query\n    with:\n      query: |\n        FROM reviews\n        | WHERE date > NOW() - 30 minutes AND stars <= 2 AND status != \"held\"\n        | LOOKUP JOIN users ON user_id\n        | WHERE trust_score < 0.4\n        | STATS review_count = COUNT(*), avg_stars = AVG(stars), avg_trust = AVG(trust_score), unique_attackers = COUNT_DISTINCT(user_id) BY business_id\n        | WHERE review_count >= 5 AND unique_attackers >= 3\n        | LOOKUP JOIN businesses ON business_id\n        | KEEP business_id, name, city, review_count, avg_stars, avg_trust, unique_attackers\n        | SORT review_count DESC\n  - name: log_detection\n    type: console\n    with:\n      message: \"Detected {{ steps.detect_review_bombs.output.values | size }} potential attacks\"\n  - name: process_attacks\n    type: foreach\n    foreach: \"{{ steps.detect_review_bombs.output.values }}\"\n    steps:\n      - name: protect_business\n        type: elasticsearch.update\n        with:\n          index: businesses\n          id: \"{{ foreach.item.business_id }}\"\n          doc:\n            rating_protected: true\n            protection_reason: review_bomb_detected\n      - name: create_incident\n        type: elasticsearch.bulk\n        with:\n          index: incidents\n          operations:\n            - incident_type: review_bomb\n              status: open\n              severity: high\n              business_id: \"{{ foreach.item.business_id }}\"\n              detected_at: \"{{ execution.startedAt }}\"\n      - name: create_notification\n        type: elasticsearch.bulk\n        with:\n          index: notifications\n          operations:\n            - type: review_bomb_detected\n              severity: high\n              title: \"Review Bomb Detected: {{ foreach.item.name }}\"\n              business_id: \"{{ foreach.item.business_id }}\"\n              read: false\n  - name: completion_log\n    type: console\n    with:\n      message: Review bomb detection workflow completed"
-}
+```yaml
+name: Review Bomb Detection
+description: Detects coordinated review bombing attacks and automatically protects targeted businesses.
+enabled: true
+
+triggers:
+  - type: scheduled
+    with:
+      every: 5m
+
+steps:
+  - name: detect_review_bombs
+    type: elasticsearch.esql.query
+    with:
+      query: |
+        FROM reviews
+        | WHERE date > NOW() - 30 minutes AND stars <= 2 AND status != "held"
+        | LOOKUP JOIN users ON user_id
+        | WHERE trust_score < 0.4
+        | STATS review_count = COUNT(*), avg_stars = AVG(stars), avg_trust = AVG(trust_score), unique_attackers = COUNT_DISTINCT(user_id) BY business_id
+        | WHERE review_count >= 5 AND unique_attackers >= 3
+        | LOOKUP JOIN businesses ON business_id
+        | KEEP business_id, name, city, review_count, avg_stars, avg_trust, unique_attackers
+        | SORT review_count DESC
+
+  - name: log_detection
+    type: console
+    with:
+      message: "Detected {{ steps.detect_review_bombs.output.values | size }} potential attacks"
+
+  - name: process_attacks
+    type: foreach
+    foreach: "{{ steps.detect_review_bombs.output.values }}"
+    steps:
+      - name: protect_business
+        type: elasticsearch.update
+        with:
+          index: businesses
+          id: "{{ foreach.item.business_id }}"
+          doc:
+            rating_protected: true
+            protection_reason: review_bomb_detected
+
+      - name: create_incident
+        type: elasticsearch.bulk
+        with:
+          index: incidents
+          operations:
+            - incident_type: review_bomb
+              status: open
+              severity: high
+              business_id: "{{ foreach.item.business_id }}"
+              detected_at: "{{ execution.startedAt }}"
+
+      - name: create_notification
+        type: elasticsearch.bulk
+        with:
+          index: notifications
+          operations:
+            - type: review_bomb_detected
+              severity: high
+              title: "Review Bomb Detected: {{ foreach.item.name }}"
+              business_id: "{{ foreach.item.business_id }}"
+              read: false
+
+  - name: completion_log
+    type: console
+    with:
+      message: Review bomb detection workflow completed
 ```
 
-> **Note:** The workflow YAML is passed as a single string. In a real workflow editor, you'd paste the YAML directly into the editor UI instead of using the API.
-
-The response will include the workflow ID - save this for later:
-```json
-{
-  "id": "workflow-abc123",
-  "name": "Review Bomb Detection",
-  ...
-}
-```
+3. Click **Save** to create the workflow
+4. Note the workflow ID shown in the URL or workflow details - you'll need it for testing
 
 ---
 
@@ -176,30 +231,20 @@ Access data using Liquid-style templates:
 
 ### Task 4: Verify and Test the Workflow (3 min)
 
-**List all workflows to verify it was created:**
-```
-POST kbn://api/workflows/search
-{
-  "limit": 20,
-  "page": 1,
-  "query": ""
-}
-```
-
-You should see your "Review Bomb Detection" workflow in the results.
+**Verify the workflow was created:**
+1. In the Workflows app, you should see "Review Bomb Detection" in the list
+2. Click on the workflow to view its details
+3. Verify the status shows "Enabled"
 
 **Execute the workflow manually (without waiting 5 minutes):**
-```
-POST kbn://api/workflows/<workflow-id>/execute
-{}
-```
+1. Click on your workflow to open it
+2. Click the **Run** button (or "Execute" / "Test")
+3. Watch the execution progress
 
-Replace `<workflow-id>` with the ID returned when you created the workflow.
-
-**Check execution status:**
-```
-GET kbn://api/workflows/<workflow-id>/executions
-```
+**Check execution history:**
+1. In the workflow details, look for an "Executions" or "History" tab
+2. You should see your manual execution listed
+3. Click on it to see the step-by-step results
 
 **Expected result:** If there are no current attacks, the workflow completes but the foreach loop has no items to process. This is normal - in Challenge 4, you'll trigger an actual attack to see the full response.
 
@@ -207,33 +252,19 @@ GET kbn://api/workflows/<workflow-id>/executions
 
 ## Verify Your Workflow
 
-Run these queries in Dev Tools to verify the workflow is ready:
+Verify the workflow is ready by checking the indices in **Discover** (ES|QL mode):
 
 **Check that the incidents index exists:**
-```
-POST /_query?format=txt
-{
-  "query": "FROM incidents | STATS count = COUNT(*)"
-}
+```esql
+FROM incidents | STATS count = COUNT(*)
 ```
 
 **Check notifications index exists:**
-```
-POST /_query?format=txt
-{
-  "query": "FROM notifications | STATS count = COUNT(*)"
-}
+```esql
+FROM notifications | STATS count = COUNT(*)
 ```
 
-**List workflows again to confirm:**
-```
-POST kbn://api/workflows/search
-{
-  "limit": 20,
-  "page": 1,
-  "query": "Review Bomb"
-}
-```
+These indices may show 0 documents initially - that's expected. They'll be populated when the workflow detects an actual attack.
 
 ---
 
@@ -261,14 +292,14 @@ Before proceeding, verify:
 
 ## Troubleshooting
 
-**"workflows:ui:enabled" setting doesn't work?**
-- Make sure you're using `kbn://internal/kibana/settings` (not `kbn://api/...`)
-- The response should show `{"settings":{"workflows:ui:enabled":{"userValue":true}}}`
+**Workflows not visible in navigation?**
+- Go to Dev Tools and run: `POST kbn://internal/kibana/settings` with `{"changes": {"workflows:ui:enabled": true}}`
+- Refresh the page
 
 **Workflow creation fails?**
-- Check JSON syntax (proper quotes, commas, brackets)
+- Check YAML syntax (proper indentation, quotes)
 - Ensure all required fields are present (`name`, `triggers`, `steps`)
-- Look for error messages in the response
+- Look for error messages in the editor
 
 **Test run shows errors?**
 - Check that index names match your environment (reviews, users, businesses, incidents, notifications)
@@ -280,10 +311,6 @@ Before proceeding, verify:
 - The foreach loop simply processes zero items
 - In Challenge 4, you'll trigger an attack to see the full flow
 
-**"404 Not Found" on workflow endpoints?**
-- Make sure you ran the enable command first: `POST kbn://internal/kibana/settings`
-- Use `kbn://` prefix for all Kibana API calls in Dev Tools
-
 ---
 
 ## Bonus: Simple Manual Workflow
@@ -294,24 +321,51 @@ If you have extra time, create a simple manual workflow to understand the basics
 
 This workflow runs on-demand to check for businesses that might be under attack.
 
-```
-POST kbn://api/workflows
-{
-  "yaml": "name: Business Health Check\ndescription: Manual check for businesses with suspicious review activity\nenabled: true\ntriggers:\n  - type: manual\nsteps:\n  - name: find_suspicious_activity\n    type: elasticsearch.esql.query\n    with:\n      query: |\n        FROM reviews\n        | WHERE date > NOW() - 1 hour AND stars <= 2\n        | LOOKUP JOIN users ON user_id\n        | WHERE trust_score < 0.4\n        | STATS suspicious_count = COUNT(*), avg_trust = AVG(trust_score) BY business_id\n        | WHERE suspicious_count >= 3\n        | LOOKUP JOIN businesses ON business_id\n        | KEEP business_id, name, suspicious_count, avg_trust\n        | SORT suspicious_count DESC\n        | LIMIT 10\n  - name: log_results\n    type: console\n    with:\n      message: \"Health check complete. Found {{ steps.find_suspicious_activity.output.values | size }} businesses with suspicious activity.\"\n  - name: alert_on_suspicious\n    type: foreach\n    foreach: \"{{ steps.find_suspicious_activity.output.values }}\"\n    steps:\n      - name: log_business\n        type: console\n        with:\n          message: \"WARNING: {{ foreach.item.name }} has {{ foreach.item.suspicious_count }} suspicious reviews\""
-}
+1. In the Workflows app, click **Create a new workflow**
+2. Paste this YAML:
+
+```yaml
+name: Business Health Check
+description: Manual check for businesses with suspicious review activity
+enabled: true
+
+triggers:
+  - type: manual
+
+steps:
+  - name: find_suspicious_activity
+    type: elasticsearch.esql.query
+    with:
+      query: |
+        FROM reviews
+        | WHERE date > NOW() - 1 hour AND stars <= 2
+        | LOOKUP JOIN users ON user_id
+        | WHERE trust_score < 0.4
+        | STATS suspicious_count = COUNT(*), avg_trust = AVG(trust_score) BY business_id
+        | WHERE suspicious_count >= 3
+        | LOOKUP JOIN businesses ON business_id
+        | KEEP business_id, name, suspicious_count, avg_trust
+        | SORT suspicious_count DESC
+        | LIMIT 10
+
+  - name: log_results
+    type: console
+    with:
+      message: "Health check complete. Found {{ steps.find_suspicious_activity.output.values | size }} businesses with suspicious activity."
+
+  - name: alert_on_suspicious
+    type: foreach
+    foreach: "{{ steps.find_suspicious_activity.output.values }}"
+    steps:
+      - name: log_business
+        type: console
+        with:
+          message: "WARNING: {{ foreach.item.name }} has {{ foreach.item.suspicious_count }} suspicious reviews"
 ```
 
-**To test this workflow:**
-1. Copy the workflow ID from the response
-2. Execute it manually:
-```
-POST kbn://api/workflows/<workflow-id>/execute
-{}
-```
-3. Check the execution results:
-```
-GET kbn://api/workflows/<workflow-id>/executions
-```
+3. Click **Save**
+4. Click **Run** to execute it manually
+5. Check the execution results to see any suspicious activity
 
 ---
 
