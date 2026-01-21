@@ -82,103 +82,16 @@ You should see `{"settings":{"workflows:ui:enabled":{"userValue":true}}}` in the
 
 ### Task 2: Create the Review Bomb Detection Workflow (10 min)
 
-Run the following command in Dev Tools to create the workflow. We'll walk through each section to understand what it does.
+Run the following command in Dev Tools to create the workflow. The API expects the workflow definition as a YAML string in the `yaml` field.
 
 ```
 POST kbn://api/workflows
 {
-  "name": "Review Bomb Detection",
-  "description": "Detects coordinated review bombing attacks and automatically protects targeted businesses by holding suspicious reviews.",
-  "enabled": true,
-  "triggers": [
-    {
-      "type": "scheduled",
-      "with": {
-        "every": "5m"
-      }
-    }
-  ],
-  "steps": [
-    {
-      "name": "detect_review_bombs",
-      "type": "elasticsearch.esql.query",
-      "with": {
-        "query": "FROM reviews | WHERE @timestamp > NOW() - 30 minutes AND stars <= 2 AND status != \"held\" | LOOKUP JOIN users ON user_id | WHERE trust_score < 0.4 | STATS review_count = COUNT(*), avg_stars = AVG(stars), avg_trust = AVG(trust_score), unique_attackers = COUNT_DISTINCT(user_id) BY business_id | WHERE review_count >= 5 AND unique_attackers >= 3 | LOOKUP JOIN businesses ON business_id | KEEP business_id, name, city, review_count, avg_stars, avg_trust, unique_attackers | SORT review_count DESC"
-      }
-    },
-    {
-      "name": "log_detection",
-      "type": "console",
-      "with": {
-        "message": "Detected potential attacks"
-      }
-    },
-    {
-      "name": "process_attacks",
-      "type": "foreach",
-      "foreach": "{{ steps.detect_review_bombs.output.values }}",
-      "steps": [
-        {
-          "name": "log_attack",
-          "type": "console",
-          "with": {
-            "message": "Processing attack"
-          }
-        },
-        {
-          "name": "protect_business",
-          "type": "elasticsearch.update",
-          "with": {
-            "index": "businesses",
-            "id": "{{ foreach.item.business_id }}",
-            "doc": {
-              "rating_protected": true,
-              "protection_reason": "review_bomb_detected"
-            }
-          }
-        },
-        {
-          "name": "create_incident",
-          "type": "elasticsearch.bulk",
-          "with": {
-            "index": "incidents",
-            "operations": [
-              {
-                "incident_type": "review_bomb",
-                "status": "open",
-                "severity": "high",
-                "detected_at": "{{ execution.startedAt }}"
-              }
-            ]
-          }
-        },
-        {
-          "name": "create_notification",
-          "type": "elasticsearch.bulk",
-          "with": {
-            "index": "notifications",
-            "operations": [
-              {
-                "type": "review_bomb_detected",
-                "severity": "high",
-                "title": "Review Bomb Detected",
-                "read": false
-              }
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "completion_log",
-      "type": "console",
-      "with": {
-        "message": "Review bomb detection workflow completed"
-      }
-    }
-  ]
+  "yaml": "name: Review Bomb Detection\ndescription: Detects coordinated review bombing attacks and automatically protects targeted businesses.\nenabled: true\ntriggers:\n  - type: scheduled\n    with:\n      every: 5m\nsteps:\n  - name: detect_review_bombs\n    type: elasticsearch.esql.query\n    with:\n      query: |\n        FROM reviews\n        | WHERE date > NOW() - 30 minutes AND stars <= 2 AND status != \"held\"\n        | LOOKUP JOIN users ON user_id\n        | WHERE trust_score < 0.4\n        | STATS review_count = COUNT(*), avg_stars = AVG(stars), avg_trust = AVG(trust_score), unique_attackers = COUNT_DISTINCT(user_id) BY business_id\n        | WHERE review_count >= 5 AND unique_attackers >= 3\n        | LOOKUP JOIN businesses ON business_id\n        | KEEP business_id, name, city, review_count, avg_stars, avg_trust, unique_attackers\n        | SORT review_count DESC\n  - name: log_detection\n    type: console\n    with:\n      message: \"Detected {{ steps.detect_review_bombs.output.values | size }} potential attacks\"\n  - name: process_attacks\n    type: foreach\n    foreach: \"{{ steps.detect_review_bombs.output.values }}\"\n    steps:\n      - name: protect_business\n        type: elasticsearch.update\n        with:\n          index: businesses\n          id: \"{{ foreach.item.business_id }}\"\n          doc:\n            rating_protected: true\n            protection_reason: review_bomb_detected\n      - name: create_incident\n        type: elasticsearch.bulk\n        with:\n          index: incidents\n          operations:\n            - incident_type: review_bomb\n              status: open\n              severity: high\n              business_id: \"{{ foreach.item.business_id }}\"\n              detected_at: \"{{ execution.startedAt }}\"\n      - name: create_notification\n        type: elasticsearch.bulk\n        with:\n          index: notifications\n          operations:\n            - type: review_bomb_detected\n              severity: high\n              title: \"Review Bomb Detected: {{ foreach.item.name }}\"\n              business_id: \"{{ foreach.item.business_id }}\"\n              read: false\n  - name: completion_log\n    type: console\n    with:\n      message: Review bomb detection workflow completed"
 }
 ```
+
+> **Note:** The workflow YAML is passed as a single string. In a real workflow editor, you'd paste the YAML directly into the editor UI instead of using the API.
 
 The response will include the workflow ID - save this for later:
 ```json
@@ -384,44 +297,7 @@ This workflow runs on-demand to check for businesses that might be under attack.
 ```
 POST kbn://api/workflows
 {
-  "name": "Business Health Check",
-  "description": "Manual check for businesses with suspicious review activity",
-  "enabled": true,
-  "triggers": [
-    {
-      "type": "manual"
-    }
-  ],
-  "steps": [
-    {
-      "name": "find_suspicious_activity",
-      "type": "elasticsearch.esql.query",
-      "with": {
-        "query": "FROM reviews | WHERE @timestamp > NOW() - 1 hour | WHERE stars <= 2 | LOOKUP JOIN users ON user_id | WHERE trust_score < 0.4 | STATS suspicious_count = COUNT(*), avg_trust = AVG(trust_score) BY business_id | WHERE suspicious_count >= 3 | LOOKUP JOIN businesses ON business_id | KEEP business_id, name, suspicious_count, avg_trust | SORT suspicious_count DESC | LIMIT 10"
-      }
-    },
-    {
-      "name": "log_results",
-      "type": "console",
-      "with": {
-        "message": "Health check complete. Found {{ steps.find_suspicious_activity.output.values | size }} businesses with suspicious activity."
-      }
-    },
-    {
-      "name": "alert_on_suspicious",
-      "type": "foreach",
-      "foreach": "{{ steps.find_suspicious_activity.output.values }}",
-      "steps": [
-        {
-          "name": "log_business",
-          "type": "console",
-          "with": {
-            "message": "WARNING: {{ foreach.item.name }} has {{ foreach.item.suspicious_count }} suspicious reviews (avg trust: {{ foreach.item.avg_trust }})"
-          }
-        }
-      ]
-    }
-  ]
+  "yaml": "name: Business Health Check\ndescription: Manual check for businesses with suspicious review activity\nenabled: true\ntriggers:\n  - type: manual\nsteps:\n  - name: find_suspicious_activity\n    type: elasticsearch.esql.query\n    with:\n      query: |\n        FROM reviews\n        | WHERE date > NOW() - 1 hour AND stars <= 2\n        | LOOKUP JOIN users ON user_id\n        | WHERE trust_score < 0.4\n        | STATS suspicious_count = COUNT(*), avg_trust = AVG(trust_score) BY business_id\n        | WHERE suspicious_count >= 3\n        | LOOKUP JOIN businesses ON business_id\n        | KEEP business_id, name, suspicious_count, avg_trust\n        | SORT suspicious_count DESC\n        | LIMIT 10\n  - name: log_results\n    type: console\n    with:\n      message: \"Health check complete. Found {{ steps.find_suspicious_activity.output.values | size }} businesses with suspicious activity.\"\n  - name: alert_on_suspicious\n    type: foreach\n    foreach: \"{{ steps.find_suspicious_activity.output.values }}\"\n    steps:\n      - name: log_business\n        type: console\n        with:\n          message: \"WARNING: {{ foreach.item.name }} has {{ foreach.item.suspicious_count }} suspicious reviews\""
 }
 ```
 
