@@ -68,22 +68,28 @@ Patterns, gotchas, and recommendations discovered during development. Use this t
 
 **Note:** The `lookup` mode index cannot be used for regular indexing operations - it's optimized for JOIN lookups. Use it for reference data (users, businesses) that changes infrequently.
 
-### Streaming App Attacker Users
+### Streaming App Attacker Users (FIXED)
 **Problem:** Streaming app generates attack reviews with `attacker_*` user IDs, but LOOKUP JOIN finds no matching users
 
 **Root Cause:** The review_streamer.py creates reviews with dynamically generated user IDs but doesn't create corresponding user records in the users index
 
-**Workaround:** Either:
-1. Pre-create attacker users before running the streamer
-2. Manually bulk insert attacker users after injection:
-```bash
-curl -X POST "$ES_URL/users/_bulk" -d '
-{"index":{"_id":"attacker_xxx"}}
-{"user_id":"attacker_xxx","trust_score":0.15,"account_age_days":3}
-'
-```
+**Solution (Implemented):** The streaming app now automatically creates attacker user records when generating attack reviews:
+- Each attack review creates a corresponding user in the `users` index
+- Users have low trust scores (0.05-0.25) and low account ages (1-14 days)
+- Duplicate users within a session are tracked and avoided
+- The summary shows "Attacker users: N" count
 
-**Proper Fix:** Update review_streamer.py to create user documents when generating attack reviews.
+```
+============================================================
+SESSION SUMMARY
+============================================================
+  Duration:          3.1 seconds
+  Total reviews:     10
+  Attack reviews:    10
+  Attacker users:    10    <-- New!
+  Errors:            0
+============================================================
+```
 
 ---
 
