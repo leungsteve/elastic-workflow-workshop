@@ -1289,13 +1289,18 @@ Now that you can detect review bombs with ES|QL, let's automate the response. Wh
 **Task 1: Create a New Workflow**
 
 1. Navigate to the Workflows app in Kibana
-2. Create a new workflow named "Review Bomb Detection"
-3. Set the trigger to run on a schedule every 5 minutes
+2. Click "Create workflow" to open the YAML editor
+3. Copy the provided workflow YAML (see Challenge 2 assignment for full YAML)
 
-**Task 2: Add Detection Step**
+**Task 2: Understand the Workflow Structure**
 
-Add an Elasticsearch query step using your detection query from Challenge 1:
+The workflow YAML contains:
+- **Trigger:** Schedule (every 5 minutes)
+- **Detection Query:** ES|QL with LOOKUP JOIN from Challenge 1
+- **For Each Loop:** Process each detected attack
+- **Response Actions:** Hold reviews, protect business, create incident, notify
 
+Example detection query within the workflow:
 ```sql
 FROM reviews
 | WHERE date > NOW() - 30 minutes
@@ -1310,29 +1315,33 @@ FROM reviews
 | LIMIT 5
 ```
 
-**Task 3: Add Response Steps**
+**Task 3: Understand Response Steps**
 
-For each detected business, add steps to:
+The workflow includes these response actions for each detected business:
 
-1. **Create Incident** - Index a document to the `incidents` index
-2. **Hold Reviews** - Update suspicious reviews: `status = "held"`
-3. **Protect Business** - Update business: `rating_protected = true`
+1. **Hold Reviews** - Update suspicious reviews: `status = "held"`
+2. **Protect Business** - Update business: `rating_protected = true`
+3. **Create Incident** - Index a document to the `incidents` index
 4. **Create Notification** - Index to `notifications` index
 
-**Task 4: Add Conditional Logic**
+**Task 4: Review Conditional Logic**
 
-Add a condition so that critical severity (review_count > 20) creates a higher severity notification.
+The workflow includes severity classification:
+- `critical`: review_count > 20
+- `high`: review_count > 10
+- `medium`: review_count >= 5
 
 **Task 5: Save and Enable**
 
-Save your workflow and enable it. We'll test it in Challenge 4.
+1. Enable the workflow using the toggle
+2. Click Save
+3. Use the Play/Run button to test immediately
 
 **Verification:**
-- [ ] Workflow created with correct trigger
-- [ ] Detection query runs successfully
-- [ ] Response steps configured for hold, protect, incident, notify
-- [ ] Conditional logic added for severity
-- [ ] Workflow saved and enabled
+- [ ] Workflow YAML pasted into editor
+- [ ] Workflow enabled and saved
+- [ ] Test run completes without errors
+- [ ] You understand trigger, detection, and response sections
 
 ---
 

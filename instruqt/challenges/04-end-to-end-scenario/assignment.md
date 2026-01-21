@@ -137,12 +137,12 @@ Your workflow should detect the attack automatically. Let's observe it in action
 
 2. Find your **Review Bomb Detection** workflow
 
-3. Click on **Execution History** or **Runs**
+3. Click on the workflow to see its details and execution history
 
 4. Wait for the next scheduled execution (runs every 5 minutes)
-   - Or click **Run Now** to trigger immediately
+   - Or click the **Play/Run** button to trigger immediately
 
-5. Watch the execution:
+5. Watch the execution steps:
    - Detection query runs and finds suspicious pattern
    - For Each loop processes the detected attack
    - Reviews are held
