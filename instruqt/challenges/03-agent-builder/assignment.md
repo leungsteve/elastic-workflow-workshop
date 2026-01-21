@@ -426,11 +426,14 @@ FROM reviews
 | STATS
     total_reviews = COUNT(*),
     avg_rating = AVG(stars),
-    low_trust_reviews = COUNT(CASE WHEN trust_score < 0.4 THEN 1 END),
-    new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END)
+    avg_trust = AVG(trust_score),
+    avg_account_age = AVG(account_age_days)
 | EVAL
-    risk_score = (low_trust_reviews + new_account_reviews) / total_reviews,
-    risk_level = CASE(risk_score > 0.5, "HIGH", risk_score > 0.2, "MEDIUM", "LOW")
+    risk_level = CASE(
+      avg_trust < 0.3 AND avg_account_age < 14, "HIGH",
+      avg_trust < 0.4 AND avg_account_age < 30, "MEDIUM",
+      TRUE, "LOW"
+    )
 ```
 - **Tool ID:** `business_risk_assessment`
 - **Parameter:** `business_id` (type: `text`)

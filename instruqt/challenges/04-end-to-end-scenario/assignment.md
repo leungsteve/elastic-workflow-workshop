@@ -88,13 +88,10 @@ Before the attack, verify the target business is in a normal state.
    FROM reviews
    | WHERE business_id == "target_biz_001"
    | WHERE date > NOW() - 1 hour
-   | STATS
-       total = COUNT(*),
-       avg_stars = AVG(stars),
-       held = COUNT(CASE WHEN status == "held" THEN 1 ELSE NULL END)
+   | STATS total = COUNT(*), avg_stars = AVG(stars) BY status
    ```
 
-   **Expected result:** Little to no recent activity, no held reviews
+   **Expected result:** Little to no recent activity (likely 0 results)
 
 **What you've verified:** The business is operating normally with no ongoing attacks.
 
@@ -129,13 +126,11 @@ Now you'll launch a simulated review bomb attack against the target business.
    FROM reviews
    | WHERE business_id == "target_biz_001"
    | WHERE date > NOW() - 10 minutes
-   | STATS
-       total = COUNT(*),
-       avg_stars = AVG(stars),
-       low_trust_count = COUNT(CASE WHEN trust_score < 0.4 THEN 1 ELSE NULL END)
+   | LOOKUP JOIN users ON user_id
+   | STATS total = COUNT(*), avg_stars = AVG(stars), avg_trust = AVG(trust_score)
    ```
 
-   **What to watch for:** Review count climbing, average stars dropping, low-trust reviews accumulating.
+   **What to watch for:** Review count climbing, average stars dropping, average trust score low (below 0.4 indicates attackers).
 
 ---
 
