@@ -30,7 +30,7 @@ TARGET_BUSINESS = {
     "latitude": 39.9526,
     "longitude": -75.1652,
     "stars": 4.7,
-    "review_count": 156,
+    "review_count": 5000,  # High count so it appears first in dropdown
     "is_open": True,
     "categories": "Restaurants, American (Traditional), Breakfast & Brunch",
     "rating_protected": False,
