@@ -381,7 +381,15 @@ Before proceeding, verify:
 
 ## Bonus: Additional Tools to Consider
 
-If you have extra time, consider creating these additional tools:
+If you have extra time, consider creating these additional tools and adding them to your agent.
+
+**Important:** After creating each tool, you must assign it to your agent:
+1. Go to **Agents** and click on your **Review Bomb Investigator** agent
+2. Switch to the **Tools** tab
+3. Check the box next to your new tool
+4. Click **Save**
+
+---
 
 **Recent Incidents Tool:**
 ```esql
@@ -394,6 +402,10 @@ FROM incidents
 - **Tool ID:** `recent_incidents`
 - **Parameter:** None (or optional `hours` parameter with type `integer`)
 - **Description:** Lists recent review bomb incidents from the last 24 hours. Use this when asked about recent attacks, latest incidents, or what's happening across the platform.
+
+**Test it:** After assigning to your agent, ask: *"What attacks happened in the last 24 hours?"*
+
+---
 
 **Business Risk Assessment:**
 ```esql
@@ -413,6 +425,8 @@ FROM reviews
 - **Tool ID:** `business_risk_assessment`
 - **Parameter:** `business_id` (type: `text`)
 - **Description:** Evaluates a business's vulnerability to review bomb attacks based on recent review patterns and reviewer characteristics.
+
+**Test it:** After assigning to your agent, ask: *"What's the risk level for business target_biz_001?"*
 
 ---
 
