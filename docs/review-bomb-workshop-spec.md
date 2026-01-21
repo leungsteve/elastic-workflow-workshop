@@ -1363,13 +1363,16 @@ When a workflow detects an attack, an analyst needs to investigate. Agent Builde
 
 Create a tool that summarizes an incident:
 
-- **Name:** `incident_summary`
-- **Description:** Summarize a review bomb incident
-- **Parameter:** `incident_id` (string)
-- **ES|QL:**
+1. Select **Type:** ES|QL
+2. Enter the ES|QL query with `{{incident_id}}` parameter placeholder
+3. In **ES|QL Parameters**, add: `incident_id` (type: `text`, required)
+4. Set **Tool ID:** `incident_summary`
+5. Set **Description:** Summarize a review bomb incident
+
+**ES|QL Query:**
 ```sql
 FROM incidents
-| WHERE incident_id == "{{ incident_id }}"
+| WHERE incident_id == "{{incident_id}}"
 | LOOKUP JOIN businesses ON business_id
 | KEEP incident_id, business_name, detected_at, severity, status, review_count, avg_rating
 ```
@@ -1378,13 +1381,17 @@ FROM incidents
 
 Create a tool that analyzes attackers:
 
-- **Name:** `reviewer_analysis`
-- **Description:** Analyze reviewers involved in an incident
-- **Parameter:** `incident_id` (string)
-- **ES|QL:**
+1. Select **Type:** ES|QL
+2. Enter the ES|QL query with `{{business_id}}` parameter placeholder
+3. In **ES|QL Parameters**, add: `business_id` (type: `text`, required)
+4. Set **Tool ID:** `reviewer_analysis`
+5. Set **Description:** Analyze reviewers involved in an attack
+
+**ES|QL Query:**
 ```sql
 FROM reviews
-| WHERE incident_id == "{{ incident_id }}"
+| WHERE business_id == "{{business_id}}"
+| WHERE @timestamp > NOW() - 24 hours
 | LOOKUP JOIN users ON user_id
 | STATS
     reviewer_count = COUNT_DISTINCT(user_id),

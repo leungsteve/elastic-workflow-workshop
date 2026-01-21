@@ -42,11 +42,12 @@ In this challenge, you'll create two investigation tools:
 ```
 
 Each tool you create has:
-- **Name** - How the AI identifies the tool
+- **Type** - The query language (ES|QL)
+- **ES|QL Query** - The actual query with `{{parameter}}` placeholders
+- **ES|QL Parameters** - Input values the AI extracts from questions
+- **Tool ID** - Unique identifier for the tool
 - **Description** - Helps the AI understand when to use it
-- **Parameters** - Input values the AI extracts from the question
-- **ES|QL Query** - The actual query that runs against your data
-- **Response Template** - How results are formatted for the analyst
+- **Labels** - Optional tags for organizing tools
 
 ---
 
@@ -58,9 +59,9 @@ Each tool you create has:
 2. Click the hamburger menu in the top left
 3. Navigate to **Machine Learning** > **Agent Builder**
    - Or use the search bar and type "Agent Builder"
-4. Click **Create Tool**
+4. Click **Create a new tool**
 
-**Tip:** If you don't see Agent Builder, it may be under a different menu path depending on your Kibana version. Try searching for "AI Assistant" or "Tools".
+**Tip:** If you don't see Agent Builder, it may be under a different menu path. Try searching for "AI Assistant" or "Tools".
 
 ---
 
@@ -68,66 +69,56 @@ Each tool you create has:
 
 This tool retrieves details about a specific incident.
 
-1. Click **Create Tool**
+#### Step 1: Set the Type
 
-2. Enter the basic information:
-   - **Name:** `incident_summary`
-   - **Description:** `Retrieves a summary of a review bomb incident including the targeted business, attack severity, and current status. Use this tool when asked about incident details, incident status, or what happened to a specific business.`
+In the **Type** dropdown, select **ES|QL**.
 
-3. Define the parameters:
-   ```json
-   {
-     "incident_id": {
-       "type": "string",
-       "description": "The incident ID to look up (e.g., INC-biz123-20240115). Can also accept a business name to find the latest incident for that business.",
-       "required": true
-     }
-   }
-   ```
+#### Step 2: Enter the ES|QL Query
 
-4. Enter the ES|QL query:
-   ```esql
-   FROM incidents
-   | WHERE incident_id == "{{incident_id}}" OR business_name LIKE "*{{incident_id}}*"
-   | SORT detected_at DESC
-   | LIMIT 1
-   | LOOKUP JOIN businesses ON business_id
-   | EVAL
-       impact_assessment = CASE(
-         severity == "critical", "SEVERE - Business reputation at immediate risk. Urgent action required.",
-         severity == "high", "SIGNIFICANT - Notable impact on business rating. Prompt investigation needed.",
-         TRUE, "MODERATE - Limited impact so far. Standard investigation protocol."
-       ),
-       time_since_detection = DATE_DIFF("minute", detected_at, NOW())
-   | KEEP incident_id, incident_type, status, severity, business_name, city,
-          metrics.review_count, metrics.avg_stars, metrics.avg_trust,
-          metrics.unique_attackers, detected_at, time_since_detection,
-          impact_assessment, stars AS business_original_rating
-   ```
+Copy this query into the **ES|QL Query** editor:
 
-5. (Optional) Add a response template:
-   ```markdown
-   ## Incident Summary: {{incident_id}}
+```esql
+FROM incidents
+| WHERE incident_id == "{{incident_id}}" OR business_name LIKE "*{{incident_id}}*"
+| SORT detected_at DESC
+| LIMIT 1
+| LOOKUP JOIN businesses ON business_id
+| EVAL
+    impact_assessment = CASE(
+      severity == "critical", "SEVERE - Business reputation at immediate risk. Urgent action required.",
+      severity == "high", "SIGNIFICANT - Notable impact on business rating. Prompt investigation needed.",
+      TRUE, "MODERATE - Limited impact so far. Standard investigation protocol."
+    ),
+    time_since_detection = DATE_DIFF("minute", detected_at, NOW())
+| KEEP incident_id, incident_type, status, severity, business_name, city,
+       metrics.review_count, metrics.avg_stars, metrics.avg_trust,
+       metrics.unique_attackers, detected_at, time_since_detection,
+       impact_assessment, stars AS business_original_rating
+```
 
-   **Business:** {{business_name}} ({{city}})
-   **Original Rating:** {{business_original_rating}} stars
-   **Status:** {{status}} | **Severity:** {{severity}}
+#### Step 3: Define ES|QL Parameters
 
-   ### Attack Metrics
-   | Metric | Value |
-   |--------|-------|
-   | Suspicious Reviews | {{metrics.review_count}} |
-   | Unique Attackers | {{metrics.unique_attackers}} |
-   | Average Attack Rating | {{metrics.avg_stars}} stars |
-   | Average Attacker Trust | {{metrics.avg_trust}} |
+In the **ES|QL Parameters** section, add a parameter:
 
-   ### Impact Assessment
-   {{impact_assessment}}
+| Name | Description | Type | Optional |
+|------|-------------|------|----------|
+| `incident_id` | The incident ID to look up (e.g., INC-biz123-2024). Can also accept a business name to find the latest incident. | `text` | ☐ (unchecked) |
 
-   **Detected:** {{detected_at}} ({{time_since_detection}} minutes ago)
-   ```
+**Tip:** You can click **Infer parameter** to automatically detect parameters from your query's `{{placeholder}}` syntax.
 
-6. Click **Save Tool**
+#### Step 4: Fill in Details
+
+- **Tool ID:** `incident_summary`
+- **Description:**
+  ```
+  Retrieves a summary of a review bomb incident including the targeted business,
+  attack severity, and current status. Use this tool when asked about incident
+  details, incident status, or what happened to a specific business.
+  ```
+
+#### Step 5: Save the Tool
+
+Click **Save** (or **Save & test** to test immediately).
 
 ---
 
@@ -135,86 +126,67 @@ This tool retrieves details about a specific incident.
 
 This tool analyzes the attackers involved in an incident.
 
-1. Click **Create Tool**
+#### Step 1: Create New Tool
 
-2. Enter the basic information:
-   - **Name:** `reviewer_analysis`
-   - **Description:** `Analyzes the reviewers/attackers involved in a review bomb incident. Shows their trust scores, account ages, review patterns, and risk levels. Use this to understand who is behind an attack and identify coordination patterns.`
+Click **Create a new tool** again.
 
-3. Define the parameters:
-   ```json
-   {
-     "business_id": {
-       "type": "string",
-       "description": "The business ID that was attacked. Can be found in the incident details.",
-       "required": true
-     },
-     "time_window": {
-       "type": "string",
-       "description": "How far back to look for suspicious reviews. Use format like '1h', '24h', '7d'. Defaults to 24h if not specified.",
-       "required": false,
-       "default": "24 hours"
-     }
-   }
-   ```
+#### Step 2: Set the Type
 
-4. Enter the ES|QL query:
-   ```esql
-   FROM reviews
-   | WHERE business_id == "{{business_id}}"
-   | WHERE date > NOW() - {{time_window}}
-   | WHERE stars <= 2
-   | LOOKUP JOIN users ON user_id
-   | WHERE trust_score < 0.5
-   | STATS
-       reviews_submitted = COUNT(*),
-       avg_rating_given = AVG(stars),
-       first_review = MIN(date),
-       last_review = MAX(date)
-     BY user_id, name AS username, trust_score, account_age_days, review_count AS total_reviews
-   | EVAL
-       risk_level = CASE(
-         trust_score < 0.2 AND account_age_days < 7, "CRITICAL",
-         trust_score < 0.3 AND account_age_days < 14, "HIGH",
-         trust_score < 0.4 AND account_age_days < 30, "MEDIUM",
-         TRUE, "LOW"
-       ),
-       account_type = CASE(
-         account_age_days < 7, "Brand New",
-         account_age_days < 30, "New",
-         account_age_days < 90, "Recent",
-         TRUE, "Established"
-       )
-   | SORT trust_score ASC, reviews_submitted DESC
-   | LIMIT 20
-   ```
+Select **ES|QL** from the Type dropdown.
 
-5. (Optional) Add a response template:
-   ```markdown
-   ## Reviewer Analysis
+#### Step 3: Enter the ES|QL Query
 
-   Found {{_count}} suspicious reviewers targeting this business.
+```esql
+FROM reviews
+| WHERE business_id == "{{business_id}}"
+| WHERE @timestamp > NOW() - 24 hours
+| WHERE stars <= 2
+| LOOKUP JOIN users ON user_id
+| WHERE trust_score < 0.5
+| STATS
+    reviews_submitted = COUNT(*),
+    avg_rating_given = AVG(stars),
+    first_review = MIN(@timestamp),
+    last_review = MAX(@timestamp)
+  BY user_id, trust_score, account_age_days
+| EVAL
+    risk_level = CASE(
+      trust_score < 0.2 AND account_age_days < 7, "CRITICAL",
+      trust_score < 0.3 AND account_age_days < 14, "HIGH",
+      trust_score < 0.4 AND account_age_days < 30, "MEDIUM",
+      TRUE, "LOW"
+    ),
+    account_type = CASE(
+      account_age_days < 7, "Brand New",
+      account_age_days < 30, "New",
+      account_age_days < 90, "Recent",
+      TRUE, "Established"
+    )
+| SORT trust_score ASC, reviews_submitted DESC
+| LIMIT 20
+```
 
-   ### Attacker Profiles
+#### Step 4: Define ES|QL Parameters
 
-   | Username | Trust Score | Account Age | Attack Reviews | Risk Level |
-   |----------|-------------|-------------|----------------|------------|
-   {{#each results}}
-   | {{username}} | {{trust_score}} | {{account_age_days}} days ({{account_type}}) | {{reviews_submitted}} | {{risk_level}} |
-   {{/each}}
+Add this parameter in the **ES|QL Parameters** section:
 
-   ### Pattern Analysis
-   - **Average Trust Score:** {{avg_trust_score}}
-   - **New Accounts (< 30 days):** {{new_account_count}}
-   - **Multiple Reviewers:** {{multi_review_count}} attackers submitted 2+ reviews
+| Name | Description | Type | Optional |
+|------|-------------|------|----------|
+| `business_id` | The business ID that was attacked. Can be found in incident details. | `text` | ☐ (unchecked) |
 
-   ### Coordination Indicators
-   {{#if high_coordination}}
-   **WARNING:** Strong coordination signals detected. Multiple new, low-trust accounts acting simultaneously.
-   {{/if}}
-   ```
+#### Step 5: Fill in Details
 
-6. Click **Save Tool**
+- **Tool ID:** `reviewer_analysis`
+- **Description:**
+  ```
+  Analyzes the reviewers/attackers involved in a review bomb incident. Shows their
+  trust scores, account ages, review patterns, and risk levels. Use this to understand
+  who is behind an attack and identify coordination patterns.
+  ```
+
+#### Step 6: Save the Tool
+
+Click **Save**.
 
 ---
 
@@ -231,14 +203,14 @@ Now test your tools using the AI Assistant.
    **Test Incident Summary:**
    > "What can you tell me about the most recent incident?"
 
-   > "Summarize the incident for Mario's Italian Kitchen"
+   > "Summarize the incident for The Happy Diner"
 
    > "What's the status of incident INC-biz_sample_001?"
 
    **Test Reviewer Analysis:**
    > "Analyze the attackers who targeted business biz_sample_001"
 
-   > "Show me who was involved in the review bomb attack in the last 2 hours"
+   > "Show me who was involved in the review bomb attack"
 
    > "What patterns do the attackers have in common?"
 
@@ -251,30 +223,20 @@ Now test your tools using the AI Assistant.
 
 ---
 
-## Expected Results
+## Parameter Types Reference
 
-When you ask about an incident, you should see output like:
+When defining parameters, choose the appropriate type:
 
-```
-## Incident Summary: INC-biz_sample_001-20240115
-
-**Business:** Mario's Italian Kitchen (San Francisco)
-**Original Rating:** 4.5 stars
-**Status:** open | **Severity:** high
-
-### Attack Metrics
-| Metric | Value |
-|--------|-------|
-| Suspicious Reviews | 8 |
-| Unique Attackers | 5 |
-| Average Attack Rating | 1.3 stars |
-| Average Attacker Trust | 0.18 |
-
-### Impact Assessment
-SIGNIFICANT - Notable impact on business rating. Prompt investigation needed.
-
-**Detected:** 2024-01-15T14:30:00Z (45 minutes ago)
-```
+| Type | Use For | Example |
+|------|---------|---------|
+| `text` | Free-form strings, IDs, names | incident_id, business_name |
+| `keyword` | Exact match values, enums | status, severity |
+| `long` | Large integers | count thresholds |
+| `integer` | Small integers | limits, offsets |
+| `double` | Decimal numbers | scores, ratings |
+| `float` | Decimal numbers (less precision) | percentages |
+| `boolean` | True/false flags | include_resolved |
+| `date` | Timestamps | start_date, end_date |
 
 ---
 
@@ -295,7 +257,7 @@ Before proceeding, verify:
 1. **Natural language investigation** - Analysts can ask questions without knowing ES|QL
 2. **Contextual tools** - Good descriptions help the AI choose the right tool
 3. **Parameter extraction** - The AI pulls values from questions automatically
-4. **Formatted responses** - Templates make data easy to understand
+4. **Type safety** - Parameters have specific types (text, keyword, integer, etc.)
 5. **Reusability** - Once created, tools work for any incident
 
 ---
@@ -305,16 +267,33 @@ Before proceeding, verify:
 If you have extra time, consider creating these additional tools:
 
 **Recent Incidents Tool:**
-- Lists all incidents from the last 24 hours
+```esql
+FROM incidents
+| WHERE detected_at > NOW() - 24 hours
+| SORT detected_at DESC
+| KEEP incident_id, business_name, severity, status, detected_at
+| LIMIT 10
+```
+- Parameter: None (or optional `hours` parameter with type `integer`)
 - Useful for "Show me all recent attacks" queries
 
 **Business Risk Assessment:**
+```esql
+FROM reviews
+| WHERE business_id == "{{business_id}}"
+| WHERE @timestamp > NOW() - 7 days
+| LOOKUP JOIN users ON user_id
+| STATS
+    total_reviews = COUNT(*),
+    avg_rating = AVG(stars),
+    low_trust_reviews = COUNT(CASE WHEN trust_score < 0.4 THEN 1 END),
+    new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END)
+| EVAL
+    risk_score = (low_trust_reviews + new_account_reviews) / total_reviews,
+    risk_level = CASE(risk_score > 0.5, "HIGH", risk_score > 0.2, "MEDIUM", "LOW")
+```
+- Parameter: `business_id` (type: `text`)
 - Evaluates a business's vulnerability to attacks
-- Shows review patterns and identifies risks
-
-**Attack Timeline:**
-- Shows the progression of an attack over time
-- Helps identify when the attack started and ended
 
 ---
 
@@ -323,16 +302,21 @@ If you have extra time, consider creating these additional tools:
 **Tool doesn't appear in AI Assistant?**
 - Ensure you clicked Save
 - Refresh the AI Assistant panel
-- Check that the tool name has no spaces or special characters
+- Check that the Tool ID has no spaces or special characters
 
 **Query returns no results?**
 - Verify the incident/business exists in your data
 - Check the time window - data may be older than expected
-- Run the query directly in Dev Tools to debug
+- Use **Save & test** to run the query directly
 
 **AI selects wrong tool?**
 - Improve the tool description to be more specific
 - Add example queries in the description
 - Make parameter descriptions clearer
+
+**Parameter not recognized?**
+- Click **Infer parameter** to auto-detect from query
+- Ensure parameter name matches `{{placeholder}}` exactly
+- Check that the Type is appropriate for the value
 
 In the next challenge, you'll run a full end-to-end attack simulation!
