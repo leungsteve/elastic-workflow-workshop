@@ -98,11 +98,12 @@ FROM incidents
       severity == "high", "SIGNIFICANT - Notable impact on business rating. Prompt investigation needed.",
       TRUE, "MODERATE - Limited impact so far. Standard investigation protocol."
     ),
-    time_since_detection = DATE_DIFF("minute", detected_at, NOW())
+    time_since_detection = DATE_DIFF("minute", detected_at, NOW()),
+    business_original_rating = stars
 | KEEP incident_id, incident_type, status, severity, business_name, city,
-       metrics.review_count, metrics.avg_stars, metrics.avg_trust,
-       metrics.unique_attackers, detected_at, time_since_detection,
-       impact_assessment, stars AS business_original_rating
+       review_count, avg_rating, avg_trust_score,
+       unique_reviewers, detected_at, time_since_detection,
+       impact_assessment, business_original_rating
 ```
 
 #### Step 3: Define ES|QL Parameters
@@ -140,7 +141,7 @@ POST kbn://api/agent_builder/tools
   "type": "esql",
   "description": "Retrieves a summary of a review bomb incident including the targeted business, attack severity, and current status. Use this tool when asked about incident details, incident status, or what happened to a specific business.",
   "configuration": {
-    "query": "FROM incidents | WHERE incident_id == \"{{incident_id}}\" OR business_name LIKE \"*{{incident_id}}*\" | SORT detected_at DESC | LIMIT 1 | LOOKUP JOIN businesses ON business_id | EVAL impact_assessment = CASE(severity == \"critical\", \"SEVERE - Business reputation at immediate risk. Urgent action required.\", severity == \"high\", \"SIGNIFICANT - Notable impact on business rating. Prompt investigation needed.\", TRUE, \"MODERATE - Limited impact so far. Standard investigation protocol.\"), time_since_detection = DATE_DIFF(\"minute\", detected_at, NOW()) | KEEP incident_id, incident_type, status, severity, business_name, city, metrics.review_count, metrics.avg_stars, metrics.avg_trust, metrics.unique_attackers, detected_at, time_since_detection, impact_assessment, stars AS business_original_rating",
+    "query": "FROM incidents | WHERE incident_id == \"{{incident_id}}\" OR business_name LIKE \"*{{incident_id}}*\" | SORT detected_at DESC | LIMIT 1 | LOOKUP JOIN businesses ON business_id | EVAL impact_assessment = CASE(severity == \"critical\", \"SEVERE - Business reputation at immediate risk. Urgent action required.\", severity == \"high\", \"SIGNIFICANT - Notable impact on business rating. Prompt investigation needed.\", TRUE, \"MODERATE - Limited impact so far. Standard investigation protocol.\"), time_since_detection = DATE_DIFF(\"minute\", detected_at, NOW()), business_original_rating = stars | KEEP incident_id, incident_type, status, severity, business_name, city, review_count, avg_rating, avg_trust_score, unique_reviewers, detected_at, time_since_detection, impact_assessment, business_original_rating",
     "params": {
       "incident_id": {
         "type": "text",
@@ -170,15 +171,15 @@ Select **ES|QL** from the Type dropdown.
 ```esql
 FROM reviews
 | WHERE business_id == "{{business_id}}"
-| WHERE @timestamp > NOW() - 24 hours
+| WHERE date > NOW() - 24 hours
 | WHERE stars <= 2
 | LOOKUP JOIN users ON user_id
 | WHERE trust_score < 0.5
 | STATS
     reviews_submitted = COUNT(*),
     avg_rating_given = AVG(stars),
-    first_review = MIN(@timestamp),
-    last_review = MAX(@timestamp)
+    first_review = MIN(date),
+    last_review = MAX(date)
   BY user_id, trust_score, account_age_days
 | EVAL
     risk_level = CASE(
@@ -230,7 +231,7 @@ POST kbn://api/agent_builder/tools
   "type": "esql",
   "description": "Analyzes the reviewers/attackers involved in a review bomb incident. Shows their trust scores, account ages, review patterns, and risk levels. Use this to understand who is behind an attack and identify coordination patterns.",
   "configuration": {
-    "query": "FROM reviews | WHERE business_id == \"{{business_id}}\" | WHERE @timestamp > NOW() - 24 hours | WHERE stars <= 2 | LOOKUP JOIN users ON user_id | WHERE trust_score < 0.5 | STATS reviews_submitted = COUNT(*), avg_rating_given = AVG(stars), first_review = MIN(@timestamp), last_review = MAX(@timestamp) BY user_id, trust_score, account_age_days | EVAL risk_level = CASE(trust_score < 0.2 AND account_age_days < 7, \"CRITICAL\", trust_score < 0.3 AND account_age_days < 14, \"HIGH\", trust_score < 0.4 AND account_age_days < 30, \"MEDIUM\", TRUE, \"LOW\"), account_type = CASE(account_age_days < 7, \"Brand New\", account_age_days < 30, \"New\", account_age_days < 90, \"Recent\", TRUE, \"Established\") | SORT trust_score ASC, reviews_submitted DESC | LIMIT 20",
+    "query": "FROM reviews | WHERE business_id == \"{{business_id}}\" | WHERE date > NOW() - 24 hours | WHERE stars <= 2 | LOOKUP JOIN users ON user_id | WHERE trust_score < 0.5 | STATS reviews_submitted = COUNT(*), avg_rating_given = AVG(stars), first_review = MIN(date), last_review = MAX(date) BY user_id, trust_score, account_age_days | EVAL risk_level = CASE(trust_score < 0.2 AND account_age_days < 7, \"CRITICAL\", trust_score < 0.3 AND account_age_days < 14, \"HIGH\", trust_score < 0.4 AND account_age_days < 30, \"MEDIUM\", TRUE, \"LOW\"), account_type = CASE(account_age_days < 7, \"Brand New\", account_age_days < 30, \"New\", account_age_days < 90, \"Recent\", TRUE, \"Established\") | SORT trust_score ASC, reviews_submitted DESC | LIMIT 20",
     "params": {
       "business_id": {
         "type": "text",
@@ -260,13 +261,14 @@ Select **ES|QL** from the Type dropdown.
 #### Step 3: Enter the ES|QL Query
 
 ```esql
-FROM reviews
-| WHERE text_semantic MATCH "{{search_text}}"
-| KEEP review_id, user_id, business_id, stars, text, date
+FROM reviews METADATA _score
+| WHERE text_semantic: "{{search_text}}"
+| SORT _score DESC
+| KEEP review_id, user_id, business_id, stars, text, date, _score
 | LIMIT 10
 ```
 
-**Note:** The `text_semantic` field uses ELSER embeddings to find semantically similar content.
+**Note:** The `text_semantic` field uses ELSER embeddings to find semantically similar content. The `:` operator performs semantic search, and `_score` indicates relevance.
 
 #### Step 4: Define ES|QL Parameters
 
@@ -303,7 +305,7 @@ POST kbn://api/agent_builder/tools
   "type": "esql",
   "description": "Finds reviews that are semantically similar to a given text using ELSER. Use this to understand attack narratives, find common themes in malicious reviews, or discover patterns in what attackers are claiming. Works by meaning, not just keywords.",
   "configuration": {
-    "query": "FROM reviews | WHERE text_semantic MATCH \"{{search_text}}\" | KEEP review_id, user_id, business_id, stars, text, date | LIMIT 10",
+    "query": "FROM reviews METADATA _score | WHERE text_semantic: \"{{search_text}}\" | SORT _score DESC | KEEP review_id, user_id, business_id, stars, text, date, _score | LIMIT 10",
     "params": {
       "search_text": {
         "type": "text",
@@ -431,7 +433,7 @@ POST kbn://api/agent_builder/tools
 ```esql
 FROM reviews
 | WHERE business_id == "{{business_id}}"
-| WHERE @timestamp > NOW() - 7 days
+| WHERE date > NOW() - 7 days
 | LOOKUP JOIN users ON user_id
 | STATS
     total_reviews = COUNT(*),
@@ -453,7 +455,7 @@ POST kbn://api/agent_builder/tools
   "type": "esql",
   "description": "Evaluates a business's vulnerability to review bomb attacks based on recent review patterns and reviewer characteristics.",
   "configuration": {
-    "query": "FROM reviews | WHERE business_id == \"{{business_id}}\" | WHERE @timestamp > NOW() - 7 days | LOOKUP JOIN users ON user_id | STATS total_reviews = COUNT(*), avg_rating = AVG(stars), low_trust_reviews = COUNT(CASE WHEN trust_score < 0.4 THEN 1 END), new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END) | EVAL risk_score = (low_trust_reviews + new_account_reviews) / total_reviews, risk_level = CASE(risk_score > 0.5, \"HIGH\", risk_score > 0.2, \"MEDIUM\", \"LOW\")",
+    "query": "FROM reviews | WHERE business_id == \"{{business_id}}\" | WHERE date > NOW() - 7 days | LOOKUP JOIN users ON user_id | STATS total_reviews = COUNT(*), avg_rating = AVG(stars), low_trust_reviews = COUNT(CASE WHEN trust_score < 0.4 THEN 1 END), new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END) | EVAL risk_score = (low_trust_reviews + new_account_reviews) / total_reviews, risk_level = CASE(risk_score > 0.5, \"HIGH\", risk_score > 0.2, \"MEDIUM\", \"LOW\")",
     "params": {
       "business_id": {
         "type": "text",
