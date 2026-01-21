@@ -76,8 +76,6 @@ You'll see a YAML editor where you can define your workflow.
 Copy the following YAML into the editor. We'll walk through each section to understand what it does.
 
 ```yaml
-version: 1
-
 name: Review Bomb Detection
 description: |
   Detects coordinated review bombing attacks and automatically
@@ -85,13 +83,14 @@ description: |
 enabled: true
 
 triggers:
-  - type: schedule
-    interval: 5m
+  - type: scheduled
+    with:
+      interval: 5m
 
 steps:
   # Step 1: Detect potential review bombs using ES|QL
-  - id: detect_review_bombs
-    type: elasticsearch.esql
+  - name: detect_review_bombs
+    type: elasticsearch.esql.query
     with:
       query: |
         FROM reviews
@@ -104,108 +103,63 @@ steps:
             review_count = COUNT(*),
             avg_stars = AVG(stars),
             avg_trust = AVG(trust_score),
-            unique_attackers = COUNT_DISTINCT(user_id),
-            review_ids = VALUES(review_id)
+            unique_attackers = COUNT_DISTINCT(user_id)
           BY business_id
         | WHERE review_count >= 5 AND unique_attackers >= 3
         | LOOKUP JOIN businesses ON business_id
         | KEEP business_id, name, city, review_count, avg_stars,
-              avg_trust, unique_attackers, review_ids
+              avg_trust, unique_attackers
         | SORT review_count DESC
 
-  # Step 2: Process each detected attack
-  - id: process_attacks
-    type: foreach
-    collection: "{{detect_review_bombs.results}}"
-    as: attack
-    steps:
-      # Calculate severity based on attack volume
-      - id: set_severity
-        type: set
-        with:
-          key: severity
-          value: |
-            {{#if (gt attack.review_count 20)}}critical
-            {{else if (gt attack.review_count 10)}}high
-            {{else}}medium{{/if}}
+  # Step 2: Log what was detected
+  - name: log_detection
+    type: console
+    with:
+      message: "Detected {{ steps.detect_review_bombs.output.values | size }} potential attacks"
 
-      # Hold the suspicious reviews
-      - id: hold_reviews
-        type: elasticsearch.update_by_query
+  # Step 3: Process each detected attack
+  - name: process_attacks
+    type: foreach
+    foreach: "{{ steps.detect_review_bombs.output.values }}"
+    steps:
+      # Log current attack being processed
+      - name: log_attack
+        type: console
         with:
-          index: reviews
-          query:
-            bool:
-              must:
-                - term:
-                    business_id: "{{attack.business_id}}"
-                - range:
-                    "@timestamp":
-                      gte: "now-30m"
-                - range:
-                    stars:
-                      lte: 2
-              must_not:
-                - term:
-                    status: "held"
-          script:
-            source: |
-              ctx._source.status = 'held';
-              ctx._source.held_reason = 'review_bomb_detection';
-              ctx._source.held_at = params.timestamp;
-            params:
-              timestamp: "{{execution.started_at}}"
+          message: "Processing attack on {{ foreach.item.name }} - {{ foreach.item.review_count }} suspicious reviews"
 
       # Enable rating protection on the business
-      - id: protect_business
+      - name: protect_business
         type: elasticsearch.update
         with:
           index: businesses
-          id: "{{attack.business_id}}"
-          document:
+          id: "{{ foreach.item.business_id }}"
+          doc:
             rating_protected: true
-            protection_reason: "review_bomb_detected"
-            protected_since: "{{execution.started_at}}"
+            protection_reason: review_bomb_detected
+            protected_since: "{{ execution.startedAt }}"
 
-      # Create an incident record
-      - id: create_incident
-        type: elasticsearch.index
+      # Create an incident record using bulk API
+      - name: create_incident
+        type: elasticsearch.bulk
         with:
-          index: incidents
-          document:
-            incident_id: "INC-{{attack.business_id}}-{{execution.id}}"
-            incident_type: "review_bomb"
-            status: "open"
-            severity: "{{severity}}"
-            business_id: "{{attack.business_id}}"
-            business_name: "{{attack.name}}"
-            city: "{{attack.city}}"
-            detected_at: "{{execution.started_at}}"
-            metrics:
-              review_count: "{{attack.review_count}}"
-              avg_stars: "{{attack.avg_stars}}"
-              avg_trust: "{{attack.avg_trust}}"
-              unique_attackers: "{{attack.unique_attackers}}"
-            affected_review_ids: "{{attack.review_ids}}"
-            created_at: "{{execution.started_at}}"
+          body: |
+            {"index":{"_index":"incidents"}}
+            {"incident_id":"INC-{{ foreach.item.business_id }}-{{ execution.id }}","incident_type":"review_bomb","status":"open","severity":"high","business_id":"{{ foreach.item.business_id }}","business_name":"{{ foreach.item.name }}","city":"{{ foreach.item.city }}","detected_at":"{{ execution.startedAt }}","metrics":{"review_count":{{ foreach.item.review_count }},"avg_stars":{{ foreach.item.avg_stars }},"unique_attackers":{{ foreach.item.unique_attackers }}}}
 
       # Create a notification
-      - id: create_notification
-        type: elasticsearch.index
+      - name: create_notification
+        type: elasticsearch.bulk
         with:
-          index: notifications
-          document:
-            notification_id: "NOTIF-{{attack.business_id}}-{{execution.id}}"
-            type: "review_bomb_detected"
-            severity: "{{severity}}"
-            title: "Review Bomb Detected: {{attack.name}}"
-            message: |
-              Detected {{attack.review_count}} suspicious reviews
-              from {{attack.unique_attackers}} attackers targeting
-              {{attack.name}} in {{attack.city}}.
-            business_id: "{{attack.business_id}}"
-            created_at: "{{execution.started_at}}"
-            read: false
+          body: |
+            {"index":{"_index":"notifications"}}
+            {"notification_id":"NOTIF-{{ foreach.item.business_id }}-{{ execution.id }}","type":"review_bomb_detected","severity":"high","title":"Review Bomb Detected: {{ foreach.item.name }}","message":"Detected {{ foreach.item.review_count }} suspicious reviews from {{ foreach.item.unique_attackers }} attackers","business_id":"{{ foreach.item.business_id }}","created_at":"{{ execution.startedAt }}","read":false}
+
+  # Step 4: Final summary
+  - name: completion_log
+    type: console
+    with:
+      message: "Review bomb detection workflow completed at {{ execution.startedAt }}"
 ```
 
 ---
@@ -216,29 +170,30 @@ Let's break down each section of the workflow:
 
 #### Metadata
 ```yaml
-version: 1
 name: Review Bomb Detection
 description: |
   Detects coordinated review bombing attacks...
 enabled: true
 ```
-- `version`: Workflow schema version
 - `name`: Display name in the UI
+- `description`: Explains what the workflow does
 - `enabled`: Set to `true` to activate the workflow
 
 #### Trigger
 ```yaml
 triggers:
-  - type: schedule
-    interval: 5m
+  - type: scheduled
+    with:
+      interval: 5m
 ```
-- Runs automatically every 5 minutes
-- Other trigger types: `document` (on index change), `webhook` (HTTP call)
+- `type: scheduled` runs automatically at intervals
+- `interval: 5m` means every 5 minutes
+- Other trigger types: `manual` (on-demand), `alert` (from detection rules)
 
-#### Detection Query
+#### Detection Query (ES|QL)
 ```yaml
-- id: detect_review_bombs
-  type: elasticsearch.esql
+- name: detect_review_bombs
+  type: elasticsearch.esql.query
   with:
     query: |
       FROM reviews
@@ -246,27 +201,36 @@ triggers:
       | LOOKUP JOIN users ON user_id
       ...
 ```
-- Uses the same ES|QL + LOOKUP JOIN pattern from Challenge 1
-- Finds businesses with 5+ low-trust negative reviews from 3+ different users
-- Returns the business details and list of suspicious review IDs
+- `name:` identifies the step (used for referencing output)
+- `type: elasticsearch.esql.query` runs an ES|QL query
+- Access results via `{{ steps.detect_review_bombs.output.values }}`
 
 #### For Each Loop
 ```yaml
-- id: process_attacks
+- name: process_attacks
   type: foreach
-  collection: "{{detect_review_bombs.results}}"
-  as: attack
+  foreach: "{{ steps.detect_review_bombs.output.values }}"
+  steps:
+    ...
 ```
-- Iterates over each detected attack
-- `{{attack.business_id}}` accesses fields from the current item
+- `type: foreach` iterates over an array
+- `foreach:` specifies what to iterate (reference previous step output)
+- Inside the loop, access current item with `{{ foreach.item }}`
+- Access index with `{{ foreach.index }}`
 
 #### Response Actions
 Each action in the loop:
-1. **set_severity** - Calculates severity (critical/high/medium) based on volume
-2. **hold_reviews** - Updates review status to "held" via update_by_query
-3. **protect_business** - Sets `rating_protected: true` on the business
-4. **create_incident** - Indexes a new incident document
-5. **create_notification** - Creates an alert for the operations team
+1. **log_attack** - Logs what's being processed (type: `console`)
+2. **protect_business** - Updates business document (type: `elasticsearch.update`)
+3. **create_incident** - Indexes incident document (type: `elasticsearch.bulk`)
+4. **create_notification** - Creates alert (type: `elasticsearch.bulk`)
+
+#### Template Variables
+Access data using Liquid-style templates:
+- `{{ steps.step_name.output }}` - Previous step results
+- `{{ foreach.item.field }}` - Current loop item field
+- `{{ execution.startedAt }}` - When workflow started
+- `{{ execution.id }}` - Unique execution ID
 
 ---
 
@@ -346,139 +310,96 @@ Before proceeding, verify:
 
 ---
 
-## Bonus: Additional Workflows
+## Bonus: Simple Manual Workflow
 
-If you have extra time, here are two more workflows you can create. These trigger automatically based on document changes rather than a schedule.
+If you have extra time, create a simple manual workflow to understand the basics.
 
-### Reviewer Flagging Workflow
+### Business Health Check Workflow
 
-This workflow triggers when a new incident is created and flags the suspicious users involved.
+This workflow runs on-demand to check for businesses that might be under attack.
 
 ```yaml
-version: 1
-
-name: Reviewer Flagging
-description: Flags suspicious users when incidents are created
+name: Business Health Check
+description: Manual check for businesses with suspicious review activity
 enabled: true
 
 triggers:
-  - type: document
-    index: incidents
-    filters:
-      - field: incident_type
-        value: review_bomb
-      - field: status
-        value: open
+  - type: manual
 
 steps:
-  - id: get_attackers
-    type: elasticsearch.esql
+  # Query for suspicious activity
+  - name: find_suspicious_activity
+    type: elasticsearch.esql.query
     with:
       query: |
         FROM reviews
-        | WHERE review_id IN ({{trigger.document.affected_review_ids}})
+        | WHERE @timestamp > NOW() - 1 hour
+        | WHERE stars <= 2
         | LOOKUP JOIN users ON user_id
         | WHERE trust_score < 0.4
-        | KEEP user_id, trust_score, account_age_days
-        | STATS count = COUNT(*) BY user_id, trust_score, account_age_days
+        | STATS
+            suspicious_count = COUNT(*),
+            avg_trust = AVG(trust_score)
+          BY business_id
+        | WHERE suspicious_count >= 3
+        | LOOKUP JOIN businesses ON business_id
+        | KEEP business_id, name, suspicious_count, avg_trust
+        | SORT suspicious_count DESC
+        | LIMIT 10
 
-  - id: flag_users
+  # Log the results
+  - name: log_results
+    type: console
+    with:
+      message: |
+        Health check complete.
+        Found {{ steps.find_suspicious_activity.output.values | size }} businesses with suspicious activity.
+
+  # Process each suspicious business
+  - name: alert_on_suspicious
     type: foreach
-    collection: "{{get_attackers.results}}"
-    as: user
+    foreach: "{{ steps.find_suspicious_activity.output.values }}"
     steps:
-      - id: update_user_flag
-        type: elasticsearch.update
+      - name: log_business
+        type: console
         with:
-          index: users
-          id: "{{user.user_id}}"
-          document:
-            flagged: true
-            flagged_at: "{{execution.started_at}}"
-            flag_reason: "review_bomb_participant"
-            last_incident_id: "{{trigger.document.incident_id}}"
+          message: "WARNING: {{ foreach.item.name }} has {{ foreach.item.suspicious_count }} suspicious reviews (avg trust: {{ foreach.item.avg_trust }})"
 ```
+
+**To test this workflow:**
+1. Save the workflow
+2. Click **Save & test** or the Play button
+3. View the console output to see results
 
 ---
 
-### Incident Resolution Workflow
+## Available Step Types
 
-This workflow triggers when an incident is marked as resolved and cleans up accordingly.
+Here are the key step types you can use in workflows:
 
-```yaml
-version: 1
+| Step Type | Description |
+|-----------|-------------|
+| `elasticsearch.esql.query` | Run ES\|QL queries |
+| `elasticsearch.search` | Run DSL search queries |
+| `elasticsearch.update` | Update a document by ID |
+| `elasticsearch.bulk` | Bulk index/update/delete |
+| `elasticsearch.delete` | Delete a document |
+| `elasticsearch.request` | Generic ES API call |
+| `console` | Log messages |
+| `foreach` | Loop over arrays |
+| `if` | Conditional logic |
+| `wait` | Pause execution |
+| `http.get` | HTTP GET request |
 
-name: Incident Resolution
-description: Processes resolved incidents - deletes or publishes held reviews
-enabled: true
+---
 
-triggers:
-  - type: document
-    index: incidents
-    on_update: true
-    filters:
-      - field: status
-        value: resolved
+## Available Trigger Types
 
-steps:
-  - id: check_resolution
-    type: if
-    condition: "{{trigger.document.resolution == 'confirmed_attack'}}"
-    then:
-      # Delete malicious reviews
-      - id: delete_reviews
-        type: elasticsearch.update_by_query
-        with:
-          index: reviews
-          query:
-            terms:
-              review_id: "{{trigger.document.affected_review_ids}}"
-          script:
-            source: |
-              ctx._source.status = 'deleted';
-              ctx._source.deleted_at = params.timestamp;
-            params:
-              timestamp: "{{execution.started_at}}"
-    else:
-      # False positive - publish the reviews
-      - id: publish_reviews
-        type: elasticsearch.update_by_query
-        with:
-          index: reviews
-          query:
-            terms:
-              review_id: "{{trigger.document.affected_review_ids}}"
-          script:
-            source: |
-              ctx._source.status = 'published';
-              ctx._source.published_at = params.timestamp;
-            params:
-              timestamp: "{{execution.started_at}}"
-
-  # Remove business protection
-  - id: remove_protection
-    type: elasticsearch.update
-    with:
-      index: businesses
-      id: "{{trigger.document.business_id}}"
-      document:
-        rating_protected: false
-        protection_removed_at: "{{execution.started_at}}"
-
-  # Create resolution notification
-  - id: notify_resolution
-    type: elasticsearch.index
-    with:
-      index: notifications
-      document:
-        notification_id: "NOTIF-RES-{{trigger.document.incident_id}}"
-        type: "incident_resolved"
-        title: "Incident Resolved: {{trigger.document.business_name}}"
-        message: "Resolution: {{trigger.document.resolution}}"
-        incident_id: "{{trigger.document.incident_id}}"
-        created_at: "{{execution.started_at}}"
-        read: false
-```
+| Trigger Type | Description |
+|--------------|-------------|
+| `manual` | Run on-demand via UI or API |
+| `scheduled` | Run at intervals (e.g., `5m`, `1h`, `1d`) |
+| `alert` | Triggered by detection rules |
 
 ---
 
