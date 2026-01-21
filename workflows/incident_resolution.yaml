@@ -1,0 +1,377 @@
+version: 1
+
+name: Incident Resolution
+description: |
+  Handles the resolution of review bomb incidents. Processes the final
+  disposition of held reviews and restores business rating protection
+  based on the investigation outcome.
+enabled: true
+
+triggers:
+  - type: document
+    index: incidents
+    filters:
+      - field: status
+        value: resolved
+    on_update: true
+    fields_changed:
+      - status
+
+steps:
+  # Step 1: Get full incident details with related data
+  - id: get_incident_details
+    type: elasticsearch.esql
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      query: |
+        FROM incidents
+        | WHERE incident_id == "{{trigger.document.incident_id}}"
+        | KEEP incident_id, incident_type, status, severity, resolution,
+              resolution_notes, resolved_by, business_id, business_name,
+              affected_review_ids, flagged_user_ids, metrics, created_at
+
+  - id: get_held_reviews
+    type: elasticsearch.esql
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      query: |
+        FROM reviews
+        | WHERE review_id IN ({{trigger.document.affected_review_ids | join(', ')}})
+          AND status == "held"
+        | KEEP review_id, user_id, business_id, stars, text, trust_score,
+              created_at, held_at, held_reason
+        | SORT created_at ASC
+
+  - id: get_business_info
+    type: elasticsearch.esql
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      query: |
+        FROM businesses
+        | WHERE business_id == "{{trigger.document.business_id}}"
+        | KEEP business_id, business_name, owner_user_id, avg_rating,
+              review_count, rating_protected, protection_enabled_at
+
+  # Step 2: Process reviews based on resolution type
+  - id: process_resolution
+    type: if
+    condition: "{{trigger.document.resolution == 'confirmed_attack'}}"
+    then:
+      # Resolution: Confirmed Attack - Delete malicious reviews
+      - id: delete_malicious_reviews
+        type: foreach
+        collection: "{{get_held_reviews.results}}"
+        as: review
+        steps:
+          - id: mark_review_deleted
+            type: elasticsearch.update
+            connectorId: "{{config.elasticsearch_connector_id}}"
+            with:
+              index: reviews
+              id: "{{review.review_id}}"
+              document:
+                status: deleted
+                deletion_reason: confirmed_review_bomb
+                deleted_at: "{{execution.started_at}}"
+                deleted_by_incident: "{{trigger.document.incident_id}}"
+
+          - id: create_deletion_audit
+            type: elasticsearch.index
+            connectorId: "{{config.elasticsearch_connector_id}}"
+            with:
+              index: audit_logs
+              document:
+                audit_id: "AUDIT-DEL-{{review.review_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+                action: review_deleted
+                review_id: "{{review.review_id}}"
+                user_id: "{{review.user_id}}"
+                business_id: "{{review.business_id}}"
+                incident_id: "{{trigger.document.incident_id}}"
+                reason: confirmed_review_bomb
+                resolution: "{{trigger.document.resolution}}"
+                resolved_by: "{{trigger.document.resolved_by}}"
+                original_stars: "{{review.stars}}"
+                original_trust_score: "{{review.trust_score}}"
+                created_at: "{{execution.started_at}}"
+
+      # Update flagged users - increase penalty for confirmed attackers
+      - id: penalize_attackers
+        type: foreach
+        collection: "{{trigger.document.flagged_user_ids}}"
+        as: user_id
+        steps:
+          - id: get_user_current_state
+            type: elasticsearch.esql
+            connectorId: "{{config.elasticsearch_connector_id}}"
+            with:
+              query: |
+                FROM users
+                | WHERE user_id == "{{user_id}}"
+                | KEEP user_id, trust_score, violation_count, suspended
+
+          - id: calculate_new_trust_score
+            type: set
+            with:
+              key: new_trust_score
+              value: "{{[get_user_current_state.results[0].trust_score * 0.5, 0.1] | max}}"
+
+          - id: update_attacker_status
+            type: elasticsearch.update
+            connectorId: "{{config.elasticsearch_connector_id}}"
+            with:
+              index: users
+              id: "{{user_id}}"
+              document:
+                trust_score: "{{new_trust_score}}"
+                violation_count: "{{(get_user_current_state.results[0].violation_count or 0) + 1}}"
+                last_violation_at: "{{execution.started_at}}"
+                last_violation_type: confirmed_review_bomb
+                last_violation_incident: "{{trigger.document.incident_id}}"
+
+          - id: check_suspension_threshold
+            type: if
+            condition: "{{(get_user_current_state.results[0].violation_count or 0) + 1 >= 3}}"
+            then:
+              - id: suspend_user
+                type: elasticsearch.update
+                connectorId: "{{config.elasticsearch_connector_id}}"
+                with:
+                  index: users
+                  id: "{{user_id}}"
+                  document:
+                    suspended: true
+                    suspended_at: "{{execution.started_at}}"
+                    suspension_reason: repeated_review_bombing
+                    suspension_incident: "{{trigger.document.incident_id}}"
+
+              - id: create_suspension_notification
+                type: elasticsearch.index
+                connectorId: "{{config.elasticsearch_connector_id}}"
+                with:
+                  index: notifications
+                  document:
+                    notification_id: "NOTIF-SUSP-{{user_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+                    notification_type: user_suspended
+                    recipient_type: user
+                    recipient_user_id: "{{user_id}}"
+                    priority: high
+                    title: "Account Suspended"
+                    message: |
+                      Your account has been suspended due to repeated violations of our
+                      community guidelines regarding authentic reviews.
+
+                      If you believe this is an error, please contact our support team.
+                    created_at: "{{execution.started_at}}"
+                    read: false
+
+    else:
+      # Resolution: False Positive or Legitimate Reviews - Publish reviews
+      - id: publish_held_reviews
+        type: foreach
+        collection: "{{get_held_reviews.results}}"
+        as: review
+        steps:
+          - id: publish_review
+            type: elasticsearch.update
+            connectorId: "{{config.elasticsearch_connector_id}}"
+            with:
+              index: reviews
+              id: "{{review.review_id}}"
+              document:
+                status: published
+                published_at: "{{execution.started_at}}"
+                hold_cleared_by_incident: "{{trigger.document.incident_id}}"
+                hold_cleared_reason: "{{trigger.document.resolution}}"
+
+          - id: create_publish_audit
+            type: elasticsearch.index
+            connectorId: "{{config.elasticsearch_connector_id}}"
+            with:
+              index: audit_logs
+              document:
+                audit_id: "AUDIT-PUB-{{review.review_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+                action: review_published
+                review_id: "{{review.review_id}}"
+                user_id: "{{review.user_id}}"
+                business_id: "{{review.business_id}}"
+                incident_id: "{{trigger.document.incident_id}}"
+                reason: "{{trigger.document.resolution}}"
+                resolved_by: "{{trigger.document.resolved_by}}"
+                created_at: "{{execution.started_at}}"
+
+      # Restore trust for falsely flagged users
+      - id: restore_user_trust
+        type: if
+        condition: "{{trigger.document.resolution == 'false_positive'}}"
+        then:
+          - id: unflag_users
+            type: foreach
+            collection: "{{trigger.document.flagged_user_ids}}"
+            as: user_id
+            steps:
+              - id: clear_user_flag
+                type: elasticsearch.update
+                connectorId: "{{config.elasticsearch_connector_id}}"
+                with:
+                  index: users
+                  id: "{{user_id}}"
+                  document:
+                    flagged: false
+                    flag_cleared_at: "{{execution.started_at}}"
+                    flag_cleared_reason: false_positive_incident
+                    flag_cleared_incident: "{{trigger.document.incident_id}}"
+
+  # Step 3: Remove business rating protection
+  - id: remove_rating_protection
+    type: elasticsearch.update
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      index: businesses
+      id: "{{trigger.document.business_id}}"
+      document:
+        rating_protected: false
+        protection_removed_at: "{{execution.started_at}}"
+        protection_removed_reason: incident_resolved
+        last_incident_resolution: "{{trigger.document.resolution}}"
+
+  # Step 4: Recalculate business rating after resolution
+  - id: recalculate_rating
+    type: elasticsearch.esql
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      query: |
+        FROM reviews
+        | WHERE business_id == "{{trigger.document.business_id}}"
+          AND status == "published"
+        | STATS
+            new_avg_rating = AVG(stars),
+            new_review_count = COUNT(*)
+
+  - id: update_business_rating
+    type: elasticsearch.update
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      index: businesses
+      id: "{{trigger.document.business_id}}"
+      document:
+        avg_rating: "{{recalculate_rating.results[0].new_avg_rating}}"
+        review_count: "{{recalculate_rating.results[0].new_review_count}}"
+        rating_updated_at: "{{execution.started_at}}"
+
+  # Step 5: Create resolution notifications
+  - id: create_resolution_notifications
+    type: parallel
+    steps:
+      - id: notify_operations
+        type: elasticsearch.index
+        connectorId: "{{config.elasticsearch_connector_id}}"
+        with:
+          index: notifications
+          document:
+            notification_id: "NOTIF-RES-OPS-{{trigger.document.incident_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+            notification_type: incident_resolved
+            recipient_type: operations
+            priority: normal
+            title: "Incident Resolved: {{trigger.document.incident_id}}"
+            message: |
+              Incident {{trigger.document.incident_id}} has been resolved.
+
+              Business: {{trigger.document.business_name}}
+              Resolution: {{trigger.document.resolution}}
+              Resolved By: {{trigger.document.resolved_by}}
+
+              {% if trigger.document.resolution == 'confirmed_attack' %}
+              Actions Taken:
+              - {{get_held_reviews.results | length}} malicious reviews deleted
+              - {{trigger.document.flagged_user_ids | length}} user accounts penalized
+              - Business rating protection removed
+              - Business rating recalculated
+              {% else %}
+              Actions Taken:
+              - {{get_held_reviews.results | length}} reviews published
+              - User flags cleared (false positive)
+              - Business rating protection removed
+              - Business rating recalculated
+              {% endif %}
+
+              Resolution Notes: {{trigger.document.resolution_notes or 'None provided'}}
+            incident_id: "{{trigger.document.incident_id}}"
+            business_id: "{{trigger.document.business_id}}"
+            created_at: "{{execution.started_at}}"
+            read: false
+
+      - id: notify_business_owner
+        type: elasticsearch.index
+        connectorId: "{{config.elasticsearch_connector_id}}"
+        with:
+          index: notifications
+          document:
+            notification_id: "NOTIF-RES-OWNER-{{trigger.document.incident_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+            notification_type: protection_removed
+            recipient_type: business_owner
+            recipient_business_id: "{{trigger.document.business_id}}"
+            priority: normal
+            title: "Rating Protection Removed - Investigation Complete"
+            message: |
+              Good news! Our investigation into the unusual review activity on your
+              business listing is now complete.
+
+              {% if trigger.document.resolution == 'confirmed_attack' %}
+              We confirmed that your business was targeted by a coordinated review
+              attack. The malicious reviews have been removed and will not affect
+              your rating.
+
+              Your current rating: {{recalculate_rating.results[0].new_avg_rating | round(1)}} stars
+              (based on {{recalculate_rating.results[0].new_review_count}} verified reviews)
+              {% else %}
+              After careful review, we've determined the flagged reviews were legitimate.
+              These reviews have been published and are now visible on your listing.
+
+              Your current rating: {{recalculate_rating.results[0].new_avg_rating | round(1)}} stars
+              (based on {{recalculate_rating.results[0].new_review_count}} reviews)
+              {% endif %}
+
+              Rating protection has been removed from your account.
+
+              Thank you for your patience during this process.
+            business_id: "{{trigger.document.business_id}}"
+            incident_id: "{{trigger.document.incident_id}}"
+            created_at: "{{execution.started_at}}"
+            read: false
+
+  # Step 6: Create final audit record
+  - id: create_resolution_audit
+    type: elasticsearch.index
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      index: audit_logs
+      document:
+        audit_id: "AUDIT-RESOLVE-{{trigger.document.incident_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+        action: incident_resolved
+        incident_id: "{{trigger.document.incident_id}}"
+        business_id: "{{trigger.document.business_id}}"
+        resolution: "{{trigger.document.resolution}}"
+        resolution_notes: "{{trigger.document.resolution_notes}}"
+        resolved_by: "{{trigger.document.resolved_by}}"
+        reviews_affected: "{{get_held_reviews.results | length}}"
+        users_affected: "{{trigger.document.flagged_user_ids | length}}"
+        new_business_rating: "{{recalculate_rating.results[0].new_avg_rating}}"
+        new_review_count: "{{recalculate_rating.results[0].new_review_count}}"
+        incident_duration_minutes: "{{(execution.started_at | date('X') - trigger.document.created_at | date('X')) / 60}}"
+        created_at: "{{execution.started_at}}"
+
+  # Step 7: Update incident with final metrics
+  - id: finalize_incident
+    type: elasticsearch.update
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      index: incidents
+      id: "{{trigger.document._id}}"
+      document:
+        resolution_completed_at: "{{execution.started_at}}"
+        resolution_metrics:
+          reviews_processed: "{{get_held_reviews.results | length}}"
+          users_affected: "{{trigger.document.flagged_user_ids | length}}"
+          final_business_rating: "{{recalculate_rating.results[0].new_avg_rating}}"
+          duration_minutes: "{{(execution.started_at | date('X') - trigger.document.created_at | date('X')) / 60}}"
+        updated_at: "{{execution.started_at}}"

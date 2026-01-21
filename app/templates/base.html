@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Review Bomb Workshop{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --success-color: #198754;
+            --dark-bg: #212529;
+            --light-bg: #f8f9fa;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+        }
+
+        .sidebar {
+            min-height: calc(100vh - 56px);
+            background-color: var(--light-bg);
+            border-right: 1px solid #dee2e6;
+        }
+
+        .sidebar .nav-link {
+            color: #333;
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+            margin: 0.125rem 0;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: #e9ecef;
+        }
+
+        .sidebar .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 0.5rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 1.5rem;
+        }
+
+        .card-stat {
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .card-stat.danger {
+            border-left-color: var(--danger-color);
+        }
+
+        .card-stat.warning {
+            border-left-color: var(--warning-color);
+        }
+
+        .card-stat.success {
+            border-left-color: var(--success-color);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+        }
+
+        .attack-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .attack-indicator.active {
+            background-color: var(--danger-color);
+            animation: pulse 1s infinite;
+        }
+
+        .attack-indicator.inactive {
+            background-color: var(--success-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .review-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .review-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .review-card.simulated {
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .star-rating {
+            color: #ffc107;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            min-width: 18px;
+            height: 18px;
+            font-size: 0.7rem;
+            border-radius: 50%;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #dee2e6;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-bottom: 1.5rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -24px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+        }
+
+        .timeline-item.danger::before {
+            background-color: var(--danger-color);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+
+        .loading-spinner {
+            display: none;
+        }
+
+        .loading .loading-spinner {
+            display: inline-block;
+        }
+
+        footer {
+            background-color: var(--dark-bg);
+            color: white;
+            padding: 1rem 0;
+            margin-top: auto;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-shield-exclamation me-2"></i>
+                Review Bomb Workshop
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" href="/">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'businesses' %}active{% endif %}" href="/businesses">
+                            <i class="bi bi-building"></i> Businesses
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'incidents' %}active{% endif %}" href="/incidents">
+                            <i class="bi bi-exclamation-triangle"></i> Incidents
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if active_page == 'attack' %}active{% endif %}" href="/attack">
+                            <i class="bi bi-lightning"></i> Simulate Attack
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item position-relative">
+                        <a class="nav-link" href="/notifications" id="notificationLink">
+                            <i class="bi bi-bell"></i>
+                            <span class="badge bg-danger notification-badge" id="notificationCount" style="display: none;">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <span class="nav-link" id="streamingStatus">
+                            <span class="attack-indicator inactive"></span>
+                            <span class="status-text">Idle</span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container-fluid">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <small>Review Bomb Workshop - Elasticsearch Workflow Demo</small>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small>
+                        <span id="connectionStatus">
+                            <i class="bi bi-circle-fill text-warning"></i> Checking connection...
+                        </span>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Base JavaScript -->
+    <script>
+        // API helper functions
+        const api = {
+            async get(url) {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            },
+
+            async post(url, data = {}) {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.json();
+            }
+        };
+
+        // Check health and update connection status
+        async function checkHealth() {
+            try {
+                const health = await api.get('/health');
+                const statusEl = document.getElementById('connectionStatus');
+                if (health.elasticsearch === 'connected') {
+                    statusEl.innerHTML = '<i class="bi bi-circle-fill text-success"></i> Connected';
+                } else {
+                    statusEl.innerHTML = '<i class="bi bi-circle-fill text-danger"></i> Disconnected';
+                }
+            } catch (e) {
+                document.getElementById('connectionStatus').innerHTML =
+                    '<i class="bi bi-circle-fill text-danger"></i> Error';
+            }
+        }
+
+        // Check streaming status
+        async function checkStreamingStatus() {
+            try {
+                const status = await api.get('/api/streaming/status');
+                const statusEl = document.getElementById('streamingStatus');
+                const indicator = statusEl.querySelector('.attack-indicator');
+                const text = statusEl.querySelector('.status-text');
+
+                if (status.is_running) {
+                    indicator.classList.remove('inactive');
+                    indicator.classList.add('active');
+                    text.textContent = `Attacking (${status.reviews_generated} reviews)`;
+                } else {
+                    indicator.classList.remove('active');
+                    indicator.classList.add('inactive');
+                    text.textContent = 'Idle';
+                }
+            } catch (e) {
+                console.error('Failed to check streaming status:', e);
+            }
+        }
+
+        // Check notification count
+        async function checkNotifications() {
+            try {
+                const notifications = await api.get('/api/notifications?unread_only=true&page_size=1');
+                const badge = document.getElementById('notificationCount');
+                if (notifications.unread_count > 0) {
+                    badge.textContent = notifications.unread_count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            } catch (e) {
+                // Silently fail - notifications may not be set up yet
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkHealth();
+            checkStreamingStatus();
+            checkNotifications();
+
+            // Periodic updates
+            setInterval(checkStreamingStatus, 5000);
+            setInterval(checkNotifications, 10000);
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

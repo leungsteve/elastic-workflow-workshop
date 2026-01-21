@@ -1,0 +1,12 @@
+{
+  "name": "incident_summary",
+  "description": "Summarize a review bomb incident including affected business, review patterns, and current status. Use this to get an overview of a specific incident.",
+  "parameters": {
+    "incident_id": {
+      "type": "string",
+      "description": "The incident ID to summarize (e.g., INC-abc123)",
+      "required": true
+    }
+  },
+  "esql": "FROM incidents | WHERE incident_id == \"{{ incident_id }}\" | LOOKUP JOIN businesses ON business_id | KEEP incident_id, business_name, detected_at, severity, status, review_count, avg_rating, avg_trust_score, resolution"
+}

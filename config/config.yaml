@@ -1,0 +1,88 @@
+# Review Bomb Workshop Configuration
+# Non-sensitive settings (committed to repo)
+
+app:
+  name: "Review Bomb Workshop"
+  port: 8000
+  debug: false
+
+elasticsearch:
+  indices:
+    businesses: "businesses"
+    users: "users"
+    reviews: "reviews"
+    incidents: "incidents"
+    notifications: "notifications"
+
+  # Bulk operation settings
+  bulk_batch_size: 5000
+  bulk_refresh: false
+
+# Data filtering settings
+data:
+  # Cities well-represented in Yelp data
+  # Note: Update these based on your Yelp dataset version
+  cities:
+    - "Philadelphia"
+    - "Tucson"
+    - "Tampa"
+
+  # Business categories to include
+  categories:
+    - "Restaurants"
+    - "Food"
+    - "Bars"
+    - "Cafes"
+
+  # Review partitioning
+  historical_ratio: 0.8  # 80% historical, 20% streaming
+
+  # Limits for workshop (reduce data size)
+  max_businesses: 20000
+  max_users: 100000
+
+# Streaming settings
+streaming:
+  replay:
+    reviews_per_second: 3
+    source: "data/streaming/reviews.ndjson"
+
+  inject:
+    reviews_per_second: 15  # Faster for dramatic demo effect
+    source: "data/attack/reviews.ndjson"
+
+# Attack simulation settings
+attack:
+  default_stars: 1
+  reviewer_trust_range: [0.05, 0.20]
+  reviewer_account_age_range: [1, 30]  # days
+
+  # Turbo mode: submit multiple reviews at once
+  turbo_mode:
+    enabled: true
+    reviews_per_burst: 15
+    burst_delay_ms: 100
+
+# Detection thresholds
+detection:
+  time_window_minutes: 30
+  min_review_count: 10
+  max_avg_stars: 2.0
+  max_avg_trust_score: 0.4
+
+  # Risk score weights
+  risk_weights:
+    high_volume: 0.3
+    low_stars: 0.3
+    low_trust: 0.2
+    new_accounts: 0.2
+
+# Workflow settings
+workflows:
+  detection_interval_minutes: 5
+  notification_channel: "#trust-safety-alerts"
+
+# ELSER settings (optional)
+elser:
+  inference_id: "elser"
+  fallback_enabled: true  # Gracefully degrade if ELSER unavailable

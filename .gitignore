@@ -1,0 +1,63 @@
+# Environment and secrets
+.env
+.env.local
+.env.cloud
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Data files (large, gitignored)
+data/raw/
+data/processed/
+data/historical/
+data/streaming/
+
+# Keep sample data
+!data/sample/
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# mypy
+.mypy_cache/
+
+# Documentation build
+docs/_build/

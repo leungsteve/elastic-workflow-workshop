@@ -1,0 +1,92 @@
+{
+  "mappings": {
+    "properties": {
+      "user_id": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "review_count": {
+        "type": "integer"
+      },
+      "yelping_since": {
+        "type": "date"
+      },
+      "friends": {
+        "type": "keyword"
+      },
+      "useful": {
+        "type": "integer"
+      },
+      "funny": {
+        "type": "integer"
+      },
+      "cool": {
+        "type": "integer"
+      },
+      "fans": {
+        "type": "integer"
+      },
+      "elite": {
+        "type": "keyword"
+      },
+      "average_stars": {
+        "type": "float"
+      },
+      "compliment_hot": {
+        "type": "integer"
+      },
+      "compliment_more": {
+        "type": "integer"
+      },
+      "compliment_profile": {
+        "type": "integer"
+      },
+      "compliment_cute": {
+        "type": "integer"
+      },
+      "compliment_list": {
+        "type": "integer"
+      },
+      "compliment_note": {
+        "type": "integer"
+      },
+      "compliment_plain": {
+        "type": "integer"
+      },
+      "compliment_cool": {
+        "type": "integer"
+      },
+      "compliment_funny": {
+        "type": "integer"
+      },
+      "compliment_writer": {
+        "type": "integer"
+      },
+      "compliment_photos": {
+        "type": "integer"
+      },
+      "trust_score": {
+        "type": "float"
+      },
+      "account_age_days": {
+        "type": "integer"
+      },
+      "flagged": {
+        "type": "boolean"
+      },
+      "flag_reason": {
+        "type": "keyword"
+      },
+      "synthetic": {
+        "type": "boolean"
+      }
+    }
+  }
+}

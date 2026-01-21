@@ -1,0 +1,31 @@
+{
+  "name": "incident_summary",
+  "description": "Summarize a review bomb incident by ID to get attack metrics, affected business details, and timeline information. Use this tool when a user asks about a specific incident, wants to understand an attack, or needs an overview of what happened to a business.",
+  "parameters": {
+    "incident_id": {
+      "type": "string",
+      "description": "The incident ID to summarize (e.g., INC-abc123). This is the unique identifier for the review bomb incident.",
+      "required": true
+    }
+  },
+  "esql": "FROM incidents | WHERE incident_id == \"{{ incident_id }}\" | LOOKUP JOIN businesses ON business_id | KEEP incident_id, business_id, business_name, detected_at, incident_type, severity, status, review_count, unique_reviewers, avg_rating, avg_trust_score, time_window_minutes, assigned_to, resolved_at, resolution, summary, notes",
+  "output_fields": {
+    "incident_id": "Unique identifier for this incident",
+    "business_id": "Unique identifier of the affected business",
+    "business_name": "Name of the business that was targeted",
+    "detected_at": "Timestamp when the review bomb was first detected",
+    "incident_type": "Type of attack detected (e.g., review_bomb, fake_reviews)",
+    "severity": "Severity level: low, medium, high, or critical",
+    "status": "Current status: open, investigating, resolved, or false_positive",
+    "review_count": "Total number of suspicious reviews in this incident",
+    "unique_reviewers": "Number of distinct user accounts involved",
+    "avg_rating": "Average star rating of the suspicious reviews",
+    "avg_trust_score": "Average trust score of the involved reviewers (0.0-1.0, lower is more suspicious)",
+    "time_window_minutes": "Duration of the attack in minutes",
+    "assigned_to": "Analyst assigned to investigate this incident",
+    "resolved_at": "Timestamp when the incident was resolved (if applicable)",
+    "resolution": "Resolution outcome (e.g., reviews_removed, false_positive, pending)",
+    "summary": "AI-generated or analyst summary of the incident",
+    "notes": "Additional investigation notes"
+  }
+}

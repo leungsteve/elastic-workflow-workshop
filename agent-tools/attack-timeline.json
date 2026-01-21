@@ -1,0 +1,31 @@
+{
+  "name": "attack_timeline",
+  "description": "Generate a chronological timeline of attack events for a specific incident. Use this tool to understand how an attack unfolded over time, identify attack phases, peak activity periods, and the sequence of events from detection to resolution.",
+  "parameters": {
+    "incident_id": {
+      "type": "string",
+      "description": "The incident ID to generate a timeline for (e.g., INC-abc123).",
+      "required": true
+    }
+  },
+  "esql": "FROM reviews | WHERE incident_id == \"{{ incident_id }}\" | LOOKUP JOIN users ON user_id | EVAL hour_bucket = DATE_TRUNC(1 hour, date) | STATS reviews_in_hour = COUNT(*), unique_reviewers = COUNT_DISTINCT(user_id), avg_stars = AVG(stars), avg_trust = AVG(trust_score), new_accounts = COUNT(CASE WHEN account_age_days < 30 THEN 1 END), one_star_reviews = COUNT(CASE WHEN stars == 1 THEN 1 END), min_stars = MIN(stars), max_stars = MAX(stars) BY hour_bucket | SORT hour_bucket ASC | EVAL cumulative_context = \"Timeline bucket\", attack_intensity = CASE WHEN reviews_in_hour > 20 THEN \"extreme\" WHEN reviews_in_hour > 10 THEN \"high\" WHEN reviews_in_hour > 5 THEN \"moderate\" ELSE \"low\" END",
+  "output_fields": {
+    "hour_bucket": "Timestamp for the start of each hour bucket",
+    "reviews_in_hour": "Number of attack reviews posted in this hour",
+    "unique_reviewers": "Number of distinct attackers active in this hour",
+    "avg_stars": "Average rating given during this hour",
+    "avg_trust": "Average trust score of reviewers active in this hour",
+    "new_accounts": "Count of new accounts (under 30 days) posting in this hour",
+    "one_star_reviews": "Count of 1-star reviews in this hour",
+    "min_stars": "Lowest rating given in this hour",
+    "max_stars": "Highest rating given in this hour",
+    "attack_intensity": "Classified intensity level: low, moderate, high, or extreme"
+  },
+  "timeline_analysis_tips": [
+    "Look for sudden spikes in reviews_in_hour to identify attack start",
+    "Declining reviews_in_hour may indicate attack is subsiding or being mitigated",
+    "Multiple peaks may indicate coordinated waves of attacks",
+    "Compare avg_trust across buckets - consistent low trust suggests organized campaign",
+    "High new_accounts early in timeline suggests pre-planned account creation"
+  ]
+}

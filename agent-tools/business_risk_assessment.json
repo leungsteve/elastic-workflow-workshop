@@ -1,0 +1,12 @@
+{
+  "name": "business_risk_assessment",
+  "description": "Assess a business's current risk profile for review manipulation based on recent activity over the past 7 days.",
+  "parameters": {
+    "business_id": {
+      "type": "string",
+      "description": "Business ID to assess",
+      "required": true
+    }
+  },
+  "esql": "FROM reviews | WHERE business_id == \"{{ business_id }}\" AND date > NOW() - 7 days | LOOKUP JOIN users ON user_id | STATS total_reviews = COUNT(*), avg_rating = AVG(stars), low_trust_reviews = COUNT(CASE WHEN trust_score < 0.3 THEN 1 END), new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END), negative_reviews = COUNT(CASE WHEN stars <= 2 THEN 1 END) | EVAL low_trust_pct = low_trust_reviews * 100.0 / total_reviews, new_account_pct = new_account_reviews * 100.0 / total_reviews, negative_pct = negative_reviews * 100.0 / total_reviews"
+}

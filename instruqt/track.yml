@@ -1,0 +1,175 @@
+# Instruqt Track Configuration
+# Review Bomb Detection Workshop
+
+slug: review-bomb-workshop
+id: review-bomb-workshop
+type: track
+title: Review Bomb Detection with Elastic Workflows
+teaser: Learn to detect and respond to coordinated review attacks using ES|QL, Workflows, and Agent Builder
+description: |
+  In this hands-on workshop, you'll build an automated detection and response system
+  to protect businesses from coordinated "review bomb" attacks.
+
+  You'll learn how to:
+  - Write detection queries using ES|QL and LOOKUP JOIN
+  - Build automated workflows for real-time response
+  - Create investigation tools with Agent Builder
+  - Run an end-to-end attack simulation
+
+  This workshop demonstrates patterns applicable to fraud detection, security operations,
+  and compliance monitoring.
+
+icon: https://www.elastic.co/favicon.ico
+tags:
+  - elasticsearch
+  - kibana
+  - esql
+  - workflows
+  - agent-builder
+  - security
+  - fraud-detection
+
+owner: elastic
+developers:
+  - workshop@elastic.co
+
+# Track configuration
+private: false
+published: false
+show_timer: true
+skipping_enabled: true
+
+# Lab environment
+lab_config:
+  overlay: false
+  width: 33
+  position: right
+  extend_ttl: 0
+  feedback_recap_enabled: false
+
+# Challenges
+challenges:
+  - slug: getting-to-know-your-data
+    id: 01-getting-to-know-your-data
+    type: challenge
+    title: Getting to Know Your Data
+    teaser: Explore the review platform data and write detection queries
+    assignment: challenges/01-getting-to-know-your-data/assignment.md
+    notes:
+      - type: text
+        contents: |
+          # Welcome to the Review Bomb Workshop!
+
+          In this workshop, you'll learn how to detect and respond to
+          coordinated "review bomb" attacks using Elastic's powerful
+          data analysis and automation tools.
+
+          ## What You'll Build
+          - Detection queries with ES|QL
+          - Automated response workflows
+          - AI-powered investigation tools
+
+          Let's get started!
+    tabs:
+      - title: Kibana
+        type: service
+        hostname: elastic
+        port: 5601
+      - title: Terminal
+        type: terminal
+        hostname: elastic
+    difficulty: basic
+    timelimit: 900
+
+  - slug: workflows
+    id: 02-workflows
+    type: challenge
+    title: Building a Detection Workflow
+    teaser: Create an automated workflow to detect and respond to attacks
+    assignment: challenges/02-workflows/assignment.md
+    notes:
+      - type: text
+        contents: |
+          # Automation with Workflows
+
+          Now that you understand the data, it's time to automate
+          detection and response.
+
+          You'll create a workflow that:
+          - Runs on a schedule
+          - Detects review bombs with ES|QL
+          - Automatically responds to protect businesses
+    tabs:
+      - title: Kibana
+        type: service
+        hostname: elastic
+        port: 5601
+      - title: Terminal
+        type: terminal
+        hostname: elastic
+    difficulty: basic
+    timelimit: 1200
+
+  - slug: agent-builder
+    id: 03-agent-builder
+    type: challenge
+    title: Creating Investigation Tools
+    teaser: Build AI-powered tools for natural language investigation
+    assignment: challenges/03-agent-builder/assignment.md
+    notes:
+      - type: text
+        contents: |
+          # AI-Powered Investigation
+
+          Automated detection is great, but analysts still need to
+          investigate incidents.
+
+          Agent Builder lets you create custom tools that the AI
+          assistant can use to answer natural language questions
+          about your data.
+    tabs:
+      - title: Kibana
+        type: service
+        hostname: elastic
+        port: 5601
+      - title: Terminal
+        type: terminal
+        hostname: elastic
+    difficulty: basic
+    timelimit: 600
+
+  - slug: end-to-end-scenario
+    id: 04-end-to-end-scenario
+    type: challenge
+    title: End-to-End Attack Simulation
+    teaser: Launch an attack and observe the full detection/response lifecycle
+    assignment: challenges/04-end-to-end-scenario/assignment.md
+    notes:
+      - type: text
+        contents: |
+          # Putting It All Together
+
+          Time for the grand finale! You'll:
+          - Launch a simulated review bomb attack
+          - Watch your workflow detect and respond
+          - Investigate with Agent Builder
+          - Resolve the incident
+
+          This is what real-world protection looks like!
+    tabs:
+      - title: Kibana
+        type: service
+        hostname: elastic
+        port: 5601
+      - title: Attack Simulator
+        type: service
+        hostname: elastic
+        port: 8080
+      - title: Terminal
+        type: terminal
+        hostname: elastic
+    difficulty: basic
+    timelimit: 900
+
+# Completion message
+checksum: "workshop-v1"

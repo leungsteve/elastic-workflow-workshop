@@ -1,0 +1,54 @@
+{
+  "name": "business_health_check",
+  "description": "Check a business's review health including rating trends, review velocity, and suspicious activity indicators. Use this tool to assess if a business is currently under attack, recovering from an attack, or operating normally. Provides a comprehensive health assessment with risk indicators.",
+  "parameters": {
+    "business_id": {
+      "type": "string",
+      "description": "The business ID to assess (e.g., biz_12345). This is the unique identifier for the business.",
+      "required": true
+    },
+    "days_back": {
+      "type": "integer",
+      "description": "Number of days to look back for the health assessment. Default is 7 days.",
+      "required": false,
+      "default": 7
+    }
+  },
+  "esql": "FROM reviews | WHERE business_id == \"{{ business_id }}\" AND date > NOW() - {{ days_back }} days | LOOKUP JOIN users ON user_id | LOOKUP JOIN businesses ON business_id | STATS total_reviews = COUNT(*), avg_rating = AVG(stars), min_rating = MIN(stars), max_rating = MAX(stars), rating_stddev = STDDEV(stars), low_trust_reviews = COUNT(CASE WHEN trust_score < 0.3 THEN 1 END), medium_trust_reviews = COUNT(CASE WHEN trust_score >= 0.3 AND trust_score < 0.6 THEN 1 END), high_trust_reviews = COUNT(CASE WHEN trust_score >= 0.6 THEN 1 END), new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END), very_new_account_reviews = COUNT(CASE WHEN account_age_days < 7 THEN 1 END), negative_reviews = COUNT(CASE WHEN stars <= 2 THEN 1 END), positive_reviews = COUNT(CASE WHEN stars >= 4 THEN 1 END), held_reviews = COUNT(CASE WHEN status == \"held\" THEN 1 END), unique_reviewers = COUNT_DISTINCT(user_id), avg_sentiment = AVG(sentiment_score) BY business_id, businesses.name, businesses.current_rating, businesses.rating_protected, businesses.categories | EVAL low_trust_pct = low_trust_reviews * 100.0 / total_reviews, new_account_pct = new_account_reviews * 100.0 / total_reviews, negative_pct = negative_reviews * 100.0 / total_reviews, positive_pct = positive_reviews * 100.0 / total_reviews, reviews_per_day = total_reviews * 1.0 / {{ days_back }}, health_score = (1.0 - (low_trust_pct / 100.0) * 0.3 - (new_account_pct / 100.0) * 0.2 - (negative_pct / 100.0) * 0.3 + (positive_pct / 100.0) * 0.2)",
+  "output_fields": {
+    "business_id": "Unique identifier of the business",
+    "businesses.name": "Business name",
+    "businesses.current_rating": "Current overall rating of the business",
+    "businesses.rating_protected": "Whether the business rating is currently protected from manipulation",
+    "businesses.categories": "Business categories/industry",
+    "total_reviews": "Total number of reviews in the assessment period",
+    "avg_rating": "Average star rating of recent reviews",
+    "min_rating": "Lowest rating received",
+    "max_rating": "Highest rating received",
+    "rating_stddev": "Standard deviation of ratings (high variance may indicate attack)",
+    "low_trust_reviews": "Count of reviews from low-trust accounts (trust < 0.3)",
+    "medium_trust_reviews": "Count of reviews from medium-trust accounts",
+    "high_trust_reviews": "Count of reviews from high-trust accounts (trust >= 0.6)",
+    "new_account_reviews": "Count of reviews from accounts under 30 days old",
+    "very_new_account_reviews": "Count of reviews from accounts under 7 days old",
+    "negative_reviews": "Count of 1-2 star reviews",
+    "positive_reviews": "Count of 4-5 star reviews",
+    "held_reviews": "Count of reviews currently held for moderation",
+    "unique_reviewers": "Number of distinct reviewers",
+    "avg_sentiment": "Average sentiment score of review text",
+    "low_trust_pct": "Percentage of reviews from low-trust accounts",
+    "new_account_pct": "Percentage of reviews from new accounts",
+    "negative_pct": "Percentage of negative reviews",
+    "positive_pct": "Percentage of positive reviews",
+    "reviews_per_day": "Average reviews per day (velocity indicator)",
+    "health_score": "Computed health score (0.0-1.0, higher is healthier)"
+  },
+  "risk_indicators": {
+    "low_trust_pct_threshold": 30,
+    "new_account_pct_threshold": 40,
+    "negative_pct_threshold": 50,
+    "reviews_per_day_high": 20,
+    "health_score_critical": 0.3,
+    "health_score_warning": 0.6
+  }
+}

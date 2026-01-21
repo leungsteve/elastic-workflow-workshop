@@ -1,0 +1,19 @@
+{
+  "name": "recent_incidents",
+  "description": "List recent review bomb incidents, optionally filtered by status. Use this to see what incidents need attention.",
+  "parameters": {
+    "status": {
+      "type": "string",
+      "description": "Filter by status: open, resolved, or all",
+      "required": false,
+      "default": "all"
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Maximum number of incidents to return",
+      "required": false,
+      "default": 10
+    }
+  },
+  "esql": "FROM incidents | WHERE status == \"{{ status }}\" OR \"{{ status }}\" == \"all\" | SORT detected_at DESC | LIMIT {{ limit }} | KEEP incident_id, business_name, detected_at, severity, status, review_count"
+}

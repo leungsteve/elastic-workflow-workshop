@@ -1,0 +1,39 @@
+// Business Risk Assessment Query
+//
+// Purpose: Assess the overall risk profile of a specific business based on
+// recent review activity over the past 7 days
+//
+// This query provides a comprehensive view of review patterns for a business
+// to help determine if it's currently under attack or has recovered.
+//
+// Parameters:
+//   - {{ business_id }}: The unique identifier of the business to assess
+//
+// Output Fields:
+//   - total_reviews: Total number of reviews in the past 7 days
+//   - avg_rating: Average star rating of recent reviews
+//   - low_trust_reviews: Count of reviews from low-trust accounts (< 0.3)
+//   - new_account_reviews: Count of reviews from accounts < 30 days old
+//   - negative_reviews: Count of reviews with 2 stars or fewer
+//   - low_trust_pct: Percentage of reviews from low-trust accounts
+//   - new_account_pct: Percentage of reviews from new accounts
+//   - negative_pct: Percentage of negative reviews
+//
+// Risk Indicators:
+//   - low_trust_pct > 30%: High proportion of suspicious reviewers
+//   - new_account_pct > 40%: Unusual number of new account reviews
+//   - negative_pct > 50%: Predominantly negative review campaign
+
+FROM reviews
+| WHERE business_id == "{{ business_id }}" AND date > NOW() - 7 days
+| LOOKUP JOIN users ON user_id
+| STATS
+    total_reviews = COUNT(*),
+    avg_rating = AVG(stars),
+    low_trust_reviews = COUNT(CASE WHEN trust_score < 0.3 THEN 1 END),
+    new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END),
+    negative_reviews = COUNT(CASE WHEN stars <= 2 THEN 1 END)
+| EVAL
+    low_trust_pct = low_trust_reviews * 100.0 / total_reviews,
+    new_account_pct = new_account_reviews * 100.0 / total_reviews,
+    negative_pct = negative_reviews * 100.0 / total_reviews

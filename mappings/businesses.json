@@ -1,0 +1,66 @@
+{
+  "mappings": {
+    "properties": {
+      "business_id": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "address": {
+        "type": "text"
+      },
+      "city": {
+        "type": "keyword"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "postal_code": {
+        "type": "keyword"
+      },
+      "latitude": {
+        "type": "float"
+      },
+      "longitude": {
+        "type": "float"
+      },
+      "stars": {
+        "type": "float"
+      },
+      "review_count": {
+        "type": "integer"
+      },
+      "is_open": {
+        "type": "boolean"
+      },
+      "categories": {
+        "type": "keyword"
+      },
+      "hours": {
+        "type": "object",
+        "enabled": false
+      },
+      "attributes": {
+        "type": "flattened"
+      },
+      "current_rating": {
+        "type": "float"
+      },
+      "rating_protected": {
+        "type": "boolean"
+      },
+      "protection_reason": {
+        "type": "keyword"
+      },
+      "protected_since": {
+        "type": "date"
+      }
+    }
+  }
+}

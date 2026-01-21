@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block title %}Businesses - Review Bomb Workshop{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-building me-2"></i>Businesses</h1>
+        <p class="text-muted">Browse and search businesses to select attack targets</p>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" id="searchQuery" placeholder="Business name...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">City</label>
+                <select class="form-select" id="filterCity">
+                    <option value="">All Cities</option>
+                    <option value="Las Vegas">Las Vegas</option>
+                    <option value="Phoenix">Phoenix</option>
+                    <option value="Toronto">Toronto</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="filterCategory">
+                    <option value="">All Categories</option>
+                    <option value="Restaurants">Restaurants</option>
+                    <option value="Food">Food</option>
+                    <option value="Bars">Bars</option>
+                    <option value="Cafes">Cafes</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button class="btn btn-primary w-100" onclick="searchBusinesses()">
+                    <i class="bi bi-search me-1"></i> Search
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Results <span id="resultCount" class="text-muted"></span></span>
+        <div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="prevPage()" id="prevBtn" disabled>
+                <i class="bi bi-chevron-left"></i> Previous
+            </button>
+            <span class="mx-2" id="pageInfo">Page 1</span>
+            <button class="btn btn-sm btn-outline-secondary" onclick="nextPage()" id="nextBtn">
+                Next <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="businessList">
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Business Detail Modal -->
+<div class="modal fade" id="businessModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="businessModalTitle">Business Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="businessModalBody">
+                Loading...
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="/attack" class="btn btn-danger" id="attackBtn">
+                    <i class="bi bi-lightning-fill me-1"></i> Attack This Business
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentPage = 1;
+    const pageSize = 10;
+    let totalResults = 0;
+
+    async function searchBusinesses() {
+        currentPage = 1;
+        await loadBusinesses();
+    }
+
+    async function loadBusinesses() {
+        const container = document.getElementById('businessList');
+        container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+
+        const query = document.getElementById('searchQuery').value;
+        const city = document.getElementById('filterCity').value;
+        const category = document.getElementById('filterCategory').value;
+
+        let url = `/api/businesses?page=${currentPage}&page_size=${pageSize}`;
+        if (query) url += `&q=${encodeURIComponent(query)}`;
+        if (city) url += `&city=${encodeURIComponent(city)}`;
+        if (category) url += `&category=${encodeURIComponent(category)}`;
+
+        try {
+            const data = await api.get(url);
+            totalResults = data.total;
+
+            document.getElementById('resultCount').textContent = `(${totalResults} found)`;
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${Math.ceil(totalResults / pageSize)}`;
+            document.getElementById('prevBtn').disabled = currentPage <= 1;
+            document.getElementById('nextBtn').disabled = currentPage >= Math.ceil(totalResults / pageSize);
+
+            if (data.businesses.length === 0) {
+                container.innerHTML = '<p class="text-center text-muted py-4">No businesses found</p>';
+                return;
+            }
+
+            let html = '<div class="row">';
+            for (const biz of data.businesses) {
+                const stars = '★'.repeat(Math.round(biz.stars || 0)) + '☆'.repeat(5 - Math.round(biz.stars || 0));
+                const protectedBadge = biz.rating_protected ? '<span class="badge bg-warning ms-2">Protected</span>' : '';
+
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card review-card h-100" onclick="showBusinessDetail('${biz.business_id}')" style="cursor: pointer;">
+                            <div class="card-body">
+                                <h5 class="card-title">${biz.name}${protectedBadge}</h5>
+                                <p class="card-text">
+                                    <i class="bi bi-geo-alt me-1"></i>${biz.city || 'Unknown'}, ${biz.state || ''}
+                                    <br>
+                                    <small class="text-muted">${biz.categories || 'No category'}</small>
+                                </p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="star-rating">${stars}</span>
+                                    <span class="badge bg-secondary">${biz.review_count || 0} reviews</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = '<p class="text-danger text-center">Failed to load businesses</p>';
+            console.error(e);
+        }
+    }
+
+    function prevPage() {
+        if (currentPage > 1) {
+            currentPage--;
+            loadBusinesses();
+        }
+    }
+
+    function nextPage() {
+        if (currentPage < Math.ceil(totalResults / pageSize)) {
+            currentPage++;
+            loadBusinesses();
+        }
+    }
+
+    async function showBusinessDetail(businessId) {
+        const modal = new bootstrap.Modal(document.getElementById('businessModal'));
+        document.getElementById('businessModalBody').innerHTML = '<div class="text-center"><div class="spinner-border"></div></div>';
+        modal.show();
+
+        try {
+            const biz = await api.get(`/api/businesses/${businessId}`);
+            const stars = '★'.repeat(Math.round(biz.stars || 0)) + '☆'.repeat(5 - Math.round(biz.stars || 0));
+
+            document.getElementById('businessModalTitle').textContent = biz.name;
+            document.getElementById('businessModalBody').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Location</h6>
+                        <p>${biz.address || ''}<br>${biz.city || ''}, ${biz.state || ''} ${biz.postal_code || ''}</p>
+
+                        <h6>Categories</h6>
+                        <p>${biz.categories || 'None'}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Rating</h6>
+                        <p><span class="star-rating fs-4">${stars}</span> (${biz.stars || 0})</p>
+
+                        <h6>Reviews</h6>
+                        <p>${biz.review_count || 0} total reviews</p>
+
+                        ${biz.rating_protected ? '<div class="alert alert-warning"><i class="bi bi-shield-exclamation me-2"></i>Rating Protected</div>' : ''}
+                    </div>
+                </div>
+                <hr>
+                <p class="text-muted small">Business ID: ${biz.business_id}</p>
+            `;
+
+            // Store business ID for attack button
+            document.getElementById('attackBtn').href = `/attack?target=${businessId}`;
+        } catch (e) {
+            document.getElementById('businessModalBody').innerHTML = '<p class="text-danger">Failed to load business details</p>';
+        }
+    }
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', loadBusinesses);
+
+    // Search on Enter key
+    document.getElementById('searchQuery').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') searchBusinesses();
+    });
+</script>
+{% endblock %}

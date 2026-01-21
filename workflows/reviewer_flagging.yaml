@@ -1,0 +1,261 @@
+version: 1
+
+name: Reviewer Flagging
+description: |
+  Automatically flags suspicious user accounts when review bomb incidents are created.
+  Analyzes the reviewers involved in detected attacks and updates their trust profiles.
+enabled: true
+
+triggers:
+  - type: document
+    index: incidents
+    filters:
+      - field: incident_type
+        value: review_bomb
+      - field: status
+        value: open
+
+steps:
+  # Step 1: Get all reviews associated with the incident
+  - id: get_incident_reviews
+    type: elasticsearch.esql
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      query: |
+        FROM reviews
+        | WHERE review_id IN ({{trigger.document.affected_review_ids | join(', ')}})
+        | EVAL
+            is_low_trust = trust_score < 0.4,
+            is_new_account = account_age_days < 30,
+            is_suspicious = is_low_trust OR is_new_account
+        | KEEP review_id, user_id, trust_score, stars, text, created_at,
+              account_age_days, is_low_trust, is_new_account, is_suspicious
+        | SORT trust_score ASC
+
+  # Step 2: Get unique low-trust users and their review history
+  - id: analyze_users
+    type: elasticsearch.esql
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      query: |
+        FROM reviews
+        | WHERE review_id IN ({{trigger.document.affected_review_ids | join(', ')}})
+          AND trust_score < 0.5
+        | STATS
+            incident_reviews = COUNT(*),
+            incident_avg_stars = AVG(stars)
+          BY user_id
+        | LOOKUP JOIN users ON user_id
+        | EVAL
+            flag_score = CASE(
+              trust_score < 0.2, 1.0,
+              trust_score < 0.3, 0.8,
+              trust_score < 0.4, 0.6,
+              0.4
+            ),
+            should_flag = trust_score < 0.4 OR account_age_days < 14
+        | WHERE should_flag == true
+        | KEEP user_id, username, email, trust_score, account_age_days,
+              total_reviews, incident_reviews, incident_avg_stars, flag_score
+        | SORT flag_score DESC
+
+  # Step 3: Flag each suspicious user
+  - id: flag_users
+    type: foreach
+    collection: "{{analyze_users.results}}"
+    as: user
+    steps:
+      - id: get_user_attack_history
+        type: elasticsearch.esql
+        connectorId: "{{config.elasticsearch_connector_id}}"
+        with:
+          query: |
+            FROM incidents
+            | WHERE affected_review_ids IS NOT NULL
+            | EVAL user_involved = "{{user.user_id}}" IN (affected_review_ids)
+            | WHERE user_involved == true
+            | STATS previous_incidents = COUNT(*)
+            | EVAL repeat_offender = previous_incidents > 1
+
+      - id: calculate_flag_reason
+        type: set
+        with:
+          key: flag_reasons
+          value: []
+
+      - id: check_low_trust
+        type: if
+        condition: "{{user.trust_score < 0.3}}"
+        then:
+          - id: add_low_trust_reason
+            type: set
+            with:
+              key: flag_reasons
+              value: "{{flag_reasons | concat(['very_low_trust_score'])}}"
+
+      - id: check_new_account
+        type: if
+        condition: "{{user.account_age_days < 14}}"
+        then:
+          - id: add_new_account_reason
+            type: set
+            with:
+              key: flag_reasons
+              value: "{{flag_reasons | concat(['new_account'])}}"
+
+      - id: check_repeat_offender
+        type: if
+        condition: "{{get_user_attack_history.results[0].repeat_offender == true}}"
+        then:
+          - id: add_repeat_reason
+            type: set
+            with:
+              key: flag_reasons
+              value: "{{flag_reasons | concat(['repeat_offender'])}}"
+
+      - id: update_user_flagged
+        type: elasticsearch.update
+        connectorId: "{{config.elasticsearch_connector_id}}"
+        with:
+          index: users
+          id: "{{user.user_id}}"
+          document:
+            flagged: true
+            flagged_at: "{{execution.started_at}}"
+            flag_reasons: "{{flag_reasons}}"
+            flag_score: "{{user.flag_score}}"
+            last_incident_id: "{{trigger.document.incident_id}}"
+          upsert: false
+
+      - id: create_user_flag_audit
+        type: elasticsearch.index
+        connectorId: "{{config.elasticsearch_connector_id}}"
+        with:
+          index: audit_logs
+          document:
+            audit_id: "AUDIT-FLAG-{{user.user_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+            action: user_flagged
+            user_id: "{{user.user_id}}"
+            incident_id: "{{trigger.document.incident_id}}"
+            business_id: "{{trigger.document.business_id}}"
+            reasons: "{{flag_reasons}}"
+            trust_score_at_flag: "{{user.trust_score}}"
+            account_age_at_flag: "{{user.account_age_days}}"
+            automated: true
+            created_at: "{{execution.started_at}}"
+
+  # Step 4: Update incident with flagged user information
+  - id: collect_flagged_users
+    type: set
+    with:
+      key: flagged_user_ids
+      value: "{{analyze_users.results | map('user_id')}}"
+
+  - id: update_incident_with_users
+    type: elasticsearch.update
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      index: incidents
+      id: "{{trigger.document._id}}"
+      document:
+        flagged_user_ids: "{{flagged_user_ids}}"
+        flagged_user_count: "{{flagged_user_ids | length}}"
+        user_analysis_completed_at: "{{execution.started_at}}"
+        updated_at: "{{execution.started_at}}"
+
+  # Step 5: Create notification for trust & safety team
+  - id: create_ts_notification
+    type: elasticsearch.index
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      index: notifications
+      document:
+        notification_id: "NOTIF-TS-{{trigger.document.incident_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+        notification_type: users_flagged
+        recipient_type: trust_safety
+        priority: "{{trigger.document.severity}}"
+        title: "{{flagged_user_ids | length}} Users Flagged - {{trigger.document.incident_id}}"
+        message: |
+          User analysis complete for incident {{trigger.document.incident_id}}.
+
+          Business: {{trigger.document.business_name}}
+          Incident Severity: {{trigger.document.severity}}
+
+          User Analysis Results:
+          - Total Suspicious Reviews: {{trigger.document.metrics.review_count}}
+          - Users Flagged: {{flagged_user_ids | length}}
+          - Unique Reviewers: {{trigger.document.metrics.unique_reviewers}}
+
+          Flagged User IDs:
+          {% for user_id in flagged_user_ids %}
+          - {{user_id}}
+          {% endfor %}
+
+          Please review the flagged users and determine if additional action is needed.
+        incident_id: "{{trigger.document.incident_id}}"
+        business_id: "{{trigger.document.business_id}}"
+        flagged_user_ids: "{{flagged_user_ids}}"
+        created_at: "{{execution.started_at}}"
+        read: false
+
+  # Step 6: Check if this is a coordinated attack (multiple repeat offenders)
+  - id: check_coordinated_attack
+    type: elasticsearch.esql
+    connectorId: "{{config.elasticsearch_connector_id}}"
+    with:
+      query: |
+        FROM users
+        | WHERE user_id IN ({{flagged_user_ids | join(', ')}})
+        | EVAL
+            is_repeat_offender = flagged == true AND flagged_at < NOW() - 1 hour
+        | STATS
+            repeat_offender_count = SUM(CASE(is_repeat_offender, 1, 0)),
+            total_flagged = COUNT(*)
+        | EVAL
+            is_coordinated = repeat_offender_count >= 3,
+            coordination_score = repeat_offender_count / total_flagged
+
+  - id: escalate_if_coordinated
+    type: if
+    condition: "{{check_coordinated_attack.results[0].is_coordinated == true}}"
+    then:
+      - id: escalate_incident
+        type: elasticsearch.update
+        connectorId: "{{config.elasticsearch_connector_id}}"
+        with:
+          index: incidents
+          id: "{{trigger.document._id}}"
+          document:
+            severity: critical
+            escalated: true
+            escalation_reason: coordinated_attack_detected
+            coordination_score: "{{check_coordinated_attack.results[0].coordination_score}}"
+            repeat_offender_count: "{{check_coordinated_attack.results[0].repeat_offender_count}}"
+            updated_at: "{{execution.started_at}}"
+
+      - id: create_escalation_notification
+        type: elasticsearch.index
+        connectorId: "{{config.elasticsearch_connector_id}}"
+        with:
+          index: notifications
+          document:
+            notification_id: "NOTIF-ESC-{{trigger.document.incident_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+            notification_type: incident_escalated
+            recipient_type: management
+            priority: critical
+            title: "ESCALATION: Coordinated Attack Detected - {{trigger.document.business_name}}"
+            message: |
+              A coordinated review bombing attack has been detected and escalated.
+
+              Incident: {{trigger.document.incident_id}}
+              Business: {{trigger.document.business_name}}
+
+              Coordination Indicators:
+              - Repeat Offenders Involved: {{check_coordinated_attack.results[0].repeat_offender_count}}
+              - Coordination Score: {{check_coordinated_attack.results[0].coordination_score | round(2)}}
+
+              This attack involves multiple users who have participated in previous
+              review bombing incidents. Immediate attention required.
+            incident_id: "{{trigger.document.incident_id}}"
+            created_at: "{{execution.started_at}}"
+            read: false

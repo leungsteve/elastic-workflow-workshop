@@ -1,0 +1,1648 @@
+# Review Bomb Detection Workshop Specification
+
+## Project Overview
+
+This document provides specifications for building a workshop that demonstrates Elastic's Workflows feature (headline for 9.3) using a review bomb detection scenario. The workshop extends the existing "What's New in Elastic Search" series and builds on the flights/contracts pattern established in the search-workshop repo.
+
+### Workshop Story Arc
+
+| Step | Feature | User Action |
+|------|---------|-------------|
+| **Ingest** | Elasticsearch | Load Yelp business and user data |
+| **Stream** | Streaming App | Simulate incoming reviews in real-time |
+| **Search** | Semantic + Keyword | Find patterns in review content |
+| **Correlate** | ES|QL + LOOKUP JOIN | Cross-reference reviewer history, account age, velocity |
+| **Investigate** | Agent Builder | "Summarize this incident. Are these reviewers connected?" |
+| **Automate** | Workflows | Hold reviews, alert admin, create case, protect business rating |
+
+### Key Message
+
+"Search finds the insight. Agent Builder surfaces it. Workflows acts on it."
+
+---
+
+## Part 1: Data Model
+
+### Source Dataset
+
+**Yelp Academic Dataset:** https://www.yelp.com/dataset
+
+Download includes:
+- `yelp_academic_dataset_business.json` (150K+ businesses)
+- `yelp_academic_dataset_user.json` (2M+ users)
+- `yelp_academic_dataset_review.json` (7M+ reviews)
+- `yelp_academic_dataset_checkin.json`
+- `yelp_academic_dataset_tip.json`
+
+### Elasticsearch Index Mappings
+
+#### Index: `businesses`
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "business_id": { "type": "keyword" },
+      "name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
+      "address": { "type": "text" },
+      "city": { "type": "keyword" },
+      "state": { "type": "keyword" },
+      "postal_code": { "type": "keyword" },
+      "latitude": { "type": "float" },
+      "longitude": { "type": "float" },
+      "stars": { "type": "float" },
+      "review_count": { "type": "integer" },
+      "is_open": { "type": "boolean" },
+      "categories": { "type": "keyword" },
+      "hours": { "type": "object", "enabled": false },
+      "attributes": { "type": "flattened" },
+      "current_rating": { "type": "float" },
+      "rating_protected": { "type": "boolean" },
+      "protection_reason": { "type": "keyword" },
+      "protected_since": { "type": "date" }
+    }
+  }
+}
+```
+
+#### Index: `users`
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "user_id": { "type": "keyword" },
+      "name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
+      "review_count": { "type": "integer" },
+      "yelping_since": { "type": "date" },
+      "friends": { "type": "keyword" },
+      "useful": { "type": "integer" },
+      "funny": { "type": "integer" },
+      "cool": { "type": "integer" },
+      "fans": { "type": "integer" },
+      "elite": { "type": "keyword" },
+      "average_stars": { "type": "float" },
+      "compliment_hot": { "type": "integer" },
+      "compliment_more": { "type": "integer" },
+      "compliment_profile": { "type": "integer" },
+      "compliment_cute": { "type": "integer" },
+      "compliment_list": { "type": "integer" },
+      "compliment_note": { "type": "integer" },
+      "compliment_plain": { "type": "integer" },
+      "compliment_cool": { "type": "integer" },
+      "compliment_funny": { "type": "integer" },
+      "compliment_writer": { "type": "integer" },
+      "compliment_photos": { "type": "integer" },
+      "trust_score": { "type": "float" },
+      "account_age_days": { "type": "integer" },
+      "flagged": { "type": "boolean" },
+      "flag_reason": { "type": "keyword" }
+    }
+  }
+}
+```
+
+#### Index: `reviews`
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "review_id": { "type": "keyword" },
+      "user_id": { "type": "keyword" },
+      "business_id": { "type": "keyword" },
+      "stars": { "type": "float" },
+      "date": { "type": "date" },
+      "text": { 
+        "type": "text",
+        "fields": {
+          "semantic": { "type": "semantic_text", "inference_id": "elser" }
+        }
+      },
+      "useful": { "type": "integer" },
+      "funny": { "type": "integer" },
+      "cool": { "type": "integer" },
+      "sentiment_score": { "type": "float" },
+      "status": { "type": "keyword" },
+      "held_reason": { "type": "keyword" },
+      "held_at": { "type": "date" },
+      "reviewed_by": { "type": "keyword" },
+      "reviewed_at": { "type": "date" },
+      "incident_id": { "type": "keyword" }
+    }
+  }
+}
+```
+
+#### Index: `incidents`
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "incident_id": { "type": "keyword" },
+      "business_id": { "type": "keyword" },
+      "business_name": { "type": "text", "fields": { "keyword": { "type": "keyword" } } },
+      "detected_at": { "type": "date" },
+      "incident_type": { "type": "keyword" },
+      "severity": { "type": "keyword" },
+      "status": { "type": "keyword" },
+      "review_count": { "type": "integer" },
+      "unique_reviewers": { "type": "integer" },
+      "avg_rating": { "type": "float" },
+      "time_window_minutes": { "type": "integer" },
+      "held_review_ids": { "type": "keyword" },
+      "flagged_user_ids": { "type": "keyword" },
+      "summary": { "type": "text" },
+      "assigned_to": { "type": "keyword" },
+      "resolved_at": { "type": "date" },
+      "resolution": { "type": "keyword" },
+      "notes": { "type": "text" }
+    }
+  }
+}
+```
+
+#### Index: `alerts`
+
+```json
+{
+  "mappings": {
+    "properties": {
+      "alert_id": { "type": "keyword" },
+      "alert_type": { "type": "keyword" },
+      "severity": { "type": "keyword" },
+      "source": { "type": "keyword" },
+      "business_id": { "type": "keyword" },
+      "incident_id": { "type": "keyword" },
+      "message": { "type": "text" },
+      "created_at": { "type": "date" },
+      "acknowledged": { "type": "boolean" },
+      "acknowledged_by": { "type": "keyword" },
+      "acknowledged_at": { "type": "date" }
+    }
+  }
+}
+```
+
+### Derived Fields for User Trust Score
+
+Calculate during ingestion or as a runtime field:
+
+```
+trust_score = (
+  (review_count * 0.2) +
+  (useful * 0.15) +
+  (fans * 0.1) +
+  (elite_years * 0.2) +
+  (account_age_days / 365 * 0.2) +
+  (average_stars_variance_penalty * 0.15)
+) / max_possible_score
+```
+
+---
+
+## Part 2: Streaming Application
+
+### Purpose
+
+Simulates real-time review ingestion to demonstrate Workflows triggers. Takes historical Yelp reviews and "replays" them as if they are arriving in real-time. Also injects synthetic review bomb scenarios.
+
+### Architecture
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Review Source  │────▶│  Stream Engine   │────▶│  Elasticsearch  │
+│  (Yelp JSON)    │     │  (Python/Node)   │     │  (reviews index)│
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                                │
+                                ▼
+                        ┌──────────────────┐
+                        │  Bomb Injector   │
+                        │  (Synthetic)     │
+                        └──────────────────┘
+```
+
+### Application: `review-streamer`
+
+#### Configuration
+
+```yaml
+# config.yaml
+elasticsearch:
+  host: "${ELASTICSEARCH_URL}"
+  api_key: "${ELASTICSEARCH_API_KEY}"
+
+streaming:
+  reviews_per_second: 5
+  batch_size: 10
+  source_file: "data/yelp_academic_dataset_review.json"
+
+bomb_injection:
+  enabled: true
+  scenarios:
+    - name: "competitor_attack"
+      target_business_category: "Restaurants"
+      review_count: 25
+      time_window_seconds: 120
+      star_rating: 1
+      templates:
+        - "Terrible experience. Food was cold and service was awful. Never coming back."
+        - "Worst restaurant in town. Got sick after eating here. Avoid at all costs."
+        - "Zero stars if I could. Rude staff, dirty tables, overpriced garbage."
+        - "How is this place still open? Health department should investigate."
+        - "Used to be good but went downhill fast. Management clearly doesn't care."
+      reviewer_profile:
+        account_age_days_max: 30
+        review_count_max: 3
+        trust_score_max: 0.2
+    
+    - name: "disgruntled_employee"
+      target_business_category: "Shopping"
+      review_count: 15
+      time_window_seconds: 60
+      star_rating: 1
+      templates:
+        - "They treat their employees like garbage. Boycott this place."
+        - "Saw how they handle food in the back. Disgusting. Don't shop here."
+        - "Owner is a crook. Overcharges customers and underpays workers."
+      reviewer_profile:
+        account_age_days_max: 90
+        review_count_max: 5
+        trust_score_max: 0.3
+```
+
+#### Main Application Logic (Python)
+
+```python
+# review_streamer.py
+
+"""
+Review Streaming Application
+
+Replays Yelp reviews as real-time events and injects review bomb scenarios
+to demonstrate Elastic Workflows detection and response capabilities.
+
+Usage:
+    python review_streamer.py --config config.yaml
+    python review_streamer.py --config config.yaml --inject-bomb competitor_attack --target-business "ABC Restaurant"
+"""
+
+import json
+import time
+import random
+import argparse
+import yaml
+import uuid
+from datetime import datetime, timedelta
+from elasticsearch import Elasticsearch
+from dataclasses import dataclass
+from typing import List, Optional
+
+@dataclass
+class ReviewEvent:
+    review_id: str
+    user_id: str
+    business_id: str
+    stars: float
+    text: str
+    date: datetime
+    status: str = "pending"
+    
+    def to_dict(self):
+        return {
+            "review_id": self.review_id,
+            "user_id": self.user_id,
+            "business_id": self.business_id,
+            "stars": self.stars,
+            "text": self.text,
+            "date": self.date.isoformat(),
+            "status": self.status,
+            "useful": 0,
+            "funny": 0,
+            "cool": 0
+        }
+
+class ReviewStreamer:
+    """Streams reviews from Yelp dataset to Elasticsearch."""
+    
+    def __init__(self, config_path: str):
+        with open(config_path) as f:
+            self.config = yaml.safe_load(f)
+        
+        self.es = Elasticsearch(
+            self.config["elasticsearch"]["host"],
+            api_key=self.config["elasticsearch"]["api_key"]
+        )
+        
+    def stream_reviews(self, duration_seconds: Optional[int] = None):
+        """Stream reviews at configured rate."""
+        start_time = time.time()
+        reviews_sent = 0
+        
+        with open(self.config["streaming"]["source_file"]) as f:
+            for line in f:
+                review = json.loads(line)
+                review["date"] = datetime.now().isoformat()
+                review["status"] = "pending"
+                
+                self.es.index(index="reviews", document=review)
+                reviews_sent += 1
+                
+                # Rate limiting
+                time.sleep(1 / self.config["streaming"]["reviews_per_second"])
+                
+                if duration_seconds and (time.time() - start_time) > duration_seconds:
+                    break
+                    
+        return reviews_sent
+
+class BombInjector:
+    """Injects synthetic review bomb scenarios."""
+    
+    def __init__(self, config_path: str):
+        with open(config_path) as f:
+            self.config = yaml.safe_load(f)
+            
+        self.es = Elasticsearch(
+            self.config["elasticsearch"]["host"],
+            api_key=self.config["elasticsearch"]["api_key"]
+        )
+    
+    def create_fake_reviewer(self, profile_config: dict) -> dict:
+        """Generate a low-trust reviewer profile."""
+        user_id = f"synthetic_{uuid.uuid4().hex[:12]}"
+        account_age = random.randint(1, profile_config["account_age_days_max"])
+        
+        return {
+            "user_id": user_id,
+            "name": f"User_{random.randint(1000, 9999)}",
+            "review_count": random.randint(0, profile_config["review_count_max"]),
+            "yelping_since": (datetime.now() - timedelta(days=account_age)).isoformat(),
+            "useful": 0,
+            "funny": 0,
+            "cool": 0,
+            "fans": 0,
+            "elite": [],
+            "average_stars": random.uniform(1.0, 2.5),
+            "trust_score": random.uniform(0.05, profile_config["trust_score_max"]),
+            "account_age_days": account_age,
+            "flagged": False
+        }
+    
+    def inject_bomb(self, scenario_name: str, target_business_id: str):
+        """Inject a review bomb scenario."""
+        scenario = next(
+            (s for s in self.config["bomb_injection"]["scenarios"] 
+             if s["name"] == scenario_name), 
+            None
+        )
+        
+        if not scenario:
+            raise ValueError(f"Unknown scenario: {scenario_name}")
+        
+        print(f"Injecting '{scenario_name}' bomb against business {target_business_id}")
+        print(f"  - {scenario['review_count']} reviews over {scenario['time_window_seconds']} seconds")
+        
+        reviewers = []
+        reviews = []
+        
+        # Create fake reviewers
+        for i in range(scenario["review_count"]):
+            reviewer = self.create_fake_reviewer(scenario["reviewer_profile"])
+            reviewers.append(reviewer)
+            self.es.index(index="users", document=reviewer)
+        
+        # Distribute reviews over time window
+        interval = scenario["time_window_seconds"] / scenario["review_count"]
+        
+        for i, reviewer in enumerate(reviewers):
+            review = ReviewEvent(
+                review_id=f"bomb_{uuid.uuid4().hex[:12]}",
+                user_id=reviewer["user_id"],
+                business_id=target_business_id,
+                stars=scenario["star_rating"],
+                text=random.choice(scenario["templates"]),
+                date=datetime.now()
+            )
+            
+            self.es.index(index="reviews", document=review.to_dict())
+            reviews.append(review)
+            
+            print(f"  [{i+1}/{scenario['review_count']}] Review injected from {reviewer['user_id']}")
+            time.sleep(interval)
+        
+        print(f"Bomb injection complete. {len(reviews)} reviews sent.")
+        return reviews
+
+def main():
+    parser = argparse.ArgumentParser(description="Review Streaming Application")
+    parser.add_argument("--config", required=True, help="Path to config.yaml")
+    parser.add_argument("--mode", choices=["stream", "inject"], default="stream")
+    parser.add_argument("--inject-bomb", help="Scenario name to inject")
+    parser.add_argument("--target-business", help="Business ID to target")
+    parser.add_argument("--duration", type=int, help="Stream duration in seconds")
+    
+    args = parser.parse_args()
+    
+    if args.mode == "stream":
+        streamer = ReviewStreamer(args.config)
+        streamer.stream_reviews(args.duration)
+    elif args.mode == "inject":
+        if not args.inject_bomb or not args.target_business:
+            print("Error: --inject-bomb and --target-business required for inject mode")
+            return
+        injector = BombInjector(args.config)
+        injector.inject_bomb(args.inject_bomb, args.target_business)
+
+if __name__ == "__main__":
+    main()
+```
+
+---
+
+## Part 3: Detection Logic
+
+### ES|QL Queries for Review Bomb Detection
+
+#### Query 1: Velocity Detection
+
+Detect abnormal review velocity for a business.
+
+```sql
+FROM reviews
+| WHERE date > NOW() - 30 minutes
+| STATS 
+    review_count = COUNT(*),
+    unique_reviewers = COUNT_DISTINCT(user_id),
+    avg_stars = AVG(stars),
+    min_stars = MIN(stars),
+    max_stars = MAX(stars)
+  BY business_id
+| WHERE review_count > 10 AND avg_stars < 2.0
+| SORT review_count DESC
+| LIMIT 20
+```
+
+#### Query 2: Reviewer Trust Analysis
+
+Cross-reference reviews with user trust scores using LOOKUP JOIN.
+
+```sql
+FROM reviews
+| WHERE date > NOW() - 30 minutes AND stars <= 2
+| LOOKUP JOIN users ON user_id
+| STATS 
+    review_count = COUNT(*),
+    avg_trust_score = AVG(trust_score),
+    avg_account_age = AVG(account_age_days),
+    low_trust_count = COUNT(CASE WHEN trust_score < 0.3 THEN 1 END)
+  BY business_id
+| WHERE review_count > 5 AND avg_trust_score < 0.4
+| SORT low_trust_count DESC
+```
+
+#### Query 3: Text Similarity Detection
+
+Find reviews with suspiciously similar content.
+
+```sql
+FROM reviews
+| WHERE date > NOW() - 60 minutes AND stars <= 2
+| STATS 
+    review_count = COUNT(*),
+    unique_texts = COUNT_DISTINCT(text)
+  BY business_id
+| EVAL similarity_ratio = unique_texts / review_count
+| WHERE review_count > 5 AND similarity_ratio < 0.5
+| SORT similarity_ratio ASC
+```
+
+#### Query 4: Combined Risk Score
+
+```sql
+FROM reviews
+| WHERE date > NOW() - 30 minutes
+| LOOKUP JOIN users ON user_id
+| LOOKUP JOIN businesses ON business_id
+| STATS 
+    review_count = COUNT(*),
+    avg_stars = AVG(stars),
+    avg_trust = AVG(trust_score),
+    new_account_pct = AVG(CASE WHEN account_age_days < 30 THEN 1.0 ELSE 0.0 END),
+    low_review_pct = AVG(CASE WHEN users.review_count < 5 THEN 1.0 ELSE 0.0 END)
+  BY business_id, businesses.name
+| EVAL risk_score = (
+    (CASE WHEN review_count > 20 THEN 0.3 WHEN review_count > 10 THEN 0.2 ELSE 0.1 END) +
+    (CASE WHEN avg_stars < 1.5 THEN 0.3 WHEN avg_stars < 2.5 THEN 0.2 ELSE 0.0 END) +
+    (CASE WHEN avg_trust < 0.3 THEN 0.2 WHEN avg_trust < 0.5 THEN 0.1 ELSE 0.0 END) +
+    (new_account_pct * 0.2)
+  )
+| WHERE risk_score > 0.5
+| SORT risk_score DESC
+| LIMIT 10
+```
+
+---
+
+## Part 4: Workflow Definitions
+
+### Workflow 1: Review Bomb Detection and Response
+
+```yaml
+workflow:
+  id: review-bomb-detection
+  description: Detect and respond to review bombing attacks
+  
+  triggers:
+    - type: alert
+      filters:
+        - key: alert_type
+          value: "review_velocity_anomaly"
+    - type: schedule
+      interval: "5m"
+  
+  steps:
+    - name: detect-anomaly
+      description: Run detection query
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          FROM reviews
+          | WHERE date > NOW() - 30 minutes
+          | LOOKUP JOIN users ON user_id
+          | STATS 
+              review_count = COUNT(*),
+              avg_stars = AVG(stars),
+              avg_trust = AVG(trust_score),
+              low_trust_count = COUNT(CASE WHEN trust_score < 0.3 THEN 1 END)
+            BY business_id
+          | WHERE review_count > 10 AND avg_stars < 2.0 AND avg_trust < 0.4
+          | SORT review_count DESC
+          | LIMIT 5
+    
+    - name: create-incident
+      description: Create incident record for each detected anomaly
+      foreach: "{{ steps.detect-anomaly.results }}"
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        index: incidents
+        document:
+          incident_id: "{{ uuid() }}"
+          business_id: "{{ item.business_id }}"
+          detected_at: "{{ now() }}"
+          incident_type: "review_bomb"
+          severity: "{{ 'critical' if item.review_count > 20 else 'high' }}"
+          status: "open"
+          review_count: "{{ item.review_count }}"
+          avg_rating: "{{ item.avg_stars }}"
+    
+    - name: hold-reviews
+      description: Set status to held for suspicious reviews
+      foreach: "{{ steps.detect-anomaly.results }}"
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          POST reviews/_update_by_query
+          {
+            "query": {
+              "bool": {
+                "must": [
+                  { "term": { "business_id": "{{ item.business_id }}" } },
+                  { "range": { "date": { "gte": "now-30m" } } },
+                  { "term": { "status": "pending" } }
+                ]
+              }
+            },
+            "script": {
+              "source": "ctx._source.status = 'held'; ctx._source.held_reason = 'review_bomb_suspected'; ctx._source.held_at = params.now; ctx._source.incident_id = params.incident_id",
+              "params": {
+                "now": "{{ now() }}",
+                "incident_id": "{{ steps.create-incident.incident_id }}"
+              }
+            }
+          }
+    
+    - name: protect-business-rating
+      description: Enable rating protection on affected business
+      foreach: "{{ steps.detect-anomaly.results }}"
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          POST businesses/_update/{{ item.business_id }}
+          {
+            "doc": {
+              "rating_protected": true,
+              "protection_reason": "review_bomb_investigation",
+              "protected_since": "{{ now() }}"
+            }
+          }
+    
+    - name: notify-admin
+      description: Send Slack notification to admin team
+      provider:
+        type: slack
+        config: "{{ providers.slack }}"
+      with:
+        channel: "#trust-safety-alerts"
+        message: |
+          :rotating_light: *Review Bomb Detected*
+          
+          *Business:* {{ steps.detect-anomaly.results[0].business_id }}
+          *Reviews:* {{ steps.detect-anomaly.results[0].review_count }} in 30 minutes
+          *Avg Rating:* {{ steps.detect-anomaly.results[0].avg_stars }}
+          *Avg Trust Score:* {{ steps.detect-anomaly.results[0].avg_trust }}
+          
+          *Actions Taken:*
+          • Reviews held pending investigation
+          • Business rating protected
+          • Incident created: {{ steps.create-incident.incident_id }}
+          
+          <{{ kibana_url }}/app/incidents/{{ steps.create-incident.incident_id }}|View Incident>
+    
+    - name: create-ticket
+      description: Create Jira ticket for investigation
+      if: "{{ steps.detect-anomaly.results[0].review_count > 20 }}"
+      provider:
+        type: jira
+        config: "{{ providers.jira }}"
+      with:
+        project: "TRUST"
+        issue_type: "Incident"
+        summary: "Review Bomb Investigation - {{ steps.detect-anomaly.results[0].business_id }}"
+        description: |
+          Automated detection identified a potential review bombing attack.
+          
+          Business ID: {{ steps.detect-anomaly.results[0].business_id }}
+          Review Count: {{ steps.detect-anomaly.results[0].review_count }}
+          Average Rating: {{ steps.detect-anomaly.results[0].avg_stars }}
+          Low Trust Reviewers: {{ steps.detect-anomaly.results[0].low_trust_count }}
+          
+          Please investigate and take appropriate action.
+        priority: "High"
+        labels:
+          - "review-bomb"
+          - "automated-detection"
+```
+
+### Workflow 2: Reviewer Flagging
+
+```yaml
+workflow:
+  id: flag-suspicious-reviewers
+  description: Flag users involved in coordinated attacks
+  
+  triggers:
+    - type: alert
+      filters:
+        - key: incident_type
+          value: "review_bomb"
+  
+  steps:
+    - name: get-incident-reviews
+      description: Get all reviews associated with incident
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          FROM reviews
+          | WHERE incident_id == "{{ alert.incident_id }}"
+          | KEEP user_id, review_id, stars, text
+    
+    - name: analyze-reviewers
+      description: Analyze reviewer patterns
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          FROM reviews
+          | WHERE incident_id == "{{ alert.incident_id }}"
+          | LOOKUP JOIN users ON user_id
+          | WHERE trust_score < 0.3 OR account_age_days < 30
+          | KEEP user_id, trust_score, account_age_days, review_count
+    
+    - name: flag-users
+      description: Flag suspicious users
+      foreach: "{{ steps.analyze-reviewers.results }}"
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          POST users/_update/{{ item.user_id }}
+          {
+            "doc": {
+              "flagged": true,
+              "flag_reason": "coordinated_attack_participant",
+              "flagged_at": "{{ now() }}",
+              "related_incident": "{{ alert.incident_id }}"
+            }
+          }
+```
+
+### Workflow 3: Resolution and Rating Restoration
+
+```yaml
+workflow:
+  id: resolve-incident
+  description: Handle incident resolution and restore business rating
+  
+  triggers:
+    - type: alert
+      filters:
+        - key: alert_type
+          value: "incident_resolved"
+  
+  steps:
+    - name: get-incident
+      description: Retrieve incident details
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          FROM incidents
+          | WHERE incident_id == "{{ alert.incident_id }}"
+    
+    - name: process-held-reviews
+      description: Delete or release held reviews based on resolution
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          POST reviews/_update_by_query
+          {
+            "query": {
+              "bool": {
+                "must": [
+                  { "term": { "incident_id": "{{ alert.incident_id }}" } },
+                  { "term": { "status": "held" } }
+                ]
+              }
+            },
+            "script": {
+              "source": "ctx._source.status = params.resolution == 'confirmed_attack' ? 'deleted' : 'published'",
+              "params": {
+                "resolution": "{{ alert.resolution }}"
+              }
+            }
+          }
+    
+    - name: restore-rating-protection
+      description: Remove rating protection from business
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          POST businesses/_update/{{ steps.get-incident.results[0].business_id }}
+          {
+            "doc": {
+              "rating_protected": false,
+              "protection_reason": null,
+              "protected_since": null
+            }
+          }
+    
+    - name: recalculate-rating
+      description: Recalculate business rating excluding deleted reviews
+      if: "{{ alert.resolution == 'confirmed_attack' }}"
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          FROM reviews
+          | WHERE business_id == "{{ steps.get-incident.results[0].business_id }}"
+          | WHERE status == "published"
+          | STATS new_rating = AVG(stars), review_count = COUNT(*)
+    
+    - name: update-business-rating
+      description: Update business with recalculated rating
+      if: "{{ alert.resolution == 'confirmed_attack' }}"
+      provider:
+        type: elasticsearch
+        config: "{{ providers.elastic }}"
+      with:
+        query: |
+          POST businesses/_update/{{ steps.get-incident.results[0].business_id }}
+          {
+            "doc": {
+              "stars": {{ steps.recalculate-rating.results[0].new_rating }},
+              "review_count": {{ steps.recalculate-rating.results[0].review_count }}
+            }
+          }
+    
+    - name: notify-resolution
+      description: Send resolution notification
+      provider:
+        type: slack
+        config: "{{ providers.slack }}"
+      with:
+        channel: "#trust-safety-alerts"
+        message: |
+          :white_check_mark: *Incident Resolved*
+          
+          *Incident:* {{ alert.incident_id }}
+          *Resolution:* {{ alert.resolution }}
+          *Reviews Affected:* {{ steps.get-incident.results[0].review_count }}
+          
+          {{ 'Business rating has been recalculated and restored.' if alert.resolution == 'confirmed_attack' else 'Reviews have been published.' }}
+```
+
+---
+
+## Part 5: Agent Builder Tools
+
+### Tool 1: Incident Summary
+
+```json
+{
+  "name": "incident_summary",
+  "description": "Summarize a review bomb incident including affected business, review patterns, and reviewer analysis",
+  "parameters": {
+    "incident_id": {
+      "type": "string",
+      "description": "The incident ID to summarize"
+    }
+  },
+  "esql": "FROM incidents | WHERE incident_id == \"{{ incident_id }}\" | LOOKUP JOIN businesses ON business_id | KEEP incident_id, business_name, detected_at, severity, status, review_count, avg_rating"
+}
+```
+
+### Tool 2: Reviewer Pattern Analysis
+
+```json
+{
+  "name": "reviewer_pattern_analysis",
+  "description": "Analyze patterns among reviewers involved in an incident to identify coordination",
+  "parameters": {
+    "incident_id": {
+      "type": "string",
+      "description": "The incident ID to analyze"
+    }
+  },
+  "esql": "FROM reviews | WHERE incident_id == \"{{ incident_id }}\" | LOOKUP JOIN users ON user_id | STATS reviewer_count = COUNT_DISTINCT(user_id), avg_account_age = AVG(account_age_days), avg_trust_score = AVG(trust_score), avg_review_count = AVG(users.review_count), accounts_under_30_days = COUNT(CASE WHEN account_age_days < 30 THEN 1 END), accounts_under_5_reviews = COUNT(CASE WHEN users.review_count < 5 THEN 1 END)"
+}
+```
+
+### Tool 3: Similar Incidents Finder
+
+```json
+{
+  "name": "find_similar_incidents",
+  "description": "Find similar past incidents based on patterns",
+  "parameters": {
+    "business_category": {
+      "type": "string",
+      "description": "Category of business to search"
+    },
+    "min_severity": {
+      "type": "string",
+      "description": "Minimum severity level (low, medium, high, critical)"
+    }
+  },
+  "esql": "FROM incidents | LOOKUP JOIN businesses ON business_id | WHERE businesses.categories LIKE \"*{{ business_category }}*\" | WHERE severity IN (\"{{ min_severity }}\", \"high\", \"critical\") | STATS incident_count = COUNT(*), avg_review_count = AVG(review_count), resolution_rate = AVG(CASE WHEN status == \"resolved\" THEN 1.0 ELSE 0.0 END) BY incident_type | SORT incident_count DESC"
+}
+```
+
+### Tool 4: Business Risk Assessment
+
+```json
+{
+  "name": "business_risk_assessment",
+  "description": "Assess a business's risk profile for review manipulation",
+  "parameters": {
+    "business_id": {
+      "type": "string",
+      "description": "Business ID to assess"
+    }
+  },
+  "esql": "FROM reviews | WHERE business_id == \"{{ business_id }}\" | LOOKUP JOIN users ON user_id | STATS total_reviews = COUNT(*), avg_rating = AVG(stars), low_trust_reviews = COUNT(CASE WHEN trust_score < 0.3 THEN 1 END), new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END), recent_negative_reviews = COUNT(CASE WHEN date > NOW() - 7 days AND stars <= 2 THEN 1 END) | EVAL risk_score = (low_trust_reviews / total_reviews * 0.4) + (new_account_reviews / total_reviews * 0.3) + (recent_negative_reviews / total_reviews * 0.3)"
+}
+```
+
+### Agent Prompts for Investigation
+
+#### Prompt 1: Incident Briefing
+```
+You are a Trust & Safety analyst investigating a review bomb incident.
+
+Use the incident_summary tool to get details about incident {{ incident_id }}.
+Then use reviewer_pattern_analysis to understand the attack pattern.
+Finally, use find_similar_incidents to see if this matches known attack patterns.
+
+Provide a briefing that includes:
+1. What happened (timeline, scale, severity)
+2. Who is affected (business details)
+3. Attack characteristics (reviewer patterns, content similarity)
+4. Recommended actions based on similar past incidents
+```
+
+#### Prompt 2: Coordination Detection
+```
+Analyze the reviewers involved in incident {{ incident_id }} to determine if this is a coordinated attack.
+
+Look for these signals:
+- Account age clustering (many new accounts)
+- Review history patterns (low review counts)
+- Trust score distribution
+- Content similarity across reviews
+- Timing patterns
+
+Conclude whether this appears to be:
+A) Coordinated attack (multiple signals present)
+B) Viral negative experience (organic pile-on)
+C) Mixed/unclear (needs manual investigation)
+```
+
+---
+
+## Part 6: Instruqt Workshop Challenges
+
+### Workshop Structure
+
+**Title:** What's New in Elastic Search 9.3 - Review Bomb Detection with Workflows
+
+**Duration:** 90-120 minutes
+
+**Prerequisites:**
+- Basic Elasticsearch knowledge
+- Familiarity with ES|QL (covered in previous workshops)
+
+### Challenge 1: Environment Setup and Data Loading
+
+**Time:** 15 minutes
+
+**Objective:** Load the Yelp dataset and verify the environment.
+
+**Instructions:**
+
+1. Connect to your Elastic Cloud deployment
+2. Run the data loading scripts to ingest:
+   - Businesses (150K documents)
+   - Users (subset of 50K documents)
+   - Historical reviews (subset of 100K documents)
+3. Verify index mappings and document counts
+4. Explore the data using Discover
+
+**Verification:**
+- Confirm businesses index has > 10,000 documents
+- Confirm users index has > 10,000 documents
+- Confirm reviews index has > 50,000 documents
+
+**Script:**
+
+```bash
+#!/bin/bash
+# 1-load-yelp-data.sh
+
+echo "Loading Yelp dataset..."
+
+# Load businesses
+echo "Loading businesses..."
+python scripts/load_businesses.py --file data/yelp_academic_dataset_business.json --limit 50000
+
+# Load users
+echo "Loading users..."
+python scripts/load_users.py --file data/yelp_academic_dataset_user.json --limit 50000
+
+# Load reviews
+echo "Loading reviews..."
+python scripts/load_reviews.py --file data/yelp_academic_dataset_review.json --limit 100000
+
+echo "Data loading complete!"
+```
+
+---
+
+### Challenge 2: Exploring Search Capabilities
+
+**Time:** 15 minutes
+
+**Objective:** Use semantic and keyword search to find relevant business and review information.
+
+**Instructions:**
+
+1. Use keyword search to find restaurants in a specific city
+2. Use semantic search to find reviews mentioning food quality issues
+3. Combine keyword and semantic search for hybrid results
+4. Use ES|QL to aggregate review statistics by business
+
+**Sample Queries:**
+
+```sql
+-- Find businesses with recent negative reviews
+FROM businesses
+| WHERE categories LIKE "*Restaurant*"
+| WHERE stars < 3.0
+| SORT review_count DESC
+| LIMIT 20
+| KEEP name, city, stars, review_count, categories
+```
+
+```sql
+-- Semantic search for food safety concerns
+FROM reviews
+| WHERE text MATCH "food poisoning sick contaminated"
+| WHERE stars <= 2
+| SORT _score DESC
+| LIMIT 10
+| KEEP business_id, stars, text, date
+```
+
+---
+
+### Challenge 3: Detecting Review Anomalies with ES|QL
+
+**Time:** 20 minutes
+
+**Objective:** Write ES|QL queries to detect review bombing patterns.
+
+**Instructions:**
+
+1. Write a query to detect businesses with abnormal review velocity
+2. Use LOOKUP JOIN to correlate reviews with user trust scores
+3. Calculate a risk score combining multiple signals
+4. Identify potential review bomb targets
+
+**Queries to Complete:**
+
+```sql
+-- Challenge 3.1: Review velocity detection
+-- Find businesses with more than X reviews in the last Y minutes
+-- Your query here:
+FROM reviews
+| WHERE date > NOW() - ___ minutes
+| STATS review_count = COUNT(*) BY ___
+| WHERE review_count > ___
+| SORT ___ DESC
+```
+
+```sql
+-- Challenge 3.2: Trust score correlation
+-- Join reviews with users to analyze reviewer quality
+-- Your query here:
+FROM reviews
+| WHERE date > NOW() - 30 minutes
+| LOOKUP JOIN ___ ON ___
+| STATS 
+    avg_trust = AVG(___),
+    low_trust_pct = ___
+  BY business_id
+```
+
+```sql
+-- Challenge 3.3: Combined risk score
+-- Create a composite risk score
+-- Your query here:
+```
+
+---
+
+### Challenge 4: Agent Builder - Incident Investigation
+
+**Time:** 20 minutes
+
+**Objective:** Create Agent Builder tools to investigate review incidents.
+
+**Instructions:**
+
+1. Create an ES|QL tool to summarize incident details
+2. Create a tool to analyze reviewer patterns
+3. Test the agent with investigation prompts
+4. Ask the agent to compare the incident with historical patterns
+
+**Agent Tools to Create:**
+
+Tool 1: `incident_summary`
+- Input: incident_id
+- Output: Business name, review count, severity, timeline
+
+Tool 2: `reviewer_analysis`
+- Input: incident_id
+- Output: Reviewer statistics, trust scores, account ages
+
+**Test Prompts:**
+
+1. "Summarize incident INC-2024-001 and tell me if it looks like a coordinated attack"
+2. "What patterns do you see among the reviewers involved in this incident?"
+3. "Have we seen similar attacks on restaurants before?"
+
+---
+
+### Challenge 5: Building Workflows for Automated Response
+
+**Time:** 30 minutes
+
+**Objective:** Create workflows that automatically respond to review bombing incidents.
+
+**Instructions:**
+
+1. Create a workflow triggered by review velocity alerts
+2. Add steps to:
+   - Hold suspicious reviews
+   - Protect the business rating
+   - Create an incident record
+   - Send notifications
+3. Test the workflow with a simulated review bomb
+4. Verify the automated actions were executed
+
+**Workflow Steps:**
+
+Step 1: Detection Trigger
+- Configure alert threshold (>10 reviews, <2.0 avg rating, 30 min window)
+
+Step 2: Hold Reviews
+- Update review status to "held"
+- Set held_reason and held_at fields
+
+Step 3: Protect Business
+- Set rating_protected = true
+- Record protection_reason
+
+Step 4: Create Incident
+- Generate incident record with all relevant details
+
+Step 5: Notify Team
+- Send Slack message with incident summary
+- Include link to investigation dashboard
+
+**Verification:**
+- Trigger a simulated review bomb
+- Confirm reviews are held (check review status)
+- Confirm business is protected (check rating_protected field)
+- Confirm incident was created
+- Confirm notification was sent
+
+---
+
+### Challenge 6: End-to-End Scenario
+
+**Time:** 15 minutes
+
+**Objective:** Run through a complete attack detection and response scenario.
+
+**Instructions:**
+
+1. Start the review streaming application in background mode
+2. Trigger a review bomb injection against a target business
+3. Observe the workflow executing automatically
+4. Use Agent Builder to investigate the incident
+5. Resolve the incident and observe rating restoration
+
+**Scenario Script:**
+
+```bash
+# Terminal 1: Start streaming normal reviews
+python review_streamer.py --config config.yaml --mode stream &
+
+# Terminal 2: Inject review bomb
+python review_streamer.py --config config.yaml --mode inject \
+  --inject-bomb competitor_attack \
+  --target-business "yelp-biz-abc123"
+
+# Monitor in Kibana:
+# - Watch reviews index for incoming documents
+# - Watch incidents index for new incident creation
+# - Check Slack channel for notifications
+```
+
+**Discussion Questions:**
+
+1. How quickly did the workflow detect the attack?
+2. What signals were most useful in identifying the attack?
+3. How would you tune the detection thresholds for your use case?
+4. What additional workflow actions would be valuable?
+
+---
+
+## Part 7: Presentation Outline
+
+### Slide Deck Structure
+
+#### Section 1: Opening (5 minutes)
+
+**Slide 1: Title**
+- What's New in Elastic Search 9.3
+- From Insight to Action: Automating Search Operations with Workflows
+
+**Slide 2: The Challenge**
+- Search applications generate insights
+- But insights without action are just data
+- Manual response doesn't scale
+- Real-world example: Review bombs can destroy businesses in hours
+
+**Slide 3: The Solution**
+- Elastic 9.3 introduces Workflows
+- Complete automation from detection to response
+- Search finds it → Agent explains it → Workflows fixes it
+
+---
+
+#### Section 2: What's New in 9.3 (10 minutes)
+
+**Slide 4: 9.3 Highlights Overview**
+- Simplify Operations: Workflows automation engine
+- Optimize Performance: [Other 9.3 features]
+- AI Innovation: Agent Builder + Workflows integration
+
+**Slide 5: Introducing Workflows**
+- Native automation engine (from Keep acquisition)
+- YAML-based workflow-as-code
+- Visual workflow builder in Kibana
+- 90+ integrations out of the box
+
+**Slide 6: Workflow Components**
+- Triggers: Alerts, schedules, manual, API
+- Steps: Actions that execute in sequence
+- Conditions: If/else logic
+- Loops: Process multiple items
+- Integrations: Slack, Jira, PagerDuty, custom webhooks
+
+**Slide 7: Why This Matters**
+- Reduce mean time to response
+- Eliminate manual toil
+- Consistent, auditable actions
+- 24/7 automated protection
+
+---
+
+#### Section 3: Demo Scenario Introduction (5 minutes)
+
+**Slide 8: The Review Bomb Problem**
+- Coordinated fake negative reviews
+- Can destroy a business's reputation in hours
+- Yelp, Google, Amazon all combat this
+- Manual detection doesn't scale
+
+**Slide 9: Our Demo Architecture**
+- Data: Yelp dataset (businesses, users, reviews)
+- Streaming: Real-time review ingestion
+- Detection: ES|QL queries identifying anomalies
+- Investigation: Agent Builder tools
+- Response: Automated workflows
+
+**Slide 10: What We'll Build**
+- Load review platform data
+- Stream incoming reviews
+- Detect review bombing patterns
+- Automatically protect affected businesses
+- Investigate with AI assistance
+
+---
+
+#### Section 4: Live Demo (30-40 minutes)
+
+**Demo 1: The Data Foundation**
+- Show indexed businesses, users, reviews
+- Quick ES|QL queries exploring the data
+- Highlight the review velocity patterns
+
+**Demo 2: Detection Queries**
+- Build detection queries step by step
+- LOOKUP JOIN for trust score correlation
+- Calculate composite risk scores
+- Discuss threshold tuning
+
+**Demo 3: Agent Builder Investigation**
+- Create investigation tools
+- Ask the agent to analyze an incident
+- Compare with historical patterns
+- Show how agent surfaces insights
+
+**Demo 4: Workflow in Action**
+- Walk through workflow definition
+- Trigger a simulated attack
+- Watch workflow execute:
+  - Reviews held
+  - Business protected
+  - Incident created
+  - Team notified
+- Show the incident in Kibana
+
+**Demo 5: Resolution**
+- Resolve the incident
+- Watch restoration workflow:
+  - Reviews processed
+  - Rating recalculated
+  - Protection removed
+- Discuss the complete lifecycle
+
+---
+
+#### Section 5: Workshop Preview (5 minutes)
+
+**Slide 11: Hands-On Labs**
+- Challenge 1: Load and explore the data
+- Challenge 2: Search capabilities (semantic + keyword)
+- Challenge 3: Detection queries with ES|QL
+- Challenge 4: Agent Builder investigation tools
+- Challenge 5: Build your own workflows
+- Challenge 6: End-to-end scenario
+
+**Slide 12: What You'll Learn**
+- Write detection queries with ES|QL
+- Use LOOKUP JOIN for data correlation
+- Create Agent Builder tools
+- Build automated workflows
+- Connect search insights to automated actions
+
+---
+
+#### Section 6: Wrap-Up (5 minutes)
+
+**Slide 13: Key Takeaways**
+- Workflows closes the loop from insight to action
+- ES|QL + Agent Builder + Workflows = complete solution
+- Automation scales your team's impact
+- Open, extensible, integrates with your stack
+
+**Slide 14: Resources**
+- Workshop environment access
+- Documentation links
+- Elastic Search Labs blog
+- Community Slack
+
+**Slide 15: Q&A**
+
+---
+
+## Part 8: Talk Track
+
+### Opening Hook
+
+"Imagine you own a restaurant. You've spent years building your reputation. One morning you wake up and your rating has dropped from 4.5 to 2.1 stars overnight. Forty-seven one-star reviews appeared while you were sleeping. By the time you notice, potential customers have already seen it and chosen your competitor instead.
+
+This is called a review bomb. It's a real attack that happens to real businesses every day. And if you're running a review platform, you need to detect and stop it before it destroys someone's livelihood.
+
+Today I'm going to show you how Elastic's new Workflows feature lets you automatically detect these attacks and protect businesses, all without human intervention."
+
+---
+
+### Transition to Detection
+
+"Detection starts with the right queries. We need to identify anomalies in real-time. With ES|QL, we can look for businesses receiving an unusual number of reviews in a short time window.
+
+But volume alone isn't enough. A viral TikTok video could send 50 real customers to a restaurant in an hour. We need to correlate with other signals.
+
+This is where LOOKUP JOIN becomes powerful. We can cross-reference each review with the reviewer's trust profile. Are these reviews coming from established users with history? Or from brand new accounts with no track record?
+
+Let me show you what that query looks like..."
+
+---
+
+### Transition to Agent Builder
+
+"Once we've detected a potential attack, someone needs to investigate. Is this actually coordinated? Or is it an organic pile-on from a genuinely bad experience?
+
+This is where Agent Builder comes in. I've created tools that let me ask natural questions about the incident.
+
+Watch this. I'm going to ask: 'Analyze the reviewers involved in this incident. Do they show signs of coordination?'
+
+The agent uses our ES|QL tools to pull the data, analyzes the patterns, and gives me a clear assessment. New accounts, similar review text, clustered timing. This looks like a coordinated attack.
+
+But here's the thing. I shouldn't have to ask. The system should act automatically while I sleep."
+
+---
+
+### Transition to Workflows
+
+"This is why we built Workflows in 9.3.
+
+Workflows lets you define automated responses that trigger when certain conditions are met. It's the missing piece that connects search insights to real-world actions.
+
+Let me walk you through what happens when we detect a review bomb.
+
+First, the workflow holds all suspicious reviews. They're not deleted. They're quarantined pending investigation. The business doesn't lose legitimate feedback, but the attack is neutralized.
+
+Second, we protect the business rating. We flag it so the rating isn't recalculated until the incident is resolved. The owner's 4.5 stars are preserved.
+
+Third, we create an incident record. Full audit trail. Every review involved, every reviewer flagged, every action taken.
+
+Fourth, we notify the team. Slack message with all the details. The trust and safety team can investigate when they're online, but the damage is already prevented.
+
+All of this happens in seconds. No human in the loop. The business is protected before the owner even knows an attack was attempted."
+
+---
+
+### Closing
+
+"This is what we mean by 'from insight to action.'
+
+Search finds the pattern. Agent Builder helps you understand it. Workflows automates the response.
+
+For years, we've been great at finding needles in haystacks. Now we can automatically do something about what we find.
+
+In the hands-on lab, you'll build this yourself. You'll write the detection queries, create the agent tools, and configure the workflows. By the end, you'll have a working system that detects and stops review bombs automatically.
+
+Let's get started."
+
+---
+
+## Part 9: File Manifest
+
+### Repository Structure
+
+```
+review-bomb-workshop/
+├── README.md
+├── config/
+│   └── config.yaml
+├── data/
+│   ├── download-yelp-dataset.sh
+│   └── sample/
+│       ├── businesses-sample.ndjson
+│       ├── users-sample.ndjson
+│       └── reviews-sample.ndjson
+├── scripts/
+│   ├── load_businesses.py
+│   ├── load_users.py
+│   ├── load_reviews.py
+│   └── calculate_trust_scores.py
+├── streaming/
+│   ├── review_streamer.py
+│   ├── bomb_injector.py
+│   └── requirements.txt
+├── mappings/
+│   ├── businesses.json
+│   ├── users.json
+│   ├── reviews.json
+│   ├── incidents.json
+│   └── alerts.json
+├── queries/
+│   ├── detection/
+│   │   ├── velocity_detection.esql
+│   │   ├── trust_correlation.esql
+│   │   └── risk_score.esql
+│   └── investigation/
+│       ├── incident_summary.esql
+│       └── reviewer_analysis.esql
+├── workflows/
+│   ├── review_bomb_detection.yaml
+│   ├── reviewer_flagging.yaml
+│   └── incident_resolution.yaml
+├── agent-tools/
+│   ├── incident_summary.json
+│   ├── reviewer_pattern_analysis.json
+│   ├── similar_incidents.json
+│   └── business_risk_assessment.json
+├── instruqt/
+│   ├── track.yml
+│   └── challenges/
+│       ├── 01-setup/
+│       ├── 02-search/
+│       ├── 03-detection/
+│       ├── 04-agent-builder/
+│       ├── 05-workflows/
+│       └── 06-scenario/
+├── presentation/
+│   ├── slides.md
+│   └── images/
+└── docs/
+    └── talk-track.md
+```
+
+---
+
+## Appendix: Sample Data Generators
+
+### Generate Synthetic Review Bomb Data
+
+For testing without the full Yelp dataset:
+
+```python
+# generate_sample_data.py
+
+import json
+import random
+import uuid
+from datetime import datetime, timedelta
+from faker import Faker
+
+fake = Faker()
+
+def generate_businesses(count=100):
+    categories = ["Restaurants", "Shopping", "Health & Medical", "Hotels", "Automotive"]
+    businesses = []
+    for _ in range(count):
+        businesses.append({
+            "business_id": uuid.uuid4().hex[:22],
+            "name": fake.company(),
+            "address": fake.street_address(),
+            "city": fake.city(),
+            "state": fake.state_abbr(),
+            "postal_code": fake.zipcode(),
+            "latitude": float(fake.latitude()),
+            "longitude": float(fake.longitude()),
+            "stars": round(random.uniform(3.0, 5.0), 1),
+            "review_count": random.randint(10, 500),
+            "is_open": True,
+            "categories": random.sample(categories, k=random.randint(1, 3)),
+            "rating_protected": False
+        })
+    return businesses
+
+def generate_users(count=500):
+    users = []
+    for _ in range(count):
+        account_age = random.randint(30, 3000)
+        review_count = random.randint(1, 200)
+        users.append({
+            "user_id": uuid.uuid4().hex[:22],
+            "name": fake.name(),
+            "review_count": review_count,
+            "yelping_since": (datetime.now() - timedelta(days=account_age)).isoformat(),
+            "useful": random.randint(0, 100),
+            "funny": random.randint(0, 50),
+            "cool": random.randint(0, 50),
+            "fans": random.randint(0, 20),
+            "elite": [],
+            "average_stars": round(random.uniform(2.5, 4.5), 2),
+            "trust_score": min(1.0, (review_count / 50 * 0.3) + (account_age / 1000 * 0.3) + random.uniform(0.1, 0.4)),
+            "account_age_days": account_age,
+            "flagged": False
+        })
+    return users
+
+def generate_reviews(businesses, users, count=2000):
+    positive_templates = [
+        "Great experience! Would definitely recommend.",
+        "Excellent service and quality. Will be back!",
+        "One of the best in town. Highly recommend.",
+        "Fantastic! Exceeded all expectations.",
+        "Love this place. Great atmosphere and friendly staff."
+    ]
+    negative_templates = [
+        "Terrible experience. Would not recommend.",
+        "Very disappointed. Expected much better.",
+        "Worst service ever. Never coming back.",
+        "Overpriced and underwhelming. Save your money.",
+        "How is this place still in business?"
+    ]
+    
+    reviews = []
+    for _ in range(count):
+        stars = random.choices([1, 2, 3, 4, 5], weights=[5, 10, 15, 30, 40])[0]
+        text = random.choice(negative_templates if stars <= 2 else positive_templates)
+        
+        reviews.append({
+            "review_id": uuid.uuid4().hex[:22],
+            "user_id": random.choice(users)["user_id"],
+            "business_id": random.choice(businesses)["business_id"],
+            "stars": stars,
+            "date": (datetime.now() - timedelta(days=random.randint(0, 365))).isoformat(),
+            "text": text,
+            "useful": random.randint(0, 10),
+            "funny": random.randint(0, 5),
+            "cool": random.randint(0, 5),
+            "status": "published"
+        })
+    return reviews
+
+if __name__ == "__main__":
+    businesses = generate_businesses(100)
+    users = generate_users(500)
+    reviews = generate_reviews(businesses, users, 2000)
+    
+    with open("data/sample/businesses-sample.ndjson", "w") as f:
+        for b in businesses:
+            f.write(json.dumps(b) + "\n")
+    
+    with open("data/sample/users-sample.ndjson", "w") as f:
+        for u in users:
+            f.write(json.dumps(u) + "\n")
+    
+    with open("data/sample/reviews-sample.ndjson", "w") as f:
+        for r in reviews:
+            f.write(json.dumps(r) + "\n")
+    
+    print(f"Generated {len(businesses)} businesses, {len(users)} users, {len(reviews)} reviews")
+```
+
+---
+
+## End of Specification
+
+This document provides comprehensive specifications for Claude Code to develop:
+
+1. **Streaming Application:** Python application to replay reviews and inject attack scenarios
+2. **Detection Queries:** ES|QL queries for anomaly detection
+3. **Agent Builder Tools:** Investigation tools for incident analysis
+4. **Workflow Definitions:** YAML workflows for automated response
+5. **Instruqt Challenges:** Six hands-on lab challenges
+6. **Presentation:** Slide outline and structure
+7. **Talk Track:** Speaker notes and narrative
+
+All components work together to tell the story: "Search finds the insight. Agent Builder surfaces it. Workflows acts on it."

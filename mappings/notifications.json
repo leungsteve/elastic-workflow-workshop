@@ -1,0 +1,47 @@
+{
+  "mappings": {
+    "properties": {
+      "notification_id": {
+        "type": "keyword"
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "severity": {
+        "type": "keyword"
+      },
+      "title": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "message": {
+        "type": "text"
+      },
+      "incident_id": {
+        "type": "keyword"
+      },
+      "business_id": {
+        "type": "keyword"
+      },
+      "business_name": {
+        "type": "keyword"
+      },
+      "workflow_id": {
+        "type": "keyword"
+      },
+      "created_at": {
+        "type": "date"
+      },
+      "read": {
+        "type": "boolean"
+      },
+      "read_at": {
+        "type": "date"
+      }
+    }
+  }
+}

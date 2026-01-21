@@ -1,0 +1,30 @@
+// Recent Incidents Query
+//
+// Purpose: List recent review bomb incidents, optionally filtered by status,
+// for dashboard display and incident management
+//
+// This query provides a paginated list of incidents sorted by detection time
+// to help analysts prioritize and track ongoing investigations.
+//
+// Parameters:
+//   - {{ status }}: Filter by status (open, investigating, resolved, false_positive)
+//                   Use "all" to show all incidents regardless of status
+//   - {{ limit }}: Maximum number of incidents to return (e.g., 10, 20, 50)
+//
+// Output Fields:
+//   - incident_id: Unique incident identifier for drill-down
+//   - business_name: Name of the affected business
+//   - detected_at: Timestamp when the incident was detected
+//   - severity: Incident severity (low, medium, high, critical)
+//   - status: Current investigation status
+//   - review_count: Number of suspicious reviews in the incident
+//
+// Usage Examples:
+//   - Status: "open", Limit: 10 - Show top 10 unresolved incidents
+//   - Status: "all", Limit: 50 - Show all recent incidents for reporting
+
+FROM incidents
+| WHERE status == "{{ status }}" OR "{{ status }}" == "all"
+| SORT detected_at DESC
+| LIMIT {{ limit }}
+| KEEP incident_id, business_name, detected_at, severity, status, review_count

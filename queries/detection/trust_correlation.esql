@@ -1,0 +1,32 @@
+// Trust Correlation Query
+//
+// Purpose: Cross-reference recent negative reviews with user trust scores to identify
+// suspicious patterns involving low-trust accounts
+//
+// This query joins review data with user trust metrics to detect attacks that
+// leverage newly created or low-reputation accounts.
+//
+// Thresholds:
+//   - stars <= 2: Focus on negative reviews only
+//   - review_count > 5: At least 5 suspicious reviews to trigger alert
+//   - avg_trust_score < 0.4: Average trust below 40% indicates coordinated fake accounts
+//   - trust_score < 0.3: Individual accounts below 30% trust are flagged
+//
+// Output Fields:
+//   - business_id: The targeted business identifier
+//   - review_count: Number of low-star reviews from the time window
+//   - avg_trust_score: Average trust score of reviewers
+//   - avg_account_age: Average age of reviewer accounts in days
+//   - low_trust_count: Number of reviews from accounts with trust < 0.3
+
+FROM reviews
+| WHERE date > NOW() - 30 minutes AND stars <= 2
+| LOOKUP JOIN users ON user_id
+| STATS
+    review_count = COUNT(*),
+    avg_trust_score = AVG(trust_score),
+    avg_account_age = AVG(account_age_days),
+    low_trust_count = COUNT(CASE WHEN trust_score < 0.3 THEN 1 END)
+  BY business_id
+| WHERE review_count > 5 AND avg_trust_score < 0.4
+| SORT low_trust_count DESC

@@ -1,0 +1,63 @@
+{
+  "mappings": {
+    "properties": {
+      "review_id": {
+        "type": "keyword"
+      },
+      "user_id": {
+        "type": "keyword"
+      },
+      "business_id": {
+        "type": "keyword"
+      },
+      "stars": {
+        "type": "float"
+      },
+      "date": {
+        "type": "date"
+      },
+      "text": {
+        "type": "text"
+      },
+      "useful": {
+        "type": "integer"
+      },
+      "funny": {
+        "type": "integer"
+      },
+      "cool": {
+        "type": "integer"
+      },
+      "sentiment_score": {
+        "type": "float"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "held_reason": {
+        "type": "keyword"
+      },
+      "held_at": {
+        "type": "date"
+      },
+      "reviewed_by": {
+        "type": "keyword"
+      },
+      "reviewed_at": {
+        "type": "date"
+      },
+      "incident_id": {
+        "type": "keyword"
+      },
+      "partition": {
+        "type": "keyword"
+      },
+      "synthetic": {
+        "type": "boolean"
+      },
+      "submitted_by": {
+        "type": "keyword"
+      }
+    }
+  }
+}

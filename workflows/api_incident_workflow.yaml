@@ -1,0 +1,132 @@
+version: 1
+
+name: API-Based Incident Workflow
+description: |
+  This workflow documents the incident creation flow implemented in the FastAPI application.
+  Unlike the ES|QL-based workflow, this one runs within the application code and provides
+  real-time incident creation when attacks are detected.
+
+  Implementation Files:
+  - app/services/incident_service.py - Core incident creation logic
+  - app/routers/businesses.py - Auto-detection on stats endpoint
+  - app/routers/incidents.py - Manual detection endpoint
+
+  Detection Criteria (matching ES|QL workflow):
+  - recent_review_count >= 5
+  - AND (rating_trend < -1.0 OR review_velocity > 2.0 OR suspicious_count > 3)
+
+  Severity Levels:
+  - CRITICAL: velocity > 5/hr OR review_count > 20
+  - HIGH: velocity > 3/hr OR review_count > 10 OR rating_trend < -2.0
+  - MEDIUM: review_count >= 5 OR suspicious_count > 3
+  - LOW: Other cases
+
+enabled: true
+
+# This workflow is implemented in Python, not ES|QL
+# The YAML serves as documentation and could be used for orchestration
+
+triggers:
+  # Triggered automatically when stats endpoint is called
+  - type: api_endpoint
+    method: GET
+    path: /api/businesses/{business_id}/stats
+    description: Auto-creates incident when attack detected
+
+  # Manual trigger endpoint
+  - type: api_endpoint
+    method: POST
+    path: /api/incidents/detect
+    description: Manually scan for attacks and create incidents
+    parameters:
+      - name: business_id
+        type: string
+        required: false
+        description: Specific business to check (optional)
+      - name: hours
+        type: integer
+        default: 24
+        description: Hours to analyze
+
+steps:
+  # Step 1: Attack Detection
+  - id: detect_attack
+    type: python
+    description: Analyze review patterns to detect attacks
+    implementation: app.routers.businesses.get_business_stats
+    criteria:
+      recent_review_count: ">= 5"
+      conditions:
+        - rating_trend: "< -1.0"
+        - review_velocity: "> 2.0"
+        - suspicious_count: "> 3"
+      logic: "recent_review_count AND (rating_trend OR review_velocity OR suspicious_count)"
+
+  # Step 2: Check for Existing Incident
+  - id: check_duplicate
+    type: python
+    description: Prevent duplicate incidents for ongoing attacks
+    implementation: app.services.incident_service.IncidentService.check_existing_open_incident
+    query:
+      index: incidents
+      filters:
+        business_id: "{{business_id}}"
+        status:
+          - detected
+          - investigating
+          - confirmed
+          - mitigated
+
+  # Step 3: Determine Severity
+  - id: determine_severity
+    type: python
+    description: Calculate incident severity based on attack metrics
+    implementation: app.services.incident_service.IncidentService.determine_severity
+    rules:
+      critical:
+        - review_velocity: "> 5.0"
+        - recent_review_count: "> 20"
+      high:
+        - review_velocity: "> 3.0"
+        - recent_review_count: "> 10"
+        - rating_trend: "< -2.0"
+      medium:
+        - recent_review_count: ">= 5"
+        - suspicious_count: "> 3"
+      low:
+        - default: true
+
+  # Step 4: Create Incident
+  - id: create_incident
+    type: python
+    description: Create incident document in Elasticsearch
+    implementation: app.services.incident_service.IncidentService.create_incident_from_attack
+    output:
+      index: incidents
+      document:
+        incident_id: "inc_{{uuid}}"
+        business_id: "{{business_id}}"
+        business_name: "{{business_name}}"
+        status: detected
+        severity: "{{severity}}"
+        detected_at: "{{timestamp}}"
+        description: "Auto-generated incident description"
+        metrics:
+          review_count: "{{recent_review_count}}"
+          average_rating: "{{recent_average_rating}}"
+          rating_drop: "{{rating_trend}}"
+          reviews_per_minute: "{{review_velocity / 60}}"
+
+# Response actions (future implementation)
+response_actions:
+  - id: hold_reviews
+    description: Place suspicious reviews on hold
+    enabled: false
+
+  - id: protect_rating
+    description: Enable rating protection on business
+    enabled: false
+
+  - id: notify_stakeholders
+    description: Send notifications to operations team
+    enabled: false

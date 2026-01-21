@@ -1,0 +1,13 @@
+{
+  "business_id": "3OGzmGqWwsyGLkhnxrA9Pw",
+  "name": "Gourmet Pizza Company",
+  "stars": 4.0,
+  "review_count": 185,
+  "city": "Tampa",
+  "attack_summary": {
+    "num_attackers": 15,
+    "num_reviews": 50,
+    "attack_window_minutes": 30,
+    "generated_at": "2026-01-20T20:15:03.112572"
+  }
+}

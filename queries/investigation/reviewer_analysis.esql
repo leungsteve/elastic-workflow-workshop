@@ -1,0 +1,35 @@
+// Reviewer Analysis Query
+//
+// Purpose: Analyze the characteristics of reviewers involved in a specific incident
+// to understand the attack profile and identify patterns
+//
+// This query aggregates user metrics for all reviewers associated with an incident
+// to help determine if the attack used fake accounts, new accounts, or compromised
+// legitimate accounts.
+//
+// Parameters:
+//   - {{ incident_id }}: The unique identifier of the incident to analyze
+//
+// Output Fields:
+//   - reviewer_count: Total number of distinct users involved
+//   - avg_account_age: Average age of reviewer accounts in days
+//   - avg_trust_score: Average trust score of involved reviewers
+//   - avg_review_count: Average number of reviews per user historically
+//   - accounts_under_30_days: Count of accounts created within last 30 days
+//   - accounts_under_5_reviews: Count of accounts with fewer than 5 total reviews
+//
+// Analysis Tips:
+//   - High accounts_under_30_days suggests coordinated fake account creation
+//   - High accounts_under_5_reviews indicates single-purpose attack accounts
+//   - Low avg_trust_score confirms suspicious reviewer pool
+
+FROM reviews
+| WHERE incident_id == "{{ incident_id }}"
+| LOOKUP JOIN users ON user_id
+| STATS
+    reviewer_count = COUNT_DISTINCT(user_id),
+    avg_account_age = AVG(account_age_days),
+    avg_trust_score = AVG(trust_score),
+    avg_review_count = AVG(users.review_count),
+    accounts_under_30_days = COUNT(CASE WHEN account_age_days < 30 THEN 1 END),
+    accounts_under_5_reviews = COUNT(CASE WHEN users.review_count < 5 THEN 1 END)

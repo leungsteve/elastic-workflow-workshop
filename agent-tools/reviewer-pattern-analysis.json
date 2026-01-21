@@ -1,0 +1,38 @@
+{
+  "name": "reviewer_pattern_analysis",
+  "description": "Analyze patterns among reviewers involved in an incident to identify coordination signals, suspicious behavior, and common attack signatures. Use this tool to understand who is behind an attack, detect fake account patterns, and find evidence of coordinated behavior.",
+  "parameters": {
+    "incident_id": {
+      "type": "string",
+      "description": "The incident ID to analyze (e.g., INC-abc123). This retrieves all reviewers associated with the incident.",
+      "required": true
+    }
+  },
+  "esql": "FROM reviews | WHERE incident_id == \"{{ incident_id }}\" | LOOKUP JOIN users ON user_id | STATS reviewer_count = COUNT_DISTINCT(user_id), avg_account_age = AVG(account_age_days), min_account_age = MIN(account_age_days), max_account_age = MAX(account_age_days), avg_trust_score = AVG(trust_score), min_trust_score = MIN(trust_score), avg_reviewer_history = AVG(users.review_count), accounts_under_7_days = COUNT(CASE WHEN account_age_days < 7 THEN 1 END), accounts_under_30_days = COUNT(CASE WHEN account_age_days < 30 THEN 1 END), accounts_under_5_reviews = COUNT(CASE WHEN users.review_count < 5 THEN 1 END), flagged_accounts = COUNT(CASE WHEN flagged == true THEN 1 END), avg_stars_given = AVG(stars), one_star_count = COUNT(CASE WHEN stars == 1 THEN 1 END), two_star_count = COUNT(CASE WHEN stars == 2 THEN 1 END) | EVAL new_account_pct = accounts_under_30_days * 100.0 / reviewer_count, low_history_pct = accounts_under_5_reviews * 100.0 / reviewer_count, very_new_account_pct = accounts_under_7_days * 100.0 / reviewer_count",
+  "output_fields": {
+    "reviewer_count": "Total number of distinct users involved in the attack",
+    "avg_account_age": "Average age of attacker accounts in days",
+    "min_account_age": "Youngest account age in days (indicates recent account creation)",
+    "max_account_age": "Oldest account age in days",
+    "avg_trust_score": "Average trust score of attackers (0.0-1.0)",
+    "min_trust_score": "Lowest trust score among attackers",
+    "avg_reviewer_history": "Average number of historical reviews per attacker",
+    "accounts_under_7_days": "Count of accounts created in the last 7 days (strong fake account signal)",
+    "accounts_under_30_days": "Count of accounts created in the last 30 days",
+    "accounts_under_5_reviews": "Count of accounts with fewer than 5 total reviews (single-purpose accounts)",
+    "flagged_accounts": "Count of accounts already flagged as suspicious",
+    "avg_stars_given": "Average star rating given by attackers",
+    "one_star_count": "Number of 1-star reviews (strongest negative signal)",
+    "two_star_count": "Number of 2-star reviews",
+    "new_account_pct": "Percentage of reviews from accounts under 30 days old",
+    "low_history_pct": "Percentage of reviews from low-activity accounts",
+    "very_new_account_pct": "Percentage of reviews from accounts under 7 days old"
+  },
+  "analysis_tips": [
+    "new_account_pct > 50% strongly suggests coordinated fake account creation",
+    "very_new_account_pct > 30% indicates accounts were created specifically for this attack",
+    "low_history_pct > 60% suggests single-purpose attack accounts",
+    "avg_trust_score < 0.3 confirms highly suspicious reviewer pool",
+    "one_star_count dominating indicates intentional rating destruction"
+  ]
+}

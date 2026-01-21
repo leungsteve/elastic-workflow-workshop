@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Review Bomb Workshop{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-bell me-2"></i>Notifications</h1>
+        <p class="text-muted">System notifications from workflow executions</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-outline-primary" onclick="markAllRead()">
+            <i class="bi bi-check-all me-1"></i> Mark All Read
+        </button>
+    </div>
+</div>
+
+<!-- Notification List -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>All Notifications</span>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="showUnreadOnly" onchange="loadNotifications()">
+            <label class="form-check-label" for="showUnreadOnly">Unread only</label>
+        </div>
+    </div>
+    <div class="card-body">
+        <div id="notificationList">
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-bell-slash display-4"></i>
+                <p class="mt-3">No notifications yet</p>
+                <p class="small">Notifications will appear when workflows execute</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function loadNotifications() {
+        const container = document.getElementById('notificationList');
+        container.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+
+        const unreadOnly = document.getElementById('showUnreadOnly').checked;
+        let url = `/api/notifications?page_size=50`;
+        if (unreadOnly) url += '&unread_only=true';
+
+        try {
+            const data = await api.get(url);
+
+            if (!data.notifications || data.notifications.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-bell-slash display-4"></i>
+                        <p class="mt-3">No notifications</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="list-group">';
+            for (const notif of data.notifications) {
+                const typeIcon = {
+                    review_bomb_detected: 'bi-exclamation-triangle-fill text-danger',
+                    reviews_held: 'bi-pause-circle text-warning',
+                    business_protected: 'bi-shield-check text-success',
+                    incident_created: 'bi-file-earmark-plus text-primary',
+                    incident_resolved: 'bi-check-circle text-success',
+                    users_flagged: 'bi-person-exclamation text-warning'
+                }[notif.type] || 'bi-bell';
+
+                const severityClass = {
+                    critical: 'border-start border-danger border-4',
+                    high: 'border-start border-warning border-4',
+                    info: ''
+                }[notif.severity] || '';
+
+                const unreadClass = notif.read ? '' : 'bg-light';
+
+                html += `
+                    <div class="list-group-item ${severityClass} ${unreadClass}" onclick="markAsRead('${notif.notification_id}', this)">
+                        <div class="d-flex align-items-start">
+                            <i class="bi ${typeIcon} me-3 fs-4"></i>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="mb-1">${notif.title}</h6>
+                                    <small class="text-muted">${new Date(notif.created_at).toLocaleString()}</small>
+                                </div>
+                                <p class="mb-1">${notif.message}</p>
+                                ${notif.incident_id ? `<small class="text-muted">Incident: ${notif.incident_id}</small>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            container.innerHTML = html;
+        } catch (e) {
+            container.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-bell-slash display-4"></i>
+                    <p class="mt-3">No notifications yet</p>
+                </div>
+            `;
+        }
+    }
+
+    async function markAsRead(notificationId, element) {
+        try {
+            await api.post(`/api/notifications/${notificationId}/read`);
+            element.classList.remove('bg-light');
+        } catch (e) {
+            // Silently fail
+        }
+    }
+
+    async function markAllRead() {
+        try {
+            await api.post('/api/notifications/mark-all-read');
+            loadNotifications();
+        } catch (e) {
+            // Silently fail
+        }
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', loadNotifications);
+</script>
+{% endblock %}

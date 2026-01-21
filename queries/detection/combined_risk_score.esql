@@ -1,0 +1,47 @@
+// Combined Risk Score Query
+//
+// Purpose: Calculate a comprehensive risk score by combining multiple signals
+// including review velocity, ratings, user trust, and account characteristics
+//
+// This query provides a holistic view of potential review bomb attacks by
+// weighing multiple risk factors into a single score (0.0 to 1.0).
+//
+// Risk Score Components:
+//   - Volume factor (0.1-0.3): Based on review count (>20: 0.3, >10: 0.2, else: 0.1)
+//   - Rating factor (0.0-0.3): Based on avg stars (<1.5: 0.3, <2.5: 0.2, else: 0.0)
+//   - Trust factor (0.0-0.2): Based on avg trust (<0.3: 0.2, <0.5: 0.1, else: 0.0)
+//   - New account factor (0.0-0.2): Percentage of reviews from accounts < 30 days old
+//
+// Threshold:
+//   - risk_score > 0.5: High confidence of coordinated attack
+//
+// Output Fields:
+//   - business_id: The targeted business identifier
+//   - businesses.name: Business name for easy identification
+//   - review_count: Number of reviews in the time window
+//   - avg_stars: Average star rating
+//   - avg_trust: Average trust score of reviewers
+//   - new_account_pct: Percentage of reviews from new accounts
+//   - low_review_pct: Percentage of reviews from users with < 5 total reviews
+//   - risk_score: Combined risk score (0.0 to 1.0)
+
+FROM reviews
+| WHERE date > NOW() - 30 minutes
+| LOOKUP JOIN users ON user_id
+| LOOKUP JOIN businesses ON business_id
+| STATS
+    review_count = COUNT(*),
+    avg_stars = AVG(stars),
+    avg_trust = AVG(trust_score),
+    new_account_pct = AVG(CASE WHEN account_age_days < 30 THEN 1.0 ELSE 0.0 END),
+    low_review_pct = AVG(CASE WHEN users.review_count < 5 THEN 1.0 ELSE 0.0 END)
+  BY business_id, businesses.name
+| EVAL risk_score = (
+    (CASE WHEN review_count > 20 THEN 0.3 WHEN review_count > 10 THEN 0.2 ELSE 0.1 END) +
+    (CASE WHEN avg_stars < 1.5 THEN 0.3 WHEN avg_stars < 2.5 THEN 0.2 ELSE 0.0 END) +
+    (CASE WHEN avg_trust < 0.3 THEN 0.2 WHEN avg_trust < 0.5 THEN 0.1 ELSE 0.0 END) +
+    (new_account_pct * 0.2)
+  )
+| WHERE risk_score > 0.5
+| SORT risk_score DESC
+| LIMIT 10

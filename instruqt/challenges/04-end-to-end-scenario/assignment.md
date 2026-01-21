@@ -1,0 +1,374 @@
+# End-to-End Attack Simulation
+
+## Time
+15 minutes
+
+## Objective
+Run a complete attack simulation to see your detection workflow, automated responses, and investigation tools working together in real-time.
+
+---
+
+## Background
+
+You've built all the pieces:
+- **Challenge 1:** ES|QL queries to detect suspicious patterns
+- **Challenge 2:** Automated workflow to respond to attacks
+- **Challenge 3:** Agent Builder tools to investigate incidents
+
+Now it's time to put everything together and watch the system in action.
+
+In this challenge, you will:
+1. Verify a target business's baseline state
+2. Launch a simulated review bomb attack
+3. Watch your workflow detect and respond automatically
+4. Use Agent Builder to investigate the incident
+5. Resolve the incident and restore normal operations
+
+This simulates how your system would protect real businesses from coordinated attacks.
+
+---
+
+## The Attack Lifecycle
+
+```
++-------------+     +-------------+     +-------------+     +-------------+
+|  1. NORMAL  |---->|  2. ATTACK  |---->|  3. DETECT  |---->|  4. RESPOND |
+|  Baseline   |     |  Begins     |     |  Workflow   |     |  Auto-hold  |
++-------------+     +-------------+     +-------------+     +-------------+
+                                                                   |
++-------------+     +-------------+     +-------------+            |
+|  7. NORMAL  |<----|  6. RESOLVE |<----|  5. INVEST- |<-----------+
+|  Restored   |     |  Incident   |     |  IGATE      |
++-------------+     +-------------+     +-------------+
+```
+
+---
+
+## Tasks
+
+### Task 1: Check Baseline State (2 min)
+
+Before the attack, verify the target business is in a normal state.
+
+1. Open **Kibana** and navigate to **Dev Tools** (or ES|QL)
+
+2. Check the target business:
+   ```esql
+   FROM businesses
+   | WHERE business_id == "target_biz_001"
+   | KEEP business_id, name, city, stars, review_count, rating_protected
+   ```
+
+   **Expected result:**
+   - Name: "The Golden Spoon"
+   - Rating: ~4.7 stars
+   - `rating_protected`: false (not under protection)
+
+3. Verify no open incidents exist for this business:
+   ```esql
+   FROM incidents
+   | WHERE business_id == "target_biz_001" AND status == "open"
+   | STATS count = COUNT(*)
+   ```
+
+   **Expected result:** count = 0
+
+4. Check recent review activity:
+   ```esql
+   FROM reviews
+   | WHERE business_id == "target_biz_001"
+   | WHERE date > NOW() - 1 hour
+   | STATS
+       total = COUNT(*),
+       avg_stars = AVG(stars),
+       held = COUNT(CASE WHEN status == "held" THEN 1 ELSE NULL END)
+   ```
+
+   **Expected result:** Little to no recent activity, no held reviews
+
+**What you've verified:** The business is operating normally with no ongoing attacks.
+
+---
+
+### Task 2: Launch the Attack (3 min)
+
+Now you'll launch a simulated review bomb attack against the target business.
+
+1. Open the **Attack Simulator** tab
+   - URL: `http://localhost:8080` or use the "Attack Simulator" tab in Instruqt
+
+2. Configure the attack:
+
+   | Setting | Value |
+   |---------|-------|
+   | **Target Business** | The Golden Spoon (target_biz_001) |
+   | **Number of Reviews** | 12 |
+   | **Rating Range** | 1-2 stars |
+   | **Attacker Profiles** | Low trust (0.1-0.3) |
+   | **Attack Duration** | 5 minutes |
+
+3. Click **Launch Attack**
+
+4. Watch the attack progress:
+   - Review counter increases
+   - Attack reviews appear in the feed
+   - Low-trust accounts submit negative reviews
+
+5. Monitor with this query (run every 30 seconds):
+   ```esql
+   FROM reviews
+   | WHERE business_id == "target_biz_001"
+   | WHERE date > NOW() - 10 minutes
+   | STATS
+       total = COUNT(*),
+       avg_stars = AVG(stars),
+       low_trust_count = COUNT(CASE WHEN trust_score < 0.4 THEN 1 ELSE NULL END)
+   ```
+
+   **What to watch for:** Review count climbing, average stars dropping, low-trust reviews accumulating.
+
+---
+
+### Task 3: Watch Workflow Detection (3 min)
+
+Your workflow should detect the attack automatically. Let's observe it in action.
+
+1. Navigate to **Workflows** in Kibana
+
+2. Find your **Review Bomb Detection** workflow
+
+3. Click on **Execution History** or **Runs**
+
+4. Wait for the next scheduled execution (runs every 5 minutes)
+   - Or click **Run Now** to trigger immediately
+
+5. Watch the execution:
+   - Detection query runs and finds suspicious pattern
+   - For Each loop processes the detected attack
+   - Reviews are held
+   - Business is protected
+   - Incident is created
+
+6. Verify the response with these queries:
+
+   **Check held reviews:**
+   ```esql
+   FROM reviews
+   | WHERE business_id == "target_biz_001"
+   | WHERE status == "held"
+   | WHERE date > NOW() - 30 minutes
+   | STATS held_count = COUNT(*)
+   ```
+
+   **Expected result:** Multiple reviews now held
+
+   **Check business protection:**
+   ```esql
+   FROM businesses
+   | WHERE business_id == "target_biz_001"
+   | KEEP name, rating_protected, protection_reason, protected_since
+   ```
+
+   **Expected result:** `rating_protected`: true
+
+   **Check incident creation:**
+   ```esql
+   FROM incidents
+   | WHERE business_id == "target_biz_001"
+   | WHERE status == "open"
+   | KEEP incident_id, severity, metrics.review_count, metrics.unique_attackers, detected_at
+   ```
+
+   **Expected result:** New incident with attack details
+
+---
+
+### Task 4: Investigate with Agent Builder (4 min)
+
+Now use your investigation tools to understand the attack.
+
+1. Open the **AI Assistant** panel
+
+2. Ask about the incident:
+   > "What can you tell me about the latest incident?"
+
+   or
+
+   > "Summarize the incident for The Golden Spoon"
+
+3. Review the incident summary - you should see:
+   - Business name and location
+   - Severity level
+   - Number of suspicious reviews
+   - Number of unique attackers
+   - Impact assessment
+
+4. Analyze the attackers:
+   > "Analyze the attackers who targeted target_biz_001 in the last hour"
+
+5. Review the attacker profiles:
+   - Low trust scores
+   - New accounts
+   - Risk levels
+
+6. Ask follow-up questions:
+   > "What patterns do these attackers have in common?"
+
+   > "Were any of these accounts involved in previous attacks?"
+
+   > "What would be the rating impact if these reviews were published?"
+
+7. Generate an investigation summary:
+   > "Generate an incident report for the attack on The Golden Spoon"
+
+---
+
+### Task 5: Resolve the Incident (3 min)
+
+Complete the incident lifecycle by resolving it.
+
+1. Review the held reviews in Kibana:
+   ```esql
+   FROM reviews
+   | WHERE business_id == "target_biz_001"
+   | WHERE status == "held"
+   | KEEP review_id, user_id, stars, text, date
+   | SORT date DESC
+   | LIMIT 15
+   ```
+
+2. Confirm they are malicious by checking patterns:
+   - Similar negative text
+   - Low ratings (1-2 stars)
+   - Recent timestamps clustered together
+   - Different users but same attack characteristics
+
+3. Take resolution actions. In a real system, you would:
+   - **Delete** the malicious reviews (or keep them held permanently)
+   - **Flag** the attacker accounts for suspension
+   - **Update** the incident status to "resolved"
+
+4. Update the incident status:
+
+   First, find the incident ID:
+   ```esql
+   FROM incidents
+   | WHERE business_id == "target_biz_001" AND status == "open"
+   | KEEP incident_id
+   | LIMIT 1
+   ```
+
+   Then update via the API (in Terminal):
+   ```bash
+   curl -X POST "${ELASTICSEARCH_URL}/incidents/_update_by_query" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "query": {
+         "bool": {
+           "must": [
+             { "term": { "business_id": "target_biz_001" } },
+             { "term": { "status": "open" } }
+           ]
+         }
+       },
+       "script": {
+         "source": "ctx._source.status = '\''resolved'\''; ctx._source.resolved_at = params.timestamp; ctx._source.resolution_notes = params.notes",
+         "params": {
+           "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
+           "notes": "Confirmed review bomb attack. Malicious reviews held. Attacker accounts flagged."
+         }
+       }
+     }'
+   ```
+
+5. Optionally, remove protection from the business:
+   ```bash
+   curl -X POST "${ELASTICSEARCH_URL}/businesses/_update/target_biz_001" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "doc": {
+         "rating_protected": false,
+         "protection_reason": null
+       }
+     }'
+   ```
+
+6. Verify the resolution:
+   ```esql
+   FROM incidents
+   | WHERE business_id == "target_biz_001"
+   | SORT detected_at DESC
+   | LIMIT 1
+   | KEEP incident_id, status, severity, resolved_at, resolution_notes
+   ```
+
+   **Expected result:** status = "resolved"
+
+---
+
+## Congratulations!
+
+You've completed a full attack lifecycle:
+
+1. **Detected** - ES|QL queries identified suspicious review patterns
+2. **Correlated** - LOOKUP JOIN enriched reviews with user trust data
+3. **Automated** - Workflow responded in real-time without human intervention
+4. **Protected** - Suspicious reviews held, business rating preserved
+5. **Investigated** - Agent Builder provided natural language analysis
+6. **Resolved** - Incident documented and closed
+
+---
+
+## Success Criteria
+
+Verify you have completed all phases:
+
+- [ ] Checked baseline state of target business
+- [ ] Launched attack via simulator
+- [ ] Observed workflow detection and response
+- [ ] Reviews were automatically held
+- [ ] Business was automatically protected
+- [ ] Incident was automatically created
+- [ ] Used Agent Builder to investigate
+- [ ] Resolved the incident with documentation
+
+---
+
+## Key Takeaways
+
+1. **Real-time protection** - Workflows can respond in minutes, not hours
+2. **Minimal false positives** - Multiple signals (trust score, rating, volume) reduce errors
+3. **Business continuity** - Rating protection prevents immediate reputation damage
+4. **Audit trail** - Incidents and held reviews provide compliance documentation
+5. **Natural language access** - Analysts don't need to be ES|QL experts
+
+---
+
+## What's Next?
+
+This pattern applies to many use cases beyond review bombing:
+
+| Use Case | Detection | Response | Investigation |
+|----------|-----------|----------|---------------|
+| **Fraud Detection** | Transaction velocity, amount anomalies | Block account, hold transactions | User behavior analysis |
+| **Security Ops** | Failed logins, suspicious IPs | Lock account, alert SOC | Attack source analysis |
+| **Compliance** | Policy violations, data access | Hold data, notify compliance | Access pattern review |
+| **Content Moderation** | Spam patterns, toxic content | Hide content, flag user | Content trend analysis |
+
+---
+
+## Workshop Complete!
+
+Thank you for participating in the Review Bomb Detection Workshop.
+
+**What you learned:**
+- ES|QL with LOOKUP JOIN for cross-index correlation
+- Elastic Workflows for automated detection and response
+- Agent Builder for natural language investigation
+
+**Key message:** *Search finds the insight. Workflows acts on it. Agent Builder explains it.*
+
+For more information:
+- [Elastic Workflows Documentation](https://www.elastic.co/guide/en/workflows/)
+- [ES|QL Reference](https://www.elastic.co/guide/en/elasticsearch/reference/current/esql.html)
+- [Agent Builder Guide](https://www.elastic.co/guide/en/agent-builder/)

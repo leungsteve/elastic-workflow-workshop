@@ -1,0 +1,68 @@
+{
+  "mappings": {
+    "properties": {
+      "incident_id": {
+        "type": "keyword"
+      },
+      "business_id": {
+        "type": "keyword"
+      },
+      "business_name": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "detected_at": {
+        "type": "date"
+      },
+      "incident_type": {
+        "type": "keyword"
+      },
+      "severity": {
+        "type": "keyword"
+      },
+      "status": {
+        "type": "keyword"
+      },
+      "review_count": {
+        "type": "integer"
+      },
+      "unique_reviewers": {
+        "type": "integer"
+      },
+      "avg_rating": {
+        "type": "float"
+      },
+      "avg_trust_score": {
+        "type": "float"
+      },
+      "time_window_minutes": {
+        "type": "integer"
+      },
+      "held_review_ids": {
+        "type": "keyword"
+      },
+      "flagged_user_ids": {
+        "type": "keyword"
+      },
+      "summary": {
+        "type": "text"
+      },
+      "assigned_to": {
+        "type": "keyword"
+      },
+      "resolved_at": {
+        "type": "date"
+      },
+      "resolution": {
+        "type": "keyword"
+      },
+      "notes": {
+        "type": "text"
+      }
+    }
+  }
+}

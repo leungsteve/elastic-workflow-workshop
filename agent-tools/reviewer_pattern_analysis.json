@@ -1,0 +1,12 @@
+{
+  "name": "reviewer_pattern_analysis",
+  "description": "Analyze patterns among reviewers involved in an incident to identify coordination signals and suspicious behavior.",
+  "parameters": {
+    "incident_id": {
+      "type": "string",
+      "description": "The incident ID to analyze",
+      "required": true
+    }
+  },
+  "esql": "FROM reviews | WHERE incident_id == \"{{ incident_id }}\" | LOOKUP JOIN users ON user_id | STATS reviewer_count = COUNT_DISTINCT(user_id), avg_account_age = AVG(account_age_days), avg_trust_score = AVG(trust_score), avg_review_count = AVG(users.review_count), accounts_under_30_days = COUNT(CASE WHEN account_age_days < 30 THEN 1 END), accounts_under_5_reviews = COUNT(CASE WHEN users.review_count < 5 THEN 1 END)"
+}

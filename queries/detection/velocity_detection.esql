@@ -1,0 +1,31 @@
+// Velocity Detection Query
+//
+// Purpose: Detect abnormal review velocity that may indicate a coordinated review bomb attack
+//
+// This query identifies businesses that have received a high volume of negative reviews
+// in a short time window (30 minutes), which is a key indicator of coordinated attacks.
+//
+// Thresholds:
+//   - review_count > 10: More than 10 reviews in 30 minutes is unusual
+//   - avg_stars < 2.0: Average rating below 2 stars indicates negative campaign
+//
+// Output Fields:
+//   - business_id: The targeted business identifier
+//   - review_count: Number of reviews received in the time window
+//   - unique_reviewers: Count of distinct users leaving reviews
+//   - avg_stars: Average star rating of recent reviews
+//   - min_stars: Lowest rating received
+//   - max_stars: Highest rating received
+
+FROM reviews
+| WHERE date > NOW() - 30 minutes
+| STATS
+    review_count = COUNT(*),
+    unique_reviewers = COUNT_DISTINCT(user_id),
+    avg_stars = AVG(stars),
+    min_stars = MIN(stars),
+    max_stars = MAX(stars)
+  BY business_id
+| WHERE review_count > 10 AND avg_stars < 2.0
+| SORT review_count DESC
+| LIMIT 20
