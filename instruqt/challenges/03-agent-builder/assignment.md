@@ -51,6 +51,16 @@ In this challenge, you'll create three investigation tools and an agent to use t
 
 ## Tasks
 
+> **Quick Setup Alternative:** If you prefer to skip the manual steps, you can run a script that creates all tools and the agent automatically:
+>
+> ```bash
+> python admin/setup_agent_builder.py
+> ```
+>
+> Then skip to **Task 6: Test Your Agent** to verify everything works. The script creates the same tools and agent described in Tasks 2-5.
+
+---
+
 ### Task 1: Navigate to Agent Builder (1 min)
 
 1. Open **Kibana** in your browser
