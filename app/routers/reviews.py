@@ -62,15 +62,35 @@ async def bulk_attack(
         "Awful, just awful. Don't believe the good reviews.",
     ]
 
-    # Build bulk operations
+    # Build bulk operations for reviews AND users
     operations = []
     reviews_created = []
+    users_created = set()
 
     for i in range(count):
         review_id = f"attack_{uuid.uuid4().hex[:12]}"
         user_id = f"attacker_{uuid.uuid4().hex[:8]}"
         text = random.choice(attack_templates)
         stars = 1 if random.random() > 0.3 else 2
+
+        # Create attacker user with low trust score
+        if user_id not in users_created:
+            user_doc = {
+                "user_id": user_id,
+                "name": f"Attacker {user_id[-6:]}",
+                "review_count": random.randint(1, 5),
+                "trust_score": round(random.uniform(0.05, 0.25), 2),  # Low trust score
+                "account_age_days": random.randint(1, 14),  # New account
+                "yelping_since": datetime.utcnow().isoformat() + "Z",
+                "friends": 0,
+                "fans": 0,
+                "elite": [],
+                "average_stars": float(stars),
+                "is_attacker": True
+            }
+            operations.append({"index": {"_index": settings.users_index, "_id": user_id}})
+            operations.append(user_doc)
+            users_created.add(user_id)
 
         review_doc = {
             "review_id": review_id,
@@ -90,7 +110,7 @@ async def bulk_attack(
         operations.append(review_doc)
         reviews_created.append({"review_id": review_id, "stars": stars, "text": text[:50]})
 
-    # Bulk index
+    # Bulk index both users and reviews
     if operations:
         await es.bulk(operations=operations, refresh=True)
 
