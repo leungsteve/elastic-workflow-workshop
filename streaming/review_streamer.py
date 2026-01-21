@@ -81,6 +81,7 @@ class ReviewStreamer:
         es_client: AsyncElasticsearch,
         config: Dict[str, Any],
         reviews_index: str = "reviews",
+        users_index: str = "users",
     ):
         """
         Initialize the review streamer.
@@ -89,14 +90,18 @@ class ReviewStreamer:
             es_client: Elasticsearch async client
             config: Configuration dictionary
             reviews_index: Name of the reviews index
+            users_index: Name of the users index
         """
         self.es_client = es_client
         self.config = config
         self.reviews_index = reviews_index
+        self.users_index = users_index
         self._shutdown = False
+        self._created_attacker_ids: set = set()  # Track created attacker users
         self._stats = {
             "reviews_sent": 0,
             "attack_reviews_sent": 0,
+            "attacker_users_created": 0,
             "errors": 0,
             "start_time": None,
         }
@@ -151,6 +156,83 @@ class ReviewStreamer:
             self._stats["errors"] += len(reviews)
             return 0
 
+    async def _create_attacker_users(self, users: List[Dict[str, Any]]) -> int:
+        """
+        Create attacker user records in the users index.
+
+        Args:
+            users: List of user documents to create
+
+        Returns:
+            Number of successfully created users
+        """
+        if not users:
+            return 0
+
+        operations = []
+        for user in users:
+            user_id = user.get("user_id")
+            operations.append({"index": {"_index": self.users_index, "_id": user_id}})
+            operations.append(user)
+
+        try:
+            response = await self.es_client.bulk(
+                operations=operations,
+                refresh=False  # Don't wait for refresh on users
+            )
+
+            if response.get("errors"):
+                error_count = sum(
+                    1 for item in response.get("items", [])
+                    if "error" in item.get("index", {})
+                )
+                return len(users) - error_count
+
+            return len(users)
+        except Exception as e:
+            logger.error(f"Failed to create attacker users: {e}")
+            return 0
+
+    def _generate_attacker_user(
+        self,
+        user_id: str,
+        trust_score: float,
+        account_age_days: int,
+    ) -> Dict[str, Any]:
+        """
+        Generate an attacker user document.
+
+        Args:
+            user_id: The attacker user ID
+            trust_score: Trust score (low for attackers)
+            account_age_days: Account age in days (usually low)
+
+        Returns:
+            Attacker user document
+        """
+        # Generate a fake name for the attacker
+        fake_names = [
+            "Alex Smith", "Jordan Lee", "Casey Brown", "Morgan Davis",
+            "Taylor Wilson", "Riley Johnson", "Quinn Miller", "Avery Moore",
+            "Cameron White", "Dakota Jones", "Skyler Martin", "Finley Clark",
+        ]
+
+        return {
+            "user_id": user_id,
+            "name": random.choice(fake_names),
+            "review_count": random.randint(1, 5),
+            "yelping_since": (datetime.now(timezone.utc)).isoformat(),
+            "useful": 0,
+            "funny": 0,
+            "cool": 0,
+            "fans": 0,
+            "average_stars": random.uniform(1.0, 2.5),
+            "trust_score": trust_score,
+            "account_age_days": account_age_days,
+            "flagged": False,
+            "synthetic": True,
+        }
+
     def _load_reviews_from_file(self, file_path: Path) -> List[Dict[str, Any]]:
         """
         Load reviews from an NDJSON file.
@@ -179,28 +261,32 @@ class ReviewStreamer:
         self,
         business_id: str,
         attacker_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
         """
-        Generate a single attack review.
+        Generate a single attack review and optionally a new attacker user.
 
         Args:
             business_id: Target business ID
             attacker_id: Optional attacker identifier
 
         Returns:
-            Attack review document
+            Tuple of (review document, user document or None if user already exists)
         """
         attack_config = self.config.get("attack", {})
-        trust_range = attack_config.get("reviewer_trust_range", [0.05, 0.20])
-        account_age_range = attack_config.get("reviewer_account_age_range", [1, 30])
+        trust_range = attack_config.get("reviewer_trust_range", [0.05, 0.25])
+        account_age_range = attack_config.get("reviewer_account_age_range", [1, 14])
 
         review_id = f"attack_{uuid.uuid4().hex[:12]}"
         user_id = f"attacker_{uuid.uuid4().hex[:8]}"
 
+        # Generate trust score and account age for this attacker
+        trust_score = random.uniform(*trust_range)
+        account_age_days = random.randint(*account_age_range)
+
         # Mostly 1-star, occasionally 2-star
         stars = 1 if random.random() > 0.2 else 2
 
-        return {
+        review = {
             "review_id": review_id,
             "user_id": user_id,
             "business_id": business_id,
@@ -215,10 +301,18 @@ class ReviewStreamer:
             "attacker_id": attacker_id or f"streamer_{uuid.uuid4().hex[:6]}",
             "partition": "streaming",
             "status": "published",
-            # Low trust indicators
-            "reviewer_trust_score": random.uniform(*trust_range),
-            "reviewer_account_age_days": random.randint(*account_age_range),
+            # Low trust indicators (stored on review for quick access)
+            "reviewer_trust_score": trust_score,
+            "reviewer_account_age_days": account_age_days,
         }
+
+        # Create user document if this is a new attacker
+        user = None
+        if user_id not in self._created_attacker_ids:
+            user = self._generate_attacker_user(user_id, trust_score, account_age_days)
+            self._created_attacker_ids.add(user_id)
+
+        return review, user
 
     def _update_review_timestamp(self, review: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -335,15 +429,24 @@ class ReviewStreamer:
 
         sent_count = 0
         while sent_count < count and not self._shutdown:
-            batch = []
+            reviews_batch = []
+            users_batch = []
             remaining = count - sent_count
             batch_count = min(batch_size, remaining)
 
             for _ in range(batch_count):
-                review = self._generate_attack_review(business_id, attacker_id)
-                batch.append(review)
+                review, user = self._generate_attack_review(business_id, attacker_id)
+                reviews_batch.append(review)
+                if user:
+                    users_batch.append(user)
 
-            sent = await self._send_bulk(batch, refresh=True)
+            # Create attacker users first (if any new ones)
+            if users_batch:
+                users_created = await self._create_attacker_users(users_batch)
+                self._stats["attacker_users_created"] += users_created
+
+            # Send attack reviews
+            sent = await self._send_bulk(reviews_batch, refresh=True)
             sent_count += sent
             self._stats["attack_reviews_sent"] += sent
             self._stats["reviews_sent"] += sent
@@ -359,6 +462,7 @@ class ReviewStreamer:
 
         print("-" * 60)
         logger.info(f"Attack injection complete: {sent_count} reviews sent to {business_id}")
+        logger.info(f"Attacker users created: {self._stats['attacker_users_created']}")
         self._print_summary()
 
     async def mixed(
@@ -450,15 +554,24 @@ class ReviewStreamer:
 
         sent_count = 0
         while sent_count < attack_count and not self._shutdown:
-            batch = []
+            reviews_batch = []
+            users_batch = []
             remaining = attack_count - sent_count
             batch_count = min(attack_batch_size, remaining)
 
             for _ in range(batch_count):
-                review = self._generate_attack_review(business_id, attacker_id)
-                batch.append(review)
+                review, user = self._generate_attack_review(business_id, attacker_id)
+                reviews_batch.append(review)
+                if user:
+                    users_batch.append(user)
 
-            sent = await self._send_bulk(batch, refresh=True)
+            # Create attacker users first (if any new ones)
+            if users_batch:
+                users_created = await self._create_attacker_users(users_batch)
+                self._stats["attacker_users_created"] += users_created
+
+            # Send attack reviews
+            sent = await self._send_bulk(reviews_batch, refresh=True)
             sent_count += sent
             self._stats["attack_reviews_sent"] += sent
             self._stats["reviews_sent"] += sent
@@ -472,6 +585,7 @@ class ReviewStreamer:
 
         print("-" * 60)
         logger.info("Mixed mode complete")
+        logger.info(f"Attacker users created: {self._stats['attacker_users_created']}")
         self._print_summary()
 
     def _print_summary(self):
@@ -485,6 +599,7 @@ class ReviewStreamer:
         print(f"  Duration:          {duration:.1f} seconds")
         print(f"  Total reviews:     {self._stats['reviews_sent']}")
         print(f"  Attack reviews:    {self._stats['attack_reviews_sent']}")
+        print(f"  Attacker users:    {self._stats['attacker_users_created']}")
         print(f"  Errors:            {self._stats['errors']}")
         print(f"  Average rate:      {rate:.1f} reviews/sec")
         print("=" * 60)
