@@ -312,7 +312,8 @@ FROM reviews
   BY business_id
 | WHERE review_count >= 5
 | LOOKUP JOIN businesses ON business_id
-| KEEP business_id, name, city, stars AS original_rating, review_count, avg_stars, avg_trust, unique_attackers
+| EVAL original_rating = stars
+| KEEP business_id, name, city, original_rating, review_count, avg_stars, avg_trust, unique_attackers
 | SORT review_count DESC
 ```
 
