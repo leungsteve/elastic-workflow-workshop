@@ -138,16 +138,14 @@ POST kbn://api/agent_builder/tools
   "id": "incident_summary",
   "type": "esql",
   "description": "Retrieves a summary of a review bomb incident including the targeted business, attack severity, and current status. Use this tool when asked about incident details, incident status, or what happened to a specific business.",
-  "esql": {
+  "configuration": {
     "query": "FROM incidents | WHERE incident_id == \"{{incident_id}}\" OR business_name LIKE \"*{{incident_id}}*\" | SORT detected_at DESC | LIMIT 1 | LOOKUP JOIN businesses ON business_id | EVAL impact_assessment = CASE(severity == \"critical\", \"SEVERE - Business reputation at immediate risk. Urgent action required.\", severity == \"high\", \"SIGNIFICANT - Notable impact on business rating. Prompt investigation needed.\", TRUE, \"MODERATE - Limited impact so far. Standard investigation protocol.\"), time_since_detection = DATE_DIFF(\"minute\", detected_at, NOW()) | KEEP incident_id, incident_type, status, severity, business_name, city, metrics.review_count, metrics.avg_stars, metrics.avg_trust, metrics.unique_attackers, detected_at, time_since_detection, impact_assessment, stars AS business_original_rating",
-    "parameters": [
-      {
-        "name": "incident_id",
-        "description": "The incident ID to look up (e.g., INC-biz123-2024). Can also accept a business name to find the latest incident.",
+    "params": {
+      "incident_id": {
         "type": "text",
-        "optional": false
+        "description": "The incident ID to look up (e.g., INC-biz123-2024). Can also accept a business name to find the latest incident."
       }
-    ]
+    }
   }
 }
 ```
@@ -230,16 +228,14 @@ POST kbn://api/agent_builder/tools
   "id": "reviewer_analysis",
   "type": "esql",
   "description": "Analyzes the reviewers/attackers involved in a review bomb incident. Shows their trust scores, account ages, review patterns, and risk levels. Use this to understand who is behind an attack and identify coordination patterns.",
-  "esql": {
+  "configuration": {
     "query": "FROM reviews | WHERE business_id == \"{{business_id}}\" | WHERE @timestamp > NOW() - 24 hours | WHERE stars <= 2 | LOOKUP JOIN users ON user_id | WHERE trust_score < 0.5 | STATS reviews_submitted = COUNT(*), avg_rating_given = AVG(stars), first_review = MIN(@timestamp), last_review = MAX(@timestamp) BY user_id, trust_score, account_age_days | EVAL risk_level = CASE(trust_score < 0.2 AND account_age_days < 7, \"CRITICAL\", trust_score < 0.3 AND account_age_days < 14, \"HIGH\", trust_score < 0.4 AND account_age_days < 30, \"MEDIUM\", TRUE, \"LOW\"), account_type = CASE(account_age_days < 7, \"Brand New\", account_age_days < 30, \"New\", account_age_days < 90, \"Recent\", TRUE, \"Established\") | SORT trust_score ASC, reviews_submitted DESC | LIMIT 20",
-    "parameters": [
-      {
-        "name": "business_id",
-        "description": "The business ID that was attacked. Can be found in incident details.",
+    "params": {
+      "business_id": {
         "type": "text",
-        "optional": false
+        "description": "The business ID that was attacked. Can be found in incident details."
       }
-    ]
+    }
   }
 }
 ```
@@ -340,9 +336,9 @@ POST kbn://api/agent_builder/tools
   "id": "recent_incidents",
   "type": "esql",
   "description": "Lists recent review bomb incidents from the last 24 hours. Use this when asked about recent attacks, latest incidents, or what's happening across the platform.",
-  "esql": {
+  "configuration": {
     "query": "FROM incidents | WHERE detected_at > NOW() - 24 hours | SORT detected_at DESC | KEEP incident_id, business_name, severity, status, detected_at | LIMIT 10",
-    "parameters": []
+    "params": {}
   }
 }
 ```
@@ -372,16 +368,14 @@ POST kbn://api/agent_builder/tools
   "id": "business_risk_assessment",
   "type": "esql",
   "description": "Evaluates a business's vulnerability to review bomb attacks based on recent review patterns and reviewer characteristics.",
-  "esql": {
+  "configuration": {
     "query": "FROM reviews | WHERE business_id == \"{{business_id}}\" | WHERE @timestamp > NOW() - 7 days | LOOKUP JOIN users ON user_id | STATS total_reviews = COUNT(*), avg_rating = AVG(stars), low_trust_reviews = COUNT(CASE WHEN trust_score < 0.4 THEN 1 END), new_account_reviews = COUNT(CASE WHEN account_age_days < 30 THEN 1 END) | EVAL risk_score = (low_trust_reviews + new_account_reviews) / total_reviews, risk_level = CASE(risk_score > 0.5, \"HIGH\", risk_score > 0.2, \"MEDIUM\", \"LOW\")",
-    "parameters": [
-      {
-        "name": "business_id",
-        "description": "The business ID to assess for attack risk.",
+    "params": {
+      "business_id": {
         "type": "text",
-        "optional": false
+        "description": "The business ID to assess for attack risk."
       }
-    ]
+    }
   }
 }
 ```

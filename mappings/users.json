@@ -1,4 +1,9 @@
 {
+  "settings": {
+    "index": {
+      "mode": "lookup"
+    }
+  },
   "mappings": {
     "properties": {
       "user_id": {
