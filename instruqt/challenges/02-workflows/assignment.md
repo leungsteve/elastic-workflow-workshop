@@ -85,7 +85,7 @@ enabled: true
 triggers:
   - type: scheduled
     with:
-      interval: 5m
+      every: 5m
 
 steps:
   # Step 1: Detect potential review bombs using ES|QL
@@ -115,7 +115,7 @@ steps:
   - name: log_detection
     type: console
     with:
-      message: "Detected {{ steps.detect_review_bombs.output.values | size }} potential attacks"
+      message: "Detected potential attacks"
 
   # Step 3: Process each detected attack
   - name: process_attacks
@@ -126,7 +126,7 @@ steps:
       - name: log_attack
         type: console
         with:
-          message: "Processing attack on {{ foreach.item.name }} - {{ foreach.item.review_count }} suspicious reviews"
+          message: "Processing attack"
 
       # Enable rating protection on the business
       - name: protect_business
@@ -137,29 +137,34 @@ steps:
           doc:
             rating_protected: true
             protection_reason: review_bomb_detected
-            protected_since: "{{ execution.startedAt }}"
 
-      # Create an incident record using bulk API
+      # Create an incident record
       - name: create_incident
         type: elasticsearch.bulk
         with:
-          body: |
-            {"index":{"_index":"incidents"}}
-            {"incident_id":"INC-{{ foreach.item.business_id }}-{{ execution.id }}","incident_type":"review_bomb","status":"open","severity":"high","business_id":"{{ foreach.item.business_id }}","business_name":"{{ foreach.item.name }}","city":"{{ foreach.item.city }}","detected_at":"{{ execution.startedAt }}","metrics":{"review_count":{{ foreach.item.review_count }},"avg_stars":{{ foreach.item.avg_stars }},"unique_attackers":{{ foreach.item.unique_attackers }}}}
+          index: incidents
+          operations:
+            - incident_type: review_bomb
+              status: open
+              severity: high
+              detected_at: "{{ execution.startedAt }}"
 
       # Create a notification
       - name: create_notification
         type: elasticsearch.bulk
         with:
-          body: |
-            {"index":{"_index":"notifications"}}
-            {"notification_id":"NOTIF-{{ foreach.item.business_id }}-{{ execution.id }}","type":"review_bomb_detected","severity":"high","title":"Review Bomb Detected: {{ foreach.item.name }}","message":"Detected {{ foreach.item.review_count }} suspicious reviews from {{ foreach.item.unique_attackers }} attackers","business_id":"{{ foreach.item.business_id }}","created_at":"{{ execution.startedAt }}","read":false}
+          index: notifications
+          operations:
+            - type: review_bomb_detected
+              severity: high
+              title: "Review Bomb Detected"
+              read: false
 
   # Step 4: Final summary
   - name: completion_log
     type: console
     with:
-      message: "Review bomb detection workflow completed at {{ execution.startedAt }}"
+      message: "Review bomb detection workflow completed"
 ```
 
 ---
@@ -184,10 +189,10 @@ enabled: true
 triggers:
   - type: scheduled
     with:
-      interval: 5m
+      every: 5m
 ```
 - `type: scheduled` runs automatically at intervals
-- `interval: 5m` means every 5 minutes
+- `every: 5m` means every 5 minutes
 - Other trigger types: `manual` (on-demand), `alert` (from detection rules)
 
 #### Detection Query (ES|QL)
@@ -398,7 +403,7 @@ Here are the key step types you can use in workflows:
 | Trigger Type | Description |
 |--------------|-------------|
 | `manual` | Run on-demand via UI or API |
-| `scheduled` | Run at intervals (e.g., `5m`, `1h`, `1d`) |
+| `scheduled` | Run at intervals using `every:` (e.g., `5m`, `1h`, `1d`) |
 | `alert` | Triggered by detection rules |
 
 ---
