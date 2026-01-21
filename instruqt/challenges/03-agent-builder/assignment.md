@@ -18,10 +18,11 @@ Automated detection is great for catching attacks quickly, but analysts still ne
 - "Who were the attackers?"
 - "What patterns do the attackers have in common?"
 
-In this challenge, you'll create two investigation tools:
+In this challenge, you'll create three investigation tools:
 
 1. **Incident Summary** - Get an overview of a review bomb incident
 2. **Reviewer Analysis** - Analyze the attackers involved in an incident
+3. **Similar Reviews** - Find reviews with similar content using semantic search
 
 ---
 
@@ -242,7 +243,80 @@ POST kbn://api/agent_builder/tools
 
 ---
 
-### Task 4: Test Your Tools (1 min)
+### Task 4: Create the Similar Reviews Tool (3 min)
+
+This tool uses semantic search to find reviews with similar content - powerful for understanding attack narratives and patterns.
+
+#### Step 1: Create New Tool
+
+Click **Create a new tool** again.
+
+#### Step 2: Set the Type
+
+Select **ES|QL** from the Type dropdown.
+
+**Note:** This tool uses a special semantic search capability that finds reviews by meaning, not just keywords.
+
+#### Step 3: Enter the ES|QL Query
+
+```esql
+FROM reviews
+| WHERE text_semantic MATCH "{{search_text}}"
+| KEEP review_id, user_id, business_id, stars, text, date
+| LIMIT 10
+```
+
+**Note:** The `text_semantic` field uses ELSER embeddings to find semantically similar content.
+
+#### Step 4: Define ES|QL Parameters
+
+Add this parameter in the **ES|QL Parameters** section:
+
+| Name | Description | Type | Optional |
+|------|-------------|------|----------|
+| `search_text` | The text to search for semantically similar reviews. Describe the content you're looking for. | `text` | ☐ (unchecked) |
+
+#### Step 5: Fill in Details
+
+- **Tool ID:** `similar_reviews`
+- **Description:**
+  ```
+  Finds reviews that are semantically similar to a given text using ELSER.
+  Use this to understand attack narratives, find common themes in malicious
+  reviews, or discover patterns in what attackers are claiming. Works by
+  meaning, not just keywords - "food poisoning" will find reviews about
+  illness even if they don't use those exact words.
+  ```
+
+#### Step 6: Save the Tool
+
+Click **Save**.
+
+**Alternative: Create via Dev Tools**
+
+If you prefer the API approach, run this command in Dev Tools:
+
+```
+POST kbn://api/agent_builder/tools
+{
+  "id": "similar_reviews",
+  "type": "esql",
+  "description": "Finds reviews that are semantically similar to a given text using ELSER. Use this to understand attack narratives, find common themes in malicious reviews, or discover patterns in what attackers are claiming. Works by meaning, not just keywords.",
+  "configuration": {
+    "query": "FROM reviews | WHERE text_semantic MATCH \"{{search_text}}\" | KEEP review_id, user_id, business_id, stars, text, date | LIMIT 10",
+    "params": {
+      "search_text": {
+        "type": "text",
+        "description": "The text to search for semantically similar reviews. Describe the content you're looking for."
+      }
+    }
+  }
+}
+```
+
+---
+
+### Task 5: Test Your Tools (2 min)
 
 Now test your tools using the AI Assistant.
 
@@ -265,6 +339,13 @@ Now test your tools using the AI Assistant.
    > "Show me who was involved in the review bomb attack"
 
    > "What patterns do the attackers have in common?"
+
+   **Test Similar Reviews (Semantic Search):**
+   > "Find reviews similar to 'food poisoning made me sick'"
+
+   > "What reviews mention terrible service or rude staff?"
+
+   > "Find attack reviews claiming health violations"
 
 3. Observe how the AI:
    - Understands your question
@@ -298,19 +379,22 @@ Before proceeding, verify:
 
 - [ ] `incident_summary` tool is created and saved
 - [ ] `reviewer_analysis` tool is created and saved
+- [ ] `similar_reviews` tool is created and saved
 - [ ] Tools respond correctly to natural language queries
 - [ ] You can get incident details by asking in plain English
 - [ ] You can analyze attackers without writing queries manually
+- [ ] You can find semantically similar reviews by describing what you're looking for
 
 ---
 
 ## Key Takeaways
 
 1. **Natural language investigation** - Analysts can ask questions without knowing ES|QL
-2. **Contextual tools** - Good descriptions help the AI choose the right tool
-3. **Parameter extraction** - The AI pulls values from questions automatically
-4. **Type safety** - Parameters have specific types (text, keyword, integer, etc.)
-5. **Reusability** - Once created, tools work for any incident
+2. **Semantic search** - Find content by meaning, not just keywords, to understand attack narratives
+3. **Contextual tools** - Good descriptions help the AI choose the right tool
+4. **Parameter extraction** - The AI pulls values from questions automatically
+5. **Type safety** - Parameters have specific types (text, keyword, integer, etc.)
+6. **Reusability** - Once created, tools work for any incident
 
 ---
 

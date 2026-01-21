@@ -11,9 +11,9 @@ Run a complete attack simulation to see your detection workflow, automated respo
 ## Background
 
 You've built all the pieces:
-- **Challenge 1:** ES|QL queries to detect suspicious patterns
+- **Challenge 1:** ES|QL queries to detect suspicious patterns + semantic search
 - **Challenge 2:** Automated workflow to respond to attacks
-- **Challenge 3:** Agent Builder tools to investigate incidents
+- **Challenge 3:** Agent Builder tools to investigate incidents (including semantic search)
 
 Now it's time to put everything together and watch the system in action.
 
@@ -50,7 +50,7 @@ This simulates how your system would protect real businesses from coordinated at
 
 Before the attack, verify the target business is in a normal state.
 
-1. Open **Kibana** and navigate to **Dev Tools** (or ES|QL)
+1. Open **Kibana** and navigate to **Discover**, then select **ES|QL** mode
 
 2. Check the target business:
    ```esql
@@ -183,7 +183,7 @@ Your workflow should detect the attack automatically. Let's observe it in action
 
 ---
 
-### Task 4: Investigate with Agent Builder (4 min)
+### Task 4: Investigate with Agent Builder (5 min)
 
 Now use your investigation tools to understand the attack.
 
@@ -211,14 +211,28 @@ Now use your investigation tools to understand the attack.
    - New accounts
    - Risk levels
 
-6. Ask follow-up questions:
+6. **Use semantic search to understand the attack narrative:**
+
+   > "Find reviews similar to 'food poisoning made me sick'"
+
+   > "What are the attackers claiming in their reviews?"
+
+   This uses the `similar_reviews` tool to find reviews by meaning. You'll discover the common themes attackers use - health complaints, service issues, food quality claims.
+
+7. **Compare attack reviews to legitimate reviews:**
+
+   > "Find reviews similar to 'great food and excellent service'"
+
+   Notice how legitimate reviews have different themes - genuine positive experiences versus the manufactured negative narratives from attackers.
+
+8. Ask follow-up questions:
    > "What patterns do these attackers have in common?"
 
    > "Were any of these accounts involved in previous attacks?"
 
    > "What would be the rating impact if these reviews were published?"
 
-7. Generate an investigation summary:
+9. Generate an investigation summary:
    > "Generate an incident report for the attack on The Golden Spoon"
 
 ---
@@ -314,8 +328,9 @@ You've completed a full attack lifecycle:
 2. **Correlated** - LOOKUP JOIN enriched reviews with user trust data
 3. **Automated** - Workflow responded in real-time without human intervention
 4. **Protected** - Suspicious reviews held, business rating preserved
-5. **Investigated** - Agent Builder provided natural language analysis
-6. **Resolved** - Incident documented and closed
+5. **Understood** - Semantic search revealed attack narratives and themes
+6. **Investigated** - Agent Builder provided natural language analysis
+7. **Resolved** - Incident documented and closed
 
 ---
 
@@ -330,6 +345,8 @@ Verify you have completed all phases:
 - [ ] Business was automatically protected
 - [ ] Incident was automatically created
 - [ ] Used Agent Builder to investigate
+- [ ] Used semantic search to understand attack narratives
+- [ ] Compared attack themes to legitimate review themes
 - [ ] Resolved the incident with documentation
 
 ---
@@ -339,8 +356,9 @@ Verify you have completed all phases:
 1. **Real-time protection** - Workflows can respond in minutes, not hours
 2. **Minimal false positives** - Multiple signals (trust score, rating, volume) reduce errors
 3. **Business continuity** - Rating protection prevents immediate reputation damage
-4. **Audit trail** - Incidents and held reviews provide compliance documentation
-5. **Natural language access** - Analysts don't need to be ES|QL experts
+4. **Semantic understanding** - ELSER reveals what attackers claim, beyond just keywords
+5. **Audit trail** - Incidents and held reviews provide compliance documentation
+6. **Natural language access** - Analysts don't need to be ES|QL experts
 
 ---
 
@@ -363,10 +381,11 @@ Thank you for participating in the Review Bomb Detection Workshop.
 
 **What you learned:**
 - ES|QL with LOOKUP JOIN for cross-index correlation
+- Semantic search with ELSER to understand content by meaning
 - Elastic Workflows for automated detection and response
 - Agent Builder for natural language investigation
 
-**Key message:** *Search finds the insight. Workflows acts on it. Agent Builder explains it.*
+**Key message:** *Search finds the insight. Semantic search reveals the meaning. Workflows acts on it. Agent Builder explains it.*
 
 For more information:
 - [Elastic Workflows Documentation](https://www.elastic.co/guide/en/workflows/)

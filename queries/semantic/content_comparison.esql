@@ -1,0 +1,37 @@
+// Content Comparison Query (Semantic Search)
+//
+// Purpose: Compare attack reviews to legitimate reviews to distinguish
+// coordinated attacks (similar generic language) from real incidents
+// (varied specific details).
+//
+// Methodology:
+//   1. Search recent reviews (attack window) for a complaint theme
+//   2. Search historical reviews for the same theme
+//   3. Compare: attacks have uniform language, real complaints are varied
+//
+// Attack Indicators:
+//   - Very similar or identical language across reviews
+//   - Generic complaints without specific details
+//   - All reviews from new/low-trust accounts
+//   - All posted within short time window
+//
+// Legitimate Indicators:
+//   - Varied language describing same issue
+//   - Specific details (dates, staff names, dishes)
+//   - Reviews spread over time
+//   - Mix of account ages and trust scores
+
+// Query: Find recent negative reviews matching a theme for a business
+FROM reviews METADATA _score
+| WHERE text_semantic: "{{ complaint_theme | default: 'bad food terrible service' }}"
+| WHERE business_id == "{{ business_id }}"
+| WHERE date > NOW() - {{ time_window | default: '24 hours' }}
+| LOOKUP JOIN users ON user_id
+| SORT _score DESC
+| KEEP review_id, user_id, stars, date, text, trust_score, account_age_days, _score
+| LIMIT 20
+
+// Analysis: After running, look for patterns:
+// - High _score + low trust_score + new account = likely attack
+// - Similar text across multiple reviews = coordinated
+// - Legitimate complaints have varied wording and specific details

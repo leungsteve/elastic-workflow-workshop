@@ -68,6 +68,77 @@ Patterns, gotchas, and recommendations discovered during development. Use this t
 
 **Note:** The `lookup` mode index cannot be used for regular indexing operations - it's optimized for JOIN lookups. Use it for reference data (users, businesses) that changes infrequently.
 
+### ES|QL Semantic Search with semantic_text Fields
+
+**Problem:** Wanted to do semantic search in ES|QL but `MATCH(text_semantic, "query")` didn't work correctly.
+
+**Root Cause:** The `MATCH()` function in ES|QL is for full-text search on `text` fields. For `semantic_text` fields, you must use the **`:` (colon) operator**.
+
+**Solution:** Use the `:` operator with `METADATA _score` and `SORT _score DESC`:
+
+```esql
+// CORRECT - Semantic search in ES|QL
+FROM reviews METADATA _score
+| WHERE text_semantic: "food poisoning made me ill"
+| SORT _score DESC
+| KEEP review_id, text, stars, _score
+| LIMIT 10
+```
+
+```esql
+// WRONG - MATCH doesn't work properly with semantic_text
+FROM reviews
+| WHERE MATCH(text_semantic, "food poisoning")  // Returns random results
+| LIMIT 10
+```
+
+**Key Points:**
+1. **Use `:` operator** - `field: "query"` for semantic search
+2. **Always use `METADATA _score`** - Captures relevance scores
+3. **Always `SORT _score DESC`** - Without sorting, results are random
+4. **Works in Discover** - No need to go to Dev Tools for semantic search
+5. **Requires inference endpoint** - The `semantic_text` field must reference a valid inference endpoint (e.g., `.elser-2-elastic`)
+
+**Mapping Setup:**
+```json
+{
+  "mappings": {
+    "properties": {
+      "text": {
+        "type": "text",
+        "copy_to": "text_semantic"
+      },
+      "text_semantic": {
+        "type": "semantic_text",
+        "inference_id": ".elser-2-elastic"
+      }
+    }
+  }
+}
+```
+
+**Workshop Best Practice:** Whenever possible, stay in Discover and use ES|QL for all queries including semantic search. Only use Dev Tools for Kibana API calls (e.g., creating workflows with `kbn://` prefix).
+
+### Date Format Flexibility in Mappings
+
+**Problem:** Bulk indexing failed because date fields had different formats (`2016-03-12 18:07:31` vs ISO format)
+
+**Solution:** Add multiple date formats to the mapping:
+
+```json
+{
+  "date": {
+    "type": "date",
+    "format": "yyyy-MM-dd HH:mm:ss||strict_date_optional_time||epoch_millis"
+  }
+}
+```
+
+This accepts:
+- `2016-03-12 18:07:31` (space-separated)
+- `2016-03-12T18:07:31Z` (ISO format)
+- `1647100051000` (epoch milliseconds)
+
 ### Streaming App Attacker Users (FIXED)
 **Problem:** Streaming app generates attack reviews with `attacker_*` user IDs, but LOOKUP JOIN finds no matching users
 
@@ -332,6 +403,8 @@ When a fix doesn't work:
 5. **Version badges save time** - Quick way to confirm cache is cleared
 6. **Auto-refresh for dashboards** - Users expect real-time updates
 7. **Serverless has constraints** - Test on target platform early
+8. **Stay in Discover for ES|QL** - Semantic search works with `:` operator; avoid unnecessary Dev Tools hops
+9. **Use `:` not `MATCH()` for semantic_text** - Different operators for different field types
 
 ---
 
@@ -836,3 +909,57 @@ Created `admin/test_kibana_api.sh` to verify cluster connectivity after switchin
 - ✓ PASS - Endpoint working
 - ✗ FAIL - Endpoint failed
 - ⚠ SKIP - Endpoint not available (expected for some configurations)
+
+---
+
+## Workshop Navigation Best Practices
+
+### Stay in Discover for ES|QL Queries
+
+**Problem:** Workshop initially directed participants to Dev Tools for ES|QL queries, causing unnecessary context switching.
+
+**Solution:** Use Kibana Discover with ES|QL mode for all data exploration:
+
+1. Navigate to **Discover** (Menu > Analytics > Discover)
+2. Click the language dropdown and select **ES|QL**
+3. Run queries directly - including semantic search!
+
+**When to use each tool:**
+
+| Task | Recommended Tool |
+|------|------------------|
+| ES|QL queries (analytics) | **Discover** |
+| ES|QL queries (semantic search) | **Discover** |
+| LOOKUP JOIN queries | **Discover** |
+| Kibana API calls (`kbn://`) | Dev Tools |
+| Creating Workflows | Dev Tools (requires `kbn://`) |
+| Agent Builder UI setup | Agent Builder app |
+
+**Why this matters:**
+- Discover provides better visualization of results
+- No context switching improves workshop flow
+- Semantic search works in ES|QL with `:` operator
+- Only use Dev Tools when you need Kibana API access
+
+### ES|QL Query Reference
+
+```esql
+// Basic analytics
+FROM reviews
+| WHERE stars <= 2 AND date > NOW() - 30 minutes
+| STATS count = COUNT(*) BY business_id
+| SORT count DESC
+
+// LOOKUP JOIN for enrichment
+FROM reviews
+| WHERE date > NOW() - 24 hours
+| LOOKUP JOIN users ON user_id
+| KEEP review_id, user_id, stars, trust_score
+
+// Semantic search (note the : operator)
+FROM reviews METADATA _score
+| WHERE text_semantic: "food poisoning made me ill"
+| SORT _score DESC
+| KEEP review_id, text, stars, _score
+| LIMIT 10
+```

@@ -1,0 +1,26 @@
+// Similar Reviews Query (Semantic Search)
+//
+// Purpose: Find reviews semantically similar to a given text pattern for
+// investigation of coordinated review bombing campaigns.
+//
+// Syntax: Uses the ES|QL `:` operator on semantic_text fields
+//   - text_semantic: "query" performs semantic search
+//   - METADATA _score captures relevance scores
+//   - SORT _score DESC returns most relevant first
+//
+// Example: Searching "terrible service rude staff" will also find:
+//   - "The waitress was incredibly impolite and dismissive"
+//   - "Worst customer experience, employees don't care"
+//   - "Staff acted like they didn't want us there"
+//
+// Parameters:
+//   - {{ search_text }}: The phrase to search for semantically (REQUIRED)
+//   - {{ business_id }}: Optional business ID filter (leave empty for all)
+//   - {{ limit }}: Maximum results (default: 20)
+
+FROM reviews METADATA _score
+| WHERE text_semantic: "{{ search_text }}"
+| WHERE business_id == "{{ business_id }}" OR "{{ business_id }}" == ""
+| SORT _score DESC
+| LIMIT {{ limit | default: 20 }}
+| KEEP review_id, business_id, user_id, stars, date, status, text, _score

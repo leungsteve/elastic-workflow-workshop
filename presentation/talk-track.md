@@ -6,7 +6,7 @@
 - Presentation & Demo: 30 minutes
 - Hands-on Labs: 60 minutes
 
-**Key Message:** "Search finds the insight. Workflows acts on it. Agent Builder explains it."
+**Key Message:** "Search finds the insight - ES|QL detects the anomaly, semantic search reveals the narrative. Workflows acts on it. Agent Builder explains it."
 
 ---
 
@@ -23,7 +23,7 @@
 - Quick overview: 30 min presentation, then 60 min hands-on
 
 **Say:**
-> "Welcome to 'What's New in Elastic Search 9.3.' Today we're going to build a complete review bomb detection system using three powerful new features: Workflows, ES|QL with LOOKUP JOIN, and Agent Builder."
+> "Welcome to 'What's New in Elastic Search 9.3.' Today we're going to build a complete review bomb detection system using powerful new features: Workflows, ES|QL with LOOKUP JOIN, Semantic Search with ELSER, and Agent Builder."
 
 **Do:**
 - Ask participants to raise hands if they've used Elasticsearch before
@@ -38,9 +38,10 @@
 **Key Points:**
 - Introduce the core theme that ties everything together
 - This message will be reinforced throughout
+- Emphasize the two types of search working together
 
 **Say:**
-> "Here's the key message I want you to take away today: Search finds the insight - that's ES|QL detecting patterns. Workflows acts on it - automating the response. And Agent Builder explains it - enabling natural language investigation. By the end of this workshop, you'll see how these three capabilities work together seamlessly."
+> "Here's the key message I want you to take away today: Search finds the insight - but search comes in two flavors. ES|QL detects the anomaly through metadata patterns - velocity, trust scores, timing. Semantic search reveals the narrative - what attackers are actually claiming. Workflows acts on the insight - automating the response. And Agent Builder explains it - enabling natural language investigation. By the end of this workshop, you'll see how these four capabilities work together seamlessly."
 
 ---
 
@@ -90,7 +91,7 @@
 > "The attack pattern is pretty consistent. Attackers identify a successful business - usually one with good ratings that depends on reviews. They create fake accounts, often many at once. Then they submit coordinated negative reviews, typically all 1-star, within a short time window. The business rating plummets before anyone notices."
 
 **Transition:**
-> "So how do we detect this? That's what we're building today."
+> "So how do we detect this? That's what we're building today - and we'll use two complementary search approaches to do it."
 
 ---
 
@@ -141,7 +142,7 @@
 
 ### Slide: Why Workflows Matter
 
-**Time:** 9:00 - 10:00
+**Time:** 9:00 - 9:30
 
 **Key Points:**
 - Before/after comparison
@@ -154,14 +155,14 @@
 
 ### Slide: ES|QL with LOOKUP JOIN
 
-**Time:** 10:00 - 11:30
+**Time:** 9:30 - 10:30
 
 **Key Points:**
 - This is the detection engine
 - Cross-index correlation is key
 
 **Say:**
-> "ES|QL is our detection engine. But here's the challenge: reviews don't contain user trust scores. That data is in a separate users index. LOOKUP JOIN lets us correlate across indices at query time. Now I can ask: show me reviews from the last 30 minutes, enriched with user trust scores, grouped by business. If a business has many reviews from low-trust users, that's our signal."
+> "ES|QL is our analytical detection engine. But here's the challenge: reviews don't contain user trust scores. That data is in a separate users index. LOOKUP JOIN lets us correlate across indices at query time. Now I can ask: show me reviews from the last 30 minutes, enriched with user trust scores, grouped by business. If a business has many reviews from low-trust users, that's our signal."
 
 **Do:**
 - Walk through the query on screen
@@ -171,7 +172,7 @@
 
 ### Slide: Why LOOKUP JOIN
 
-**Time:** 11:30 - 12:30
+**Time:** 10:30 - 11:00
 
 **Key Points:**
 - Solve the data correlation problem
@@ -182,6 +183,41 @@
 
 ---
 
+### Slide: Semantic Search with ELSER
+
+**Time:** 11:00 - 12:00
+
+**Key Points:**
+- Introduce semantic search as complementary to ES|QL
+- The `semantic_text` field type
+- ELSER model for embeddings
+
+**Say:**
+> "ES|QL finds anomalies in metadata - velocity, trust scores, timing. But what about the content itself? That's where semantic search comes in. With ELSER - the Elastic Learned Sparse EncodeR - we can understand what reviews actually mean, not just match keywords. The `semantic_text` field type makes this simple: just mark a field as semantic, and Elasticsearch automatically generates embeddings at index time."
+
+**Do:**
+- Show the mapping with `semantic_text` field type
+- Explain automatic inference
+
+---
+
+### Slide: Why Semantic Search Matters
+
+**Time:** 12:00 - 12:30
+
+**Key Points:**
+- Content understanding vs. metadata patterns
+- Revealing the attack narrative
+- Finding similar legitimate complaints
+
+**Say:**
+> "Here's why this matters for fraud detection: attackers often use similar language - they're copying from a template or following a script. Semantic search can find reviews with similar meaning even when the words are different. And critically, it lets us ask: are there legitimate reviews with the same complaints? That's how we distinguish a real problem from a coordinated attack."
+
+**Transition:**
+> "So we have two types of search working together: ES|QL detects the anomaly through patterns, semantic search reveals what attackers are claiming."
+
+---
+
 ### Slide: Agent Builder
 
 **Time:** 12:30 - 13:30
@@ -189,9 +225,10 @@
 **Key Points:**
 - AI-powered investigation
 - Custom tools with ES|QL backend
+- Semantic search tools for content analysis
 
 **Say:**
-> "Once we detect an incident, someone needs to investigate. That's where Agent Builder comes in. You create custom tools - powered by ES|QL queries - and the AI assistant can use them to answer natural language questions. Instead of writing queries, an analyst can simply ask: 'Tell me about the incident at Mario's Pizza.'"
+> "Once we detect an incident, someone needs to investigate. That's where Agent Builder comes in. You create custom tools - powered by ES|QL queries and semantic search - and the AI assistant can use them to answer natural language questions. Instead of writing queries, an analyst can simply ask: 'Tell me about the incident at Mario's Pizza' or 'Find reviews similar to this complaint.'"
 
 ---
 
@@ -201,9 +238,10 @@
 
 **Key Points:**
 - Show the flow: question -> tool -> query -> answer
+- Highlight both analytical and semantic tools
 
 **Say:**
-> "Here's how it works. The user asks a natural language question. The Agent selects the appropriate tool you created. The tool executes an ES|QL query. The Agent formats the response naturally. The analyst never needs to write a query - they just ask questions."
+> "Here's how it works. The user asks a natural language question. The Agent selects the appropriate tool you created. The tool executes an ES|QL query or semantic search. The Agent formats the response naturally. The analyst never needs to write a query - they just ask questions. And with semantic search tools, they can ask things like 'find similar reviews' or 'what complaints are people making?'"
 
 **Transition:**
 > "Now let's see all of this in action."
@@ -221,7 +259,7 @@
 - Set the scene
 
 **Say:**
-> "We have a review platform with real Yelp data - over 10,000 restaurants, 50,000 user accounts, 200,000 reviews. We're going to target a popular restaurant in Las Vegas and launch a review bomb attack. Then we'll watch our automated defenses respond."
+> "We have a review platform with real Yelp data - over 10,000 restaurants, 50,000 user accounts, 200,000 reviews. We're going to target a popular restaurant in Las Vegas and launch a review bomb attack. Then we'll watch our automated defenses respond - and use semantic search to understand what the attackers are claiming."
 
 ---
 
@@ -232,9 +270,10 @@
 **Key Points:**
 - Quick overview of indices
 - Focus on relationships
+- Mention semantic field
 
 **Say:**
-> "Four key indices: businesses with ratings, users with trust scores, reviews linking them together, and incidents for tracking detections. The trust score is calculated from user activity - account age, review count, usefulness votes, and so on."
+> "Four key indices: businesses with ratings, users with trust scores, reviews linking them together, and incidents for tracking detections. The trust score is calculated from user activity - account age, review count, usefulness votes, and so on. Notice that the review text field is a `semantic_text` type - this enables semantic search out of the box."
 
 ---
 
@@ -277,7 +316,7 @@
 3. Run the query (should return no results if no attack)
 
 **Say:**
-> "Here's our detection query. We look at reviews in the last 30 minutes. We JOIN with users to get trust scores. We aggregate by business - counting reviews, averaging stars and trust. Then we filter: if a business has more than 10 reviews AND those reviews average less than 2 stars AND the reviewers have low trust scores, that's suspicious. Right now, no results - no attacks in progress."
+> "Here's our ES|QL detection query - this is the analytical search. We look at reviews in the last 30 minutes. We JOIN with users to get trust scores. We aggregate by business - counting reviews, averaging stars and trust. Then we filter: if a business has more than 10 reviews AND those reviews average less than 2 stars AND the reviewers have low trust scores, that's suspicious. Right now, no results - no attacks in progress."
 
 ---
 
@@ -316,7 +355,7 @@
 
 ### Demo: Workflow Response
 
-**Time:** 25:00 - 27:00
+**Time:** 25:00 - 26:00
 
 **Do:**
 1. Either wait for scheduled execution or trigger manually
@@ -338,18 +377,66 @@ FROM reviews
 
 ---
 
+### Demo: Semantic Search - Revealing the Attack Narrative
+
+**Time:** 26:00 - 27:30
+
+**Do:**
+1. Open Dev Tools or the web application
+2. Run a semantic search query on the held reviews
+3. Show the common themes/language patterns
+
+**Say:**
+> "ES|QL detected the anomaly through metadata - velocity and trust scores. But what are these attackers actually claiming? Let's use semantic search to find out."
+
+**Query:**
+```json
+POST reviews/_search
+{
+  "query": {
+    "semantic": {
+      "field": "text",
+      "query": "food poisoning sick health violation"
+    }
+  },
+  "_source": ["text", "stars", "user_id", "status"],
+  "size": 5
+}
+```
+
+**Say:**
+> "Look at this - the attackers are all claiming food poisoning and health issues. This is the attack narrative. They're not just leaving bad reviews; they're making specific allegations designed to scare customers away."
+
+**Key Insight:**
+> "Now here's the critical question: are these legitimate complaints, or is this a coordinated attack? Let's check if there are similar complaints from high-trust users."
+
+**Query:**
+```sql
+FROM reviews
+| WHERE stars <= 2
+| LOOKUP JOIN users ON user_id
+| WHERE trust_score > 0.7
+| LIMIT 100
+```
+
+**Say:**
+> "When we look at low-star reviews from trusted users, we don't see these food poisoning claims. That tells us this is a fabricated narrative, not a real problem. Semantic search revealed what ES|QL couldn't - the content of the attack."
+
+---
+
 ### Demo: Investigation with Agent Builder
 
-**Time:** 27:00 - 29:00
+**Time:** 27:30 - 29:00
 
 **Do:**
 1. Open AI Assistant in Kibana
 2. Ask: "What incidents were detected recently?"
 3. Ask: "Summarize the incident for [business name]"
-4. Ask: "Analyze the attackers - does this look coordinated?"
+4. Ask: "Find reviews similar to the attack reviews"
+5. Ask: "Are there legitimate reviews with similar complaints?"
 
 **Say:**
-> "Now I need to investigate. Instead of writing queries, I'll just ask. 'What incidents were detected recently?' The Agent finds the incident. 'Summarize it for me.' It gives me the details. 'Analyze the attackers.' It tells me they're all new accounts with low trust scores - classic coordination pattern."
+> "Now I need to investigate. Instead of writing queries, I'll just ask. 'What incidents were detected recently?' The Agent finds the incident. 'Summarize it for me.' It gives me the details - including what the attackers are claiming. 'Find similar reviews.' It uses semantic search to find related content. 'Are there legitimate reviews with similar complaints?' It compares against high-trust user reviews. This is the power of combining analytical and semantic search."
 
 ---
 
@@ -366,7 +453,7 @@ FROM reviews
 > "To resolve, I mark it as a confirmed attack. The resolution workflow triggers - deleting the malicious reviews, removing the rating protection, notifying the business owner. The business rating is restored to its true value."
 
 **Transition:**
-> "That's the complete flow. Now it's your turn to build this."
+> "That's the complete flow. ES|QL detected the anomaly. Semantic search revealed the narrative. Workflows automated the response. Agent Builder enabled investigation. Now it's your turn to build this."
 
 ---
 
@@ -381,7 +468,7 @@ FROM reviews
 - Set time expectations
 
 **Say:**
-> "You have four challenges. First, explore the data and write detection queries - 15 minutes. Second, build the workflow - this is the main challenge, 20 minutes. Third, create Agent Builder tools - quick but powerful, 10 minutes. Finally, the end-to-end scenario where you'll launch your own attack - 15 minutes."
+> "You have four challenges. First, explore the data and write detection queries - 15 minutes. Second, build the workflow - this is the main challenge, 20 minutes. Third, create Agent Builder tools including a semantic search tool - 10 minutes. Finally, the end-to-end scenario where you'll launch your own attack - 15 minutes."
 
 ---
 
@@ -398,10 +485,10 @@ FROM reviews
 > "You'll create a workflow from scratch - schedule trigger, detection step, response actions."
 
 **Challenge 3:**
-> "You'll create two Agent Builder tools and test them with natural language."
+> "You'll create Agent Builder tools including both analytical and semantic search tools. One to analyze incidents, one to find similar reviews."
 
 **Challenge 4:**
-> "You'll launch an attack and watch everything you built respond automatically."
+> "You'll launch an attack, watch everything you built respond automatically, and use semantic search to understand what the attackers claimed."
 
 ---
 
@@ -431,7 +518,7 @@ FROM reviews
 - Ask for help
 
 **Say:**
-> "A few tips: Read the instructions carefully. Copy and paste the provided queries - they're there to help you. If you get stuck, raise your hand. Understanding is more important than completion. And experiment - try variations on the queries to see what happens."
+> "A few tips: Read the instructions carefully. Copy and paste the provided queries - they're there to help you. If you get stuck, raise your hand. Understanding is more important than completion. And experiment - try variations on the queries and semantic searches to see what happens."
 
 ---
 
@@ -456,6 +543,7 @@ FROM reviews
 - Syntax errors in ES|QL - remind about pipe characters
 - Confusion about LOOKUP JOIN syntax
 - Questions about trust score ranges
+- Confusion about semantic_text field type
 
 **Checkpoints:**
 - At 5 minutes: Most should have run basic counts
@@ -466,6 +554,7 @@ FROM reviews
 - "Make sure you have a pipe before each clause"
 - "LOOKUP JOIN goes right after FROM or a WHERE"
 - "The threshold values are suggestions - feel free to experiment"
+- "The semantic_text field handles embeddings automatically - you just query it naturally"
 
 ---
 
@@ -493,6 +582,7 @@ FROM reviews
 **Common Issues:**
 - Tool parameter syntax
 - ES|QL query in JSON format
+- Semantic search query format
 - Testing the agent
 
 **Checkpoints:**
@@ -502,7 +592,9 @@ FROM reviews
 **Help Prompts:**
 - "Parameters go in a JSON object"
 - "The ES|QL query is a string value"
+- "For semantic search tools, use the semantic query DSL"
 - "Try asking 'What tools do you have?' to see if it recognizes your tool"
+- "Try 'find similar reviews' to test the semantic search tool"
 
 ---
 
@@ -512,16 +604,18 @@ FROM reviews
 - Workflow not triggering (timing)
 - Web UI access
 - Incident resolution steps
+- Understanding semantic search results
 
 **Checkpoints:**
 - At 3 minutes: Should have submitted attack reviews
 - At 8 minutes: Should see workflow execution
-- At 12 minutes: Should be investigating with Agent
+- At 12 minutes: Should be investigating with Agent and semantic search
 
 **Help Prompts:**
 - "The workflow runs every 5 minutes - you can trigger it manually"
 - "Refresh the web UI to see updated statuses"
 - "Resolution is done by updating the incident document"
+- "Use semantic search to understand what attackers are claiming"
 
 ---
 
@@ -539,15 +633,33 @@ FROM reviews
 
 ---
 
+### Q: "What's the difference between ES|QL and semantic search?"
+
+**A:** "ES|QL is analytical - it's great for aggregations, filters, and pattern detection across structured data and metadata. Semantic search understands meaning - it finds content that's conceptually similar even when the words differ. In fraud detection, use ES|QL to find anomalies in behavior (velocity, trust scores), and semantic search to understand what's being said."
+
+---
+
+### Q: "How does the semantic_text field type work?"
+
+**A:** "When you define a field as `semantic_text`, Elasticsearch automatically runs it through an embedding model (ELSER by default) at index time. The embeddings are stored alongside the text. At query time, your query is also embedded, and we find documents with similar embeddings. You don't need to manage models or vectors yourself - it's all automatic."
+
+---
+
+### Q: "Can semantic search find attacks that ES|QL misses?"
+
+**A:** "Yes! Imagine a sophisticated attacker who uses multiple trusted accounts over several days - they might not trigger velocity thresholds. But semantic search could still identify that all their reviews contain similar fabricated claims. The two approaches complement each other."
+
+---
+
 ### Q: "Can Agent Builder tools call external APIs?"
 
-**A:** "Currently, Agent Builder tools execute ES|QL queries. For external API calls, you'd use Workflows with HTTP actions and have the Agent reference the results via incident or notification indices."
+**A:** "Currently, Agent Builder tools execute ES|QL queries or semantic searches. For external API calls, you'd use Workflows with HTTP actions and have the Agent reference the results via incident or notification indices."
 
 ---
 
 ### Q: "How do we handle false positives?"
 
-**A:** "Great question! The threshold values are tuneable. Start conservative (high thresholds), monitor false positive rates, then adjust. The resolution workflow supports 'false_positive' as a resolution type, which releases held reviews."
+**A:** "Great question! The threshold values are tuneable. Start conservative (high thresholds), monitor false positive rates, then adjust. The resolution workflow supports 'false_positive' as a resolution type, which releases held reviews. Semantic search can also help - if attack reviews match legitimate complaints from trusted users, that's a signal to investigate further before confirming."
 
 ---
 
@@ -569,9 +681,13 @@ FROM reviews
 
 **Key Takeaways to Reinforce:**
 1. Workflows enable native automation - no external tools needed
-2. ES|QL with LOOKUP JOIN powers cross-index detection
-3. Agent Builder turns queries into natural language tools
-4. Together: complete insight-to-action in seconds
+2. ES|QL with LOOKUP JOIN powers cross-index analytical detection
+3. Semantic search reveals the attack narrative - what's being claimed
+4. Agent Builder turns queries into natural language tools
+5. Together: complete insight-to-action in seconds
+
+**The Story Arc:**
+> "Remember the four phases: Detect with ES|QL, Understand with semantic search, Automate with Workflows, Investigate with Agent Builder. That's the complete fraud detection pipeline."
 
 **Feedback Collection:**
 - Share feedback form link
@@ -581,10 +697,11 @@ FROM reviews
 - Workshop GitHub repo
 - Elastic Workflows documentation
 - ES|QL reference
+- Semantic search and ELSER guide
 - Agent Builder guide
 
 **Final Message:**
-> "Remember: Search finds the insight. Workflows acts on it. Agent Builder explains it. You've just built a complete automated detection and response system. Take these patterns and apply them to your own use cases - fraud detection, security, compliance, operations. Thank you for joining us today!"
+> "Remember: Search finds the insight - ES|QL detects the anomaly, semantic search reveals the narrative. Workflows acts on it. Agent Builder explains it. You've just built a complete automated detection and response system with both analytical and semantic intelligence. Take these patterns and apply them to your own use cases - fraud detection, security, compliance, operations. Thank you for joining us today!"
 
 ---
 
@@ -593,7 +710,7 @@ FROM reviews
 | Section | Start | End | Duration |
 |---------|-------|-----|----------|
 | Welcome + Problem | 0:00 | 5:00 | 5 min |
-| 9.3 Features | 5:00 | 15:00 | 10 min |
+| 9.3 Features (incl. Semantic Search) | 5:00 | 15:00 | 10 min |
 | Live Demo | 15:00 | 30:00 | 15 min |
 | Hands-on Preview | 30:00 | 35:00 | 5 min |
 | Challenge 1 | 35:00 | 50:00 | 15 min |
@@ -610,6 +727,8 @@ FROM reviews
 
 - [ ] Lab environments provisioned and accessible
 - [ ] Sample data loaded successfully
+- [ ] ELSER model deployed and inference endpoint configured
+- [ ] Semantic_text field mappings applied to reviews index
 - [ ] Workflows deployed and enabled
 - [ ] Web application running
 - [ ] Kibana accessible with correct permissions
@@ -632,6 +751,12 @@ FROM reviews
 2. Use shared screen for group exercises
 3. Extend demo time, shorten hands-on
 4. Focus on concepts over completion
+
+### If Semantic Search Not Working:
+1. Check if ELSER model is deployed
+2. Verify inference endpoint configuration
+3. Fall back to keyword search for demo
+4. Focus on ES|QL detection flow
 
 ### If Running Behind:
 1. Skip appendix slides

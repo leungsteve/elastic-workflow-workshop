@@ -1,0 +1,46 @@
+// Attack Narrative Analysis (Semantic Search)
+//
+// Purpose: Analyze what attack reviews are claiming - identify common themes
+// and narratives in coordinated review bomb campaigns.
+//
+// Use Case: After detecting an attack, use semantic search to understand
+// the narrative attackers are pushing (e.g., all claiming "food poisoning")
+//
+// Common Attack Narratives to Search:
+//   - "food poisoning health violation sick"
+//   - "terrible service rude staff"
+//   - "scam ripoff overpriced"
+//   - "dirty unsanitary disgusting"
+//   - "worst experience never return"
+//
+// Parameters:
+//   - {{ business_id }}: The business under attack (REQUIRED)
+//   - {{ narrative }}: The narrative theme to search for
+
+// Query 1: Find reviews matching a specific attack narrative
+FROM reviews METADATA _score
+| WHERE text_semantic: "{{ narrative | default: 'food poisoning made me sick' }}"
+| WHERE business_id == "{{ business_id }}"
+| WHERE stars <= 2
+| SORT _score DESC
+| LIMIT 20
+| KEEP review_id, user_id, stars, date, text, _score
+
+// Query 2: Compare attack window vs historical (run separately)
+// Recent reviews (potential attack):
+// FROM reviews METADATA _score
+// | WHERE text_semantic: "{{ narrative }}"
+// | WHERE business_id == "{{ business_id }}"
+// | WHERE date > NOW() - 30 minutes
+// | SORT _score DESC
+// | KEEP review_id, user_id, stars, date, text, _score
+// | LIMIT 20
+
+// Historical reviews (likely legitimate):
+// FROM reviews METADATA _score
+// | WHERE text_semantic: "{{ narrative }}"
+// | WHERE business_id == "{{ business_id }}"
+// | WHERE date < NOW() - 7 days
+// | SORT _score DESC
+// | KEEP review_id, user_id, stars, date, text, _score
+// | LIMIT 20

@@ -122,6 +122,33 @@ Agent Builder tools allow the AI assistant to query Elasticsearch data and provi
 
 ---
 
+### 7. similar-reviews.json
+**Purpose:** Find reviews semantically similar to a given phrase using ELSER - the AI understands meaning, not just keywords.
+
+**Use Cases:**
+- Discovering coordinated attack patterns where attackers use similar language
+- Finding reviews with matching themes, sentiment, or talking points
+- Identifying template-based fake reviews even with varied wording
+- Investigating specific complaint patterns (e.g., "food poisoning" claims)
+- Uncovering attack campaigns with consistent messaging
+
+**How It Helps Investigation:**
+Attackers often coordinate their messaging, using similar phrases, themes, or templates. This tool uses **semantic search** (via the `:` operator on `text_semantic`) to find reviews with similar *meaning*, even if they use different words. For example, searching "terrible service slow food" will also find "waited forever, staff was rude" because they share semantic similarity.
+
+**Parameters:**
+- `search_text` (required): The phrase to search for semantically
+- `business_id` (optional): Limit search to a specific business
+- `limit` (optional): Maximum results to return (default: 10)
+
+**Example Prompts:**
+- "Find reviews similar to 'food poisoning made me sick'"
+- "Search for reviews about terrible service and rude staff"
+- "Are there reviews like 'worst experience ever' for business MTSW4McQd7CbVtyjqoe9mw?"
+- "Find reviews semantically similar to 'scam ripoff stay away'"
+- "Search for reviews that talk about health code violations"
+
+---
+
 ## Deploying Tools to Kibana Agent Builder
 
 ### Prerequisites

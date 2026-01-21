@@ -24,9 +24,11 @@ Your platform has three main indices:
 |-------|-------------|------------|
 | `businesses` | Restaurant profiles | `business_id`, `name`, `stars`, `city`, `categories` |
 | `users` | Reviewer accounts | `user_id`, `name`, `trust_score`, `account_age_days` |
-| `reviews` | Individual reviews | `review_id`, `user_id`, `business_id`, `stars`, `date` |
+| `reviews` | Individual reviews | `review_id`, `user_id`, `business_id`, `stars`, `date`, `text_semantic` |
 
 The **trust_score** (0.0 - 1.0) is a calculated metric based on account age, review history, and community interactions. Legitimate reviewers typically have scores above 0.5, while suspicious accounts often have scores below 0.3.
+
+The **text_semantic** field uses ELSER (Elastic Learned Sparse Encoder) to enable semantic search - finding reviews by meaning rather than exact keywords. This is powerful for understanding attack narratives.
 
 ---
 
@@ -37,8 +39,9 @@ The **trust_score** (0.0 - 1.0) is a calculated metric based on account age, rev
 Let's start by understanding what businesses are on the platform.
 
 1. Open **Kibana** in the browser tab
-2. Navigate to **Dev Tools** (Menu > Management > Dev Tools) or use the search bar
-3. In ES|QL mode, run this query to count businesses:
+2. Navigate to **Discover** (Menu > Analytics > Discover)
+3. Click the language dropdown (usually shows "KQL") and select **ES|QL**
+4. Run this query to count businesses:
 
 ```esql
 FROM businesses
@@ -47,7 +50,7 @@ FROM businesses
 
 **Expected output:** You should see a count of businesses (approximately 5,000-20,000 depending on the dataset).
 
-4. Now explore the top-rated restaurants:
+5. Now explore the top-rated restaurants:
 
 ```esql
 FROM businesses
@@ -59,7 +62,7 @@ FROM businesses
 
 **What to notice:** This shows which cities have the most highly-rated restaurants. These successful businesses are prime targets for review bombs.
 
-5. Find specific high-profile targets:
+6. Find specific high-profile targets:
 
 ```esql
 FROM businesses
@@ -167,9 +170,65 @@ FROM reviews
 
 ---
 
-### Task 4: Use LOOKUP JOIN for Enrichment (5 min)
+### Task 4: Explore Semantic Search (3 min)
+
+The reviews index has a `text_semantic` field that enables searching by meaning, not just keywords. This is powered by ELSER (Elastic Learned Sparse Encoder). **You can do semantic search directly in ES|QL using the `:` operator!**
+
+1. First, see how keyword search works - find reviews with the exact phrase "food poisoning":
+
+```esql
+FROM reviews
+| WHERE text LIKE "*food poisoning*"
+| KEEP review_id, text, stars
+| LIMIT 5
+```
+
+**What to notice:** This only finds reviews containing the exact phrase "food poisoning".
+
+2. Now use **semantic search** to find reviews about illness - even without those exact words:
+
+```esql
+FROM reviews METADATA _score
+| WHERE text_semantic: "food poisoning made me ill"
+| SORT _score DESC
+| KEEP review_id, text, stars, _score
+| LIMIT 5
+```
+
+**What to notice:** Semantic search finds reviews about stomach problems, getting sick, food-borne illness - even if they use different words like "nausea", "vomiting", or "got sick". It understands **meaning**, not just keywords. The `_score` shows relevance - higher scores mean more semantically similar.
+
+3. Try searching for attack narratives:
+
+```esql
+FROM reviews METADATA _score
+| WHERE text_semantic: "terrible service rude staff worst experience"
+| SORT _score DESC
+| KEEP review_id, text, stars, user_id, _score
+| LIMIT 5
+```
+
+**What to notice:** This finds reviews with similar negative sentiment, even if they use words like "awful", "horrible", "disrespectful", or "disappointing".
+
+4. Combine semantic search with filters to investigate a specific business:
+
+```esql
+FROM reviews METADATA _score
+| WHERE text_semantic: "scam ripoff stay away"
+| WHERE stars <= 2
+| SORT _score DESC
+| KEEP review_id, business_id, stars, text, _score
+| LIMIT 10
+```
+
+**Why this matters:** Attackers often use similar narratives. Semantic search in ES|QL helps you find patterns in what they're claiming - all without leaving Discover!
+
+---
+
+### Task 5: Use LOOKUP JOIN for Enrichment (5 min)
 
 The real power of ES|QL comes from **LOOKUP JOIN** - the ability to combine data across indices in a single query. This is essential for correlating reviews with user trust scores.
+
+**Key concept:** LOOKUP JOIN lets you correlate data across indices without leaving ES|QL.
 
 1. First, understand the syntax. LOOKUP JOIN matches records from one index with another:
 
@@ -235,7 +294,7 @@ Using what you've learned, write a query that identifies potential review bomb a
 - At least 5 suspicious reviews per business
 - Include the business name and city
 
-**Hint:** Combine the patterns from Task 4, adjusting the time window and thresholds.
+**Hint:** Combine the patterns from Task 5, adjusting the time window and thresholds.
 
 <details>
 <summary>Click to reveal solution</summary>
@@ -267,6 +326,7 @@ Before proceeding to the next challenge, verify you can:
 
 - [ ] Query all three indices (businesses, users, reviews)
 - [ ] Understand the trust_score distribution and what low scores indicate
+- [ ] Use semantic search to find reviews by meaning, not just keywords
 - [ ] Use LOOKUP JOIN to combine reviews with user data
 - [ ] Identify patterns that indicate suspicious review activity
 
@@ -275,8 +335,9 @@ Before proceeding to the next challenge, verify you can:
 ## Key Takeaways
 
 1. **Trust scores** are your primary signal for identifying fake accounts
-2. **LOOKUP JOIN** lets you enrich data across indices in a single query
-3. **Coordinated attacks** show patterns: multiple low-trust users, similar timing, low ratings
-4. **High-value targets** are businesses with good ratings and many reviews
+2. **Semantic search** finds reviews by meaning - critical for understanding attack narratives
+3. **LOOKUP JOIN** lets you enrich data across indices in a single query
+4. **Coordinated attacks** show patterns: multiple low-trust users, similar timing, low ratings
+5. **High-value targets** are businesses with good ratings and many reviews
 
 In the next challenge, you'll automate this detection using Elastic Workflows!

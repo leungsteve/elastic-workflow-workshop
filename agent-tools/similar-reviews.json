@@ -1,0 +1,32 @@
+{
+  "name": "workshop.similar_reviews",
+  "description": "Find reviews semantically similar to a given phrase using ELSER. Use this tool when investigating review bombs to find reviews with similar language patterns, themes, or sentiment - even if they use different words.",
+  "parameters": {
+    "search_text": {
+      "type": "string",
+      "description": "The phrase to search for semantically. Examples: 'food poisoning made me sick', 'terrible service rude staff', 'worst experience ever'",
+      "required": true
+    },
+    "business_id": {
+      "type": "string",
+      "description": "Optional business ID to limit search to a specific business (e.g., 'MTSW4McQd7CbVtyjqoe9mw')",
+      "required": false
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Maximum number of reviews to return",
+      "required": false,
+      "default": 10
+    }
+  },
+  "esql": "FROM reviews METADATA _score | WHERE text_semantic: \"{{ search_text }}\" | WHERE business_id == \"{{ business_id }}\" OR \"{{ business_id }}\" == \"\" | SORT _score DESC | LIMIT {{ limit }} | KEEP review_id, business_id, user_id, stars, date, text, _score",
+  "output_fields": {
+    "review_id": "Unique identifier for the review",
+    "business_id": "The business this review is about",
+    "user_id": "The user who wrote this review",
+    "stars": "Star rating given (1-5)",
+    "date": "When the review was posted",
+    "text": "The review text content",
+    "_score": "Semantic similarity score (higher = more similar)"
+  }
+}
