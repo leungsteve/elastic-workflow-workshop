@@ -555,3 +555,199 @@ fi
 echo "SUCCESS: All checks passed!"
 exit 0
 ```
+
+---
+
+## Kibana API - Serverless Restrictions
+
+### Workflows Management API Not Available on Serverless
+
+**Problem:** Workflows Management API endpoints return 404 on Cloud Serverless despite plugin showing as "available"
+
+**Root Cause:** The Workflows feature requires `workflows:ui:enabled: true` setting, but:
+1. The settings API (`/internal/kibana/settings`) is blocked on serverless
+2. The feature is disabled by default and cannot be enabled via API
+
+**What We Found (Kibana 9.4.0, `build_flavor: serverless`):**
+```bash
+# These all return 404
+curl "$KIBANA_URL/api/workflows"
+curl "$KIBANA_URL/api/workflows/{id}"
+curl "$KIBANA_URL/internal/workflows_management/workflows"
+
+# But the plugin shows as available
+curl "$KIBANA_URL/api/status" | jq '.status.plugins.workflowsManagement'
+# Returns: {"level": "available", "summary": "All services and plugins are available"}
+```
+
+**Documented Endpoints (from [Kibana README](https://github.com/elastic/kibana/blob/main/src/platform/plugins/shared/workflows_management/README.md)):**
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | `/api/workflows` | List workflows |
+| POST | `/api/workflows` | Create workflow |
+| GET | `/api/workflows/{id}` | Get workflow |
+| PUT | `/api/workflows/{id}` | Update workflow |
+| DELETE | `/api/workflows/{id}` | Delete workflow |
+| POST | `/api/workflows/{id}/execute` | Execute workflow |
+| GET | `/api/workflows/{id}/executions` | Get execution history |
+
+**Solution:** On Cloud Serverless, workflows must be managed via the Kibana UI (`/app/workflows`), not the API.
+
+---
+
+### Agent Builder API Works on Serverless
+
+**Good News:** The Agent Builder API is fully functional on serverless:
+
+```bash
+# List tools - WORKS
+curl -H "Authorization: ApiKey $API_KEY" -H "kbn-xsrf: true" \
+  "$KIBANA_URL/api/agent_builder/tools"
+
+# Create tool - WORKS
+curl -X POST -H "Authorization: ApiKey $API_KEY" -H "kbn-xsrf: true" \
+  -H "Content-Type: application/json" \
+  "$KIBANA_URL/api/agent_builder/tools" \
+  -d '{"id": "my.tool", "type": "esql", "description": "...", "configuration": {...}}'
+
+# List agents - WORKS
+curl -H "Authorization: ApiKey $API_KEY" -H "kbn-xsrf: true" \
+  "$KIBANA_URL/api/agent_builder/agents"
+
+# Chat with agent - WORKS
+curl -X POST -H "Authorization: ApiKey $API_KEY" -H "kbn-xsrf: true" \
+  -H "Content-Type: application/json" \
+  "$KIBANA_URL/api/agent_builder/converse" \
+  -d '{"input": "List all indices"}'
+```
+
+**Working Agent Builder Endpoints:**
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/agent_builder/tools` | List all tools |
+| GET | `/api/agent_builder/tools/{id}` | Get tool by ID |
+| POST | `/api/agent_builder/tools` | Create tool |
+| DELETE | `/api/agent_builder/tools/{id}` | Delete tool |
+| GET | `/api/agent_builder/agents` | List agents |
+| GET | `/api/agent_builder/conversations` | List conversations |
+| POST | `/api/agent_builder/converse` | Chat with agent |
+
+---
+
+### Kibana API Authentication
+
+**Pattern:** Use API key with `Authorization` header (not basic auth):
+
+```bash
+# WORKS - API Key auth
+curl -H "Authorization: ApiKey <base64-encoded-key>" \
+     -H "kbn-xsrf: true" \
+     "$KIBANA_URL/api/agent_builder/tools"
+
+# FAILS on serverless - Basic auth
+curl -u "elastic:password" \
+     -H "kbn-xsrf: true" \
+     "$KIBANA_URL/api/agent_builder/tools"
+# Returns: 401 Unauthorized
+```
+
+**Key Points:**
+- Always include `-H "kbn-xsrf: true"` header
+- Use the same API key as Elasticsearch
+- Kibana URL uses `.kb.` instead of `.es.` in the hostname
+
+---
+
+### Serverless API Restrictions Summary
+
+**Blocked on Serverless:**
+- `/internal/kibana/settings` - Cannot change UI settings
+- `/api/console/proxy` - Dev Tools console proxy
+- `/api/saved_objects/_find` - Saved objects search
+- `/api/workflows/*` - Workflow management (requires disabled feature flag)
+
+**Working on Serverless:**
+- `/api/status` - Kibana status and plugin info
+- `/api/features` - List features and privileges
+- `/api/agent_builder/*` - Full Agent Builder API
+- `/api/alerting/*` - Alerting rules API
+- `/api/actions/connectors` - List connectors
+- `/api/spaces/*` - Spaces management
+
+---
+
+### Workflows API Requires Session Auth (Not API Key)
+
+**Problem:** Workflows REST API returns "not available with current configuration" when using API key auth via curl.
+
+**Root Cause:** The Workflows API requires **session-based authentication** (browser cookies), not API key authentication. This is different from Agent Builder and Alerting APIs which support API key auth.
+
+**Tested on:** Kibana 9.3.0 GA and 9.3.0-SNAPSHOT
+
+| API | API Key Auth (curl) | Session Auth (Dev Tools) |
+|-----|---------------------|--------------------------|
+| Agent Builder | ✅ Works | ✅ Works |
+| Alerting | ✅ Works | ✅ Works |
+| **Workflows** | ❌ Blocked | ✅ Works |
+
+**Solution:** Use Kibana Dev Tools with `kbn://` prefix for Workflows API calls:
+
+```
+# First enable the feature
+POST kbn://internal/kibana/settings
+{"changes": {"workflows:ui:enabled": true}}
+
+# Then query workflows
+POST kbn://api/workflows/search
+{"limit": 20, "page": 1, "query": ""}
+```
+
+**For automation/scripts:** Use the Kibana UI at `/app/workflows` or consider using the Alerting API (`/api/alerting/rules`) which supports API key auth for rule-based automation.
+
+---
+
+### Cloud URL Patterns
+
+**Problem:** Kibana URL format differs between deployment types and may not match ES URL pattern.
+
+**Cloud Serverless URLs:**
+```
+ES:     https://<deployment-id>.es.<region>.gcp.elastic.cloud:443
+Kibana: https://<deployment-id>.kb.<region>.gcp.elastic.cloud:443
+```
+
+**Cloud Hosted URLs:**
+```
+ES:     https://<deployment-id>.<region>.gcp.elastic-cloud.com:443
+Kibana: https://<deployment-name>.kb.<region>.gcp.elastic-cloud.com:443
+```
+
+**Key differences:**
+- Serverless: `.elastic.cloud` domain, `.es.` and `.kb.` subdomains
+- Hosted: `.elastic-cloud.com` domain, different URL structure
+- Hosted Kibana URL may have a **different prefix** than ES URL
+- Always check the Cloud console for exact Kibana endpoint
+
+---
+
+### Test Script for API Connectivity
+
+Created `admin/test_kibana_api.sh` to verify cluster connectivity after switching environments.
+
+**Usage:**
+```bash
+./admin/test_kibana_api.sh
+```
+
+**Tests:**
+- Elasticsearch connection and version
+- Kibana status
+- Agent Builder API (tools, agents, conversations)
+- Workflows API (with feature flag check)
+- Alerting API
+- Connectors API
+
+**Output indicates:**
+- ✓ PASS - Endpoint working
+- ✗ FAIL - Endpoint failed
+- ⚠ SKIP - Endpoint not available (expected for some configurations)

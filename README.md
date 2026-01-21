@@ -27,12 +27,12 @@ Review bombing is a coordinated attack where bad actors flood a business with fa
 
 ## What You'll Learn
 
-| Challenge                 | Duration | Skills                                     |
-| ------------------------- | -------- | ------------------------------------------ | ---------------------------------------- |
-| Getting to Know Your Data | 15 min   | ES                                         | QL queries, LOOKUP JOIN, detection logic |
-| Workflows                 | 20 min   | Automated detection and response pipelines |
-| Agent Builder             | 10 min   | Natural language investigation tools       |
-| End-to-End Scenario       | 15 min   | Full attack lifecycle simulation           |
+| Challenge | Duration | Skills |
+|-----------|----------|--------|
+| Getting to Know Your Data | 15 min | ES\|QL queries, LOOKUP JOIN, detection logic |
+| Workflows | 20 min | Automated detection and response pipelines |
+| Agent Builder | 10 min | Natural language investigation tools |
+| End-to-End Scenario | 15 min | Full attack lifecycle simulation |
 
 ---
 
@@ -60,17 +60,23 @@ Review bombing is a coordinated attack where bad actors flood a business with fa
 ```
 review-bomb-workshop/
 ├── admin/                    # Pre-workshop setup scripts
-│   ├── prepare-data.sh       # Master setup script
-│   ├── filter-businesses.py  # Filter Yelp data by city/category
-│   ├── calculate-trust-scores.py
-│   ├── partition-reviews.py  # Split historical/streaming
-│   ├── generate-attackers.py # Create synthetic attack accounts
+│   ├── prepare_data.sh       # Master setup script
+│   ├── filter_businesses.py  # Filter Yelp data by city/category
+│   ├── calculate_trust_scores.py
+│   ├── partition_reviews.py  # Split historical/streaming
+│   ├── generate_attackers.py # Create synthetic attack accounts
 │   └── ...
 │
+├── app/                      # FastAPI web application
+│   ├── main.py               # Application entry point
+│   ├── routers/              # API endpoints (businesses, reviews, incidents)
+│   ├── services/             # Business logic (incident auto-detection)
+│   ├── templates/            # Jinja2 HTML templates (dashboard, attack UI)
+│   └── static/               # CSS and JavaScript
+│
 ├── streaming/                # Real-time review streaming app
-│   ├── review_streamer.py    # Main application
-│   ├── config.yaml           # Configuration
-│   └── requirements.txt
+│   ├── review_streamer.py    # Main application (replay/inject/mixed modes)
+│   └── ...
 │
 ├── mappings/                 # Elasticsearch index mappings
 │   ├── businesses.json
@@ -195,23 +201,38 @@ python verify-environment.py
 
 ## Running the Demo
 
-### Start Normal Review Traffic
+### Option 1: Web Application (Recommended)
+
+The FastAPI web app provides a dashboard, attack simulator, and incident management UI.
+
+```bash
+# Start the web application
+python -m app.main
+
+# Access at http://localhost:8000
+```
+
+**Web App Features:**
+- **Dashboard** - Real-time attack monitoring with auto-refresh
+- **Attack Simulator** - Launch turbo attacks against target businesses
+- **Incidents** - View and resolve detected incidents
+- **Businesses** - Browse and search business data
+
+### Option 2: Streaming Application (CLI)
+
+For CLI-based demos or automated testing.
 
 ```bash
 cd streaming
-python review_streamer.py --config config.yaml --mode replay
-```
 
-### Inject Review Bomb Attack
+# Replay legitimate reviews
+python review_streamer.py --mode replay
 
-```bash
-python review_streamer.py --config config.yaml --mode inject
-```
+# Inject attack reviews
+python review_streamer.py --mode inject --business-id <BUSINESS_ID> --count 15
 
-### Mixed Mode (Normal Traffic + Attack)
-
-```bash
-python review_streamer.py --config config.yaml --mode mixed
+# Mixed mode (normal traffic, then attack)
+python review_streamer.py --mode mixed --business-id <BUSINESS_ID> --normal-duration 60
 ```
 
 The mixed mode runs normal traffic for a configurable period, then injects the attack automatically.
