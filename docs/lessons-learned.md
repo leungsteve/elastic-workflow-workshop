@@ -1098,3 +1098,124 @@ async def bulk_attack(business_id: str, count: int = 15):
 ```
 
 **Key Lesson:** When creating data for LOOKUP JOIN detection, ensure both sides of the join have matching records. This is especially important for attack simulation where synthetic data is generated.
+
+---
+
+## Workflow Response Actions
+
+### Automated Response Requires Explicit Implementation
+
+**Problem:** Detection workflow found attacks but didn't automatically protect businesses or hold reviews.
+
+**Root Cause:** The detection endpoint created incidents but had no code to execute response actions.
+
+**Solution:** Implement response actions in the incident service:
+
+```python
+class IncidentService:
+    async def protect_business(self, business_id: str) -> bool:
+        """Enable rating protection on a business."""
+        await self.es.update(
+            index=self.settings.businesses_index,
+            id=business_id,
+            doc={
+                "rating_protected": True,
+                "protection_reason": "review_bomb_detected",
+                "protected_since": datetime.utcnow().isoformat(),
+            },
+            refresh=True
+        )
+        return True
+
+    async def hold_suspicious_reviews(self, business_id: str, hours: int = 1) -> int:
+        """Mark suspicious reviews as held."""
+        response = await self.es.update_by_query(
+            index=self.settings.reviews_index,
+            query={
+                "bool": {
+                    "must": [
+                        {"term": {"business_id": business_id}},
+                        {"range": {"date": {"gte": f"now-{hours}h"}}},
+                        {"range": {"stars": {"lte": 2}}},
+                    ]
+                }
+            },
+            script={
+                "source": "ctx._source.status = 'held'; ctx._source.hold_reason = 'review_bomb_detected'"
+            },
+            refresh=True
+        )
+        return response.get("updated", 0)
+
+    async def execute_response_actions(self, business_id: str, incident_id: str) -> dict:
+        """Execute all response actions for a detected attack."""
+        actions = []
+        if await self.protect_business(business_id):
+            actions.append("business_protected")
+        held = await self.hold_suspicious_reviews(business_id)
+        if held > 0:
+            actions.append(f"held_{held}_reviews")
+        return {"actions": actions, "reviews_held": held}
+```
+
+**Key Pattern:** Response actions should be called both for new incidents AND existing incidents (to catch newly arriving attack reviews).
+
+---
+
+## Agent Builder API Gotchas
+
+### Agent Creation - Don't Include 'type' Field
+
+**Problem:** Creating agent via API failed with "definition for this key is missing" error.
+
+**Root Cause:** The `type` field is auto-assigned by the API. Including it in the request causes a validation error (confusing error message).
+
+**Solution:** Omit the `type` field when creating agents:
+
+```python
+# WRONG - causes error
+agent = {
+    "id": "my_agent",
+    "name": "My Agent",
+    "type": "chat",  # DON'T include this!
+    "description": "...",
+    "configuration": {...}
+}
+
+# CORRECT - type is auto-assigned
+agent = {
+    "id": "my_agent",
+    "name": "My Agent",
+    "description": "...",
+    "configuration": {
+        "instructions": "System prompt...",
+        "tools": [{"tool_ids": ["tool1", "tool2"]}]
+    }
+}
+```
+
+### Agent Tools Format
+
+**Problem:** Agent creation failed with "could not parse object value from json input" for tools.
+
+**Root Cause:** Tools must be an array of objects with `tool_ids`, not just an array of strings.
+
+```python
+# WRONG
+"tools": ["tool1", "tool2"]
+
+# CORRECT
+"tools": [{"tool_ids": ["tool1", "tool2"]}]
+```
+
+### Checking Existing Agent Format
+
+**Pattern:** When API schema is unclear, check existing resources:
+
+```bash
+curl -s "$KIBANA_URL/api/agent_builder/agents" \
+  -H "Authorization: ApiKey $API_KEY" \
+  -H "kbn-xsrf: true" | jq '.results[0]'
+```
+
+This reveals the actual schema used by successful resources.

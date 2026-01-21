@@ -53,6 +53,14 @@ Review bombing is a coordinated attack where bad actors flood a business with fa
 4. **Investigate** - Use Agent Builder to analyze attack patterns
 5. **Resolve** - Process incidents and restore business ratings
 
+### Automated Response Actions
+
+When an attack is detected, the workflow automatically:
+- **Protects business ratings** - Sets `rating_protected: true` to freeze displayed rating
+- **Holds suspicious reviews** - Marks attack reviews as `status: "held"` for manual review
+- **Creates incidents** - Logs attack with severity classification (critical/high/medium/low)
+- **Records actions** - Tracks all response actions taken for audit purposes
+
 ---
 
 ## Repository Structure
@@ -218,6 +226,21 @@ python -m app.main
 - **Incidents** - View and resolve detected incidents
 - **Businesses** - Browse and search business data
 
+**Key API Endpoints:**
+```bash
+# Launch attack (creates reviews + attacker users)
+POST /api/reviews/bulk-attack?business_id=<ID>&count=15
+
+# Run detection workflow (creates incident + executes response actions)
+POST /api/incidents/detect?business_id=<ID>&hours=1
+
+# Check business protection status
+GET /api/businesses/<ID>
+
+# List incidents
+GET /api/incidents?business_id=<ID>
+```
+
 ### Option 2: Streaming Application (CLI)
 
 For CLI-based demos or automated testing.
@@ -236,6 +259,26 @@ python review_streamer.py --mode mixed --business-id <BUSINESS_ID> --normal-dura
 ```
 
 The mixed mode runs normal traffic for a configurable period, then injects the attack automatically.
+
+### Option 3: Agent Builder Setup (Quick Start)
+
+Set up all Agent Builder tools and the investigation agent with a single command:
+
+```bash
+python admin/setup_agent_builder.py
+```
+
+This creates:
+- **incident_summary** tool - ES|QL query for incident details
+- **reviewer_analysis** tool - Attacker pattern analysis with risk levels
+- **similar_reviews** tool - ELSER semantic search for attack narratives
+- **Review Bomb Investigator** agent - Custom agent with all tools assigned
+
+Options:
+```bash
+python admin/setup_agent_builder.py --delete   # Delete and recreate all resources
+python admin/setup_agent_builder.py --dry-run  # Preview without making changes
+```
 
 ---
 
