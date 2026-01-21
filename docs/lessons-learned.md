@@ -963,3 +963,30 @@ FROM reviews METADATA _score
 | KEEP review_id, text, stars, _score
 | LIMIT 10
 ```
+
+### ES|QL KEEP Clause Does Not Support Aliases
+
+**Problem:** ES|QL query failed with "mismatched input 'AS' expecting {<EOF>..."
+
+**Root Cause:** ES|QL KEEP clause does not support the `AS` alias syntax. You cannot rename columns in KEEP.
+
+```esql
+// WRONG - AS not valid in KEEP clause
+| KEEP incident_id, business_name, stars AS business_original_rating
+
+// Error: mismatched input 'AS' expecting {<EOF>...
+```
+
+**Solution:** Use EVAL to create the renamed column before KEEP:
+
+```esql
+// CORRECT - Use EVAL to rename, then KEEP the new name
+| EVAL business_original_rating = stars
+| KEEP incident_id, business_name, business_original_rating
+```
+
+**Key Points:**
+1. KEEP only accepts column names, not transformations
+2. Use EVAL to create new columns or rename existing ones
+3. Place EVAL before KEEP in the pipeline
+4. This is different from SQL's `SELECT ... AS ...` pattern
