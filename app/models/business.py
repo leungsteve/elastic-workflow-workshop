@@ -1,9 +1,9 @@
 """Business models for Review Bomb Workshop."""
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class BusinessLocation(BaseModel):
@@ -35,7 +35,15 @@ class Business(BaseModel):
     business_id: str = Field(..., description="Unique business identifier")
     name: str = Field(..., description="Business name")
     # Categories can be a string (comma-separated) or list
-    categories: Optional[str] = Field(default=None, description="Business categories")
+    categories: Optional[Union[str, List[str]]] = Field(default=None, description="Business categories")
+
+    @field_validator("categories", mode="before")
+    @classmethod
+    def convert_categories(cls, v):
+        """Convert categories list to comma-separated string."""
+        if isinstance(v, list):
+            return ", ".join(v)
+        return v
     # Flat location fields (matching our data format)
     address: Optional[str] = None
     city: Optional[str] = None
