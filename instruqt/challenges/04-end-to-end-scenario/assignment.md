@@ -46,6 +46,16 @@ This simulates how your system would protect real businesses from coordinated at
 
 ## Tasks
 
+> **Setup Required:** Before starting, ensure the target business exists by running:
+>
+> ```bash
+> python admin/setup_target_business.py
+> ```
+>
+> This creates "The Golden Spoon" (`target_biz_001`) as the attack target. In Instruqt, this runs automatically.
+
+---
+
 ### Task 1: Check Baseline State (2 min)
 
 Before the attack, verify the target business is in a normal state.
