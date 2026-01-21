@@ -61,6 +61,71 @@ chmod +x admin/prepare_data.sh
 ./admin/prepare_data.sh --dry-run --verbose
 ```
 
+---
+
+## Instruqt Workshop Setup
+
+For Instruqt workshops, use these specialized scripts:
+
+### prebake_data.sh
+
+Run **once during image build** to generate sample data files:
+
+```bash
+./admin/prebake_data.sh
+```
+
+Creates:
+- `data/sample/businesses.ndjson` (300 businesses)
+- `data/sample/users.ndjson` (1500 users)
+- `data/sample/reviews.ndjson` (8000 reviews)
+- `data/sample/attacker_users.ndjson` (10 attackers)
+- `data/sample/attack_reviews.ndjson` (50 attack reviews)
+
+### setup_workshop_data.sh
+
+Run **at workshop start** (in Instruqt setup script) to load data into Elasticsearch:
+
+```bash
+./admin/setup_workshop_data.sh
+```
+
+This script:
+1. Waits for Elasticsearch to be available
+2. Creates indices with proper mappings (including `index.mode: lookup`)
+3. Loads pre-generated data files
+4. Verifies data was loaded correctly
+
+**Instruqt Integration Example:**
+
+```yaml
+# In track.yml or challenge setup script
+lifecycle:
+  setup:
+    script: |
+      cd /workspace/elastic-workflow-workshop
+      ./admin/setup_workshop_data.sh
+```
+
+### Recommended Workflow
+
+1. **Image Build Time:**
+   ```bash
+   ./admin/prebake_data.sh
+   ```
+
+2. **Workshop Start (Instruqt setup):**
+   ```bash
+   ./admin/setup_workshop_data.sh
+   ```
+
+This approach gives you:
+- Consistent data across all participants
+- Fast startup (~15 seconds to load data)
+- Fresh indices each session (no leftover attack data)
+
+---
+
 ## Individual Scripts
 
 ### filter_businesses.py
