@@ -990,3 +990,111 @@ FROM reviews METADATA _score
 2. Use EVAL to create new columns or rename existing ones
 3. Place EVAL before KEEP in the pipeline
 4. This is different from SQL's `SELECT ... AS ...` pattern
+
+### ES|QL COUNT(CASE WHEN) Not Supported
+
+**Problem:** ES|QL query failed with "no viable alternative at input 'COUNT(CASE WHEN'"
+
+**Root Cause:** ES|QL doesn't support `COUNT(CASE WHEN ...)` conditional aggregation patterns common in SQL.
+
+```esql
+// WRONG - Not valid ES|QL
+| STATS held_count = COUNT(CASE WHEN status == "held" THEN 1 END)
+```
+
+**Solution:** Use one of these alternatives:
+
+1. **Group by status:**
+```esql
+| STATS count = COUNT(*) BY status
+```
+
+2. **Filter first, then count:**
+```esql
+| WHERE status == "held"
+| STATS held_count = COUNT(*)
+```
+
+3. **Use AVG for ratio:**
+```esql
+| EVAL is_held = CASE(status == "held", 1, 0)
+| STATS held_ratio = AVG(is_held)
+```
+
+---
+
+## Bulk Operations Must Create Related Records
+
+### LOOKUP JOIN Requires Matching Records
+
+**Problem:** LOOKUP JOIN returned null for `trust_score` even though attack reviews existed
+
+**Root Cause:** The bulk-attack endpoint created reviews with `user_id` values like `attacker_abc123`, but never created corresponding records in the `users` index.
+
+**Debugging steps that revealed the issue:**
+```esql
+// Step 1: Found reviews exist
+FROM reviews
+| WHERE business_id == "target_biz_001"
+| WHERE date > NOW() - 30 minutes
+| STATS count = COUNT(*)
+// Result: count = 44
+
+// Step 2: Checked user_ids
+FROM reviews
+| WHERE business_id == "target_biz_001"
+| WHERE stars <= 2
+| KEEP user_id
+| LIMIT 10
+// Result: attacker_2e9be573, attacker_xxx, ...
+
+// Step 3: LOOKUP JOIN returned null
+FROM reviews
+| WHERE business_id == "target_biz_001"
+| LOOKUP JOIN users ON user_id
+| WHERE trust_score IS NOT NULL
+| STATS count = COUNT(*)
+// Result: count = 0  <-- No matching users!
+```
+
+**Solution:** The bulk-attack endpoint must create BOTH reviews AND users in the same bulk operation:
+
+```python
+@router.post("/bulk-attack")
+async def bulk_attack(business_id: str, count: int = 15):
+    operations = []
+    users_created = set()
+
+    for i in range(count):
+        review_id = f"attack_{uuid.uuid4().hex[:12]}"
+        user_id = f"attacker_{uuid.uuid4().hex[:8]}"
+
+        # Create attacker user FIRST (with low trust score)
+        if user_id not in users_created:
+            user_doc = {
+                "user_id": user_id,
+                "name": f"Attacker {user_id[-6:]}",
+                "trust_score": round(random.uniform(0.05, 0.25), 2),  # Low!
+                "account_age_days": random.randint(1, 14),  # New account
+                "is_attacker": True
+            }
+            operations.append({"index": {"_index": "users", "_id": user_id}})
+            operations.append(user_doc)
+            users_created.add(user_id)
+
+        # Then create the review
+        review_doc = {
+            "review_id": review_id,
+            "business_id": business_id,
+            "user_id": user_id,  # References the user created above
+            "stars": 1,
+            "text": "Terrible!",
+            "is_simulated": True
+        }
+        operations.append({"index": {"_index": "reviews", "_id": review_id}})
+        operations.append(review_doc)
+
+    await es.bulk(operations=operations, refresh=True)
+```
+
+**Key Lesson:** When creating data for LOOKUP JOIN detection, ensure both sides of the join have matching records. This is especially important for attack simulation where synthetic data is generated.
