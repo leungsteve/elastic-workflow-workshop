@@ -13,7 +13,7 @@ Run a complete attack simulation to see your detection workflow, automated respo
 You've built all the pieces:
 - **Challenge 1:** ES|QL queries to detect suspicious patterns + semantic search
 - **Challenge 2:** Automated workflow to respond to attacks
-- **Challenge 3:** Agent Builder tools to investigate incidents (including semantic search)
+- **Challenge 3:** Agent Builder tools and a custom **Review Bomb Investigator** agent
 
 Now it's time to put everything together and watch the system in action.
 
@@ -21,7 +21,7 @@ In this challenge, you will:
 1. Verify a target business's baseline state
 2. Launch a simulated review bomb attack
 3. Watch your workflow detect and respond automatically
-4. Use Agent Builder to investigate the incident
+4. Use your custom agent to investigate the incident
 5. Resolve the incident and restore normal operations
 
 This simulates how your system would protect real businesses from coordinated attacks.
@@ -183,11 +183,12 @@ Your workflow should detect the attack automatically. Let's observe it in action
 
 ---
 
-### Task 4: Investigate with Agent Builder (5 min)
+### Task 4: Investigate with Your Custom Agent (5 min)
 
-Now use your investigation tools to understand the attack.
+Now use the **Review Bomb Investigator** agent you created in Challenge 3 to understand the attack.
 
-1. Open the **AI Assistant** panel
+1. Open **Agent Builder** and select your **Review Bomb Investigator** agent
+   - Or click **Chat** next to your agent in the Agents list
 
 2. Ask about the incident:
    > "What can you tell me about the latest incident?"
