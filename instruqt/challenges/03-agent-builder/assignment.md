@@ -105,10 +105,9 @@ FROM incidents
     ),
     time_since_detection = DATE_DIFF("minute", detected_at, NOW()),
     business_original_rating = stars
-| KEEP incident_id, incident_type, status, severity, business_name, city,
-       review_count, avg_rating, avg_trust_score,
-       unique_reviewers, detected_at, time_since_detection,
-       impact_assessment, business_original_rating
+| KEEP incident_id, status, severity, business_name, city,
+       metrics.review_count, metrics.average_rating, metrics.unique_attackers,
+       detected_at, time_since_detection, impact_assessment, business_original_rating
 ```
 
 #### Step 3: Define ES|QL Parameters
