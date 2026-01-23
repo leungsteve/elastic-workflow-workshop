@@ -93,7 +93,7 @@ Copy this query into the **ES|QL Query** editor:
 
 ```esql
 FROM incidents
-| WHERE incident_id == "{{incident_id}}" OR business_name LIKE "*{{incident_id}}*"
+| WHERE incident_id == ?incident_id OR business_name == ?incident_id
 | SORT detected_at DESC
 | LIMIT 1
 | LOOKUP JOIN businesses ON business_id
@@ -118,7 +118,7 @@ In the **ES|QL Parameters** section, add a parameter:
 |------|-------------|------|----------|
 | `incident_id` | The incident ID to look up (e.g., INC-biz123-2024). Can also accept a business name to find the latest incident. | `text` | ☐ (unchecked) |
 
-**Tip:** You can click **Infer parameter** to automatically detect parameters from your query's `{{placeholder}}` syntax.
+**Tip:** You can click **Infer parameter** to automatically detect parameters from your query's `?param` syntax.
 
 #### Step 4: Fill in Details
 
@@ -150,7 +150,7 @@ Select **ES|QL** from the Type dropdown.
 
 ```esql
 FROM reviews
-| WHERE business_id == "{{business_id}}"
+| WHERE business_id == ?business_id
 | WHERE date > NOW() - 24 hours
 | WHERE stars <= 2
 | LOOKUP JOIN users ON user_id
@@ -218,7 +218,7 @@ Select **ES|QL** from the Type dropdown.
 
 ```esql
 FROM reviews METADATA _score
-| WHERE text_semantic: "{{search_text}}"
+| WHERE text_semantic: ?search_text
 | SORT _score DESC
 | KEEP review_id, user_id, business_id, stars, text, date, _score
 | LIMIT 10
@@ -422,7 +422,7 @@ FROM incidents
 **Business Risk Assessment:**
 ```esql
 FROM reviews
-| WHERE business_id == "{{business_id}}"
+| WHERE business_id == ?business_id
 | WHERE date > NOW() - 7 days
 | LOOKUP JOIN users ON user_id
 | STATS
@@ -464,7 +464,7 @@ FROM reviews
 
 **Parameter not recognized?**
 - Click **Infer parameter** to auto-detect from query
-- Ensure parameter name matches `{{placeholder}}` exactly
+- Ensure parameter name matches `?param` exactly (use `?` prefix in queries)
 - Check that the Type is appropriate for the value
 
 In the next challenge, you'll run a full end-to-end attack simulation!

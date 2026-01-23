@@ -28,12 +28,25 @@ import urllib.error
 # Tool definitions
 TOOLS = [
     {
+        "id": "recent_incidents",
+        "type": "esql",
+        "description": "Lists recent review fraud incidents from the last 24 hours. Use this when asked about recent attacks, latest incidents, or what's happening across the platform. No parameters required - shows the most recent incidents automatically.",
+        "configuration": {
+            "query": """FROM incidents
+| WHERE detected_at > NOW() - 24 hours
+| SORT detected_at DESC
+| KEEP incident_id, business_name, severity, status, detected_at, metrics.review_count, metrics.unique_attackers
+| LIMIT 10""",
+            "params": {}
+        }
+    },
+    {
         "id": "incident_summary",
         "type": "esql",
         "description": "Retrieves a summary of a review fraud incident including the targeted business, attack severity, and current status. Use this tool when asked about incident details, incident status, or what happened to a specific business.",
         "configuration": {
             "query": """FROM incidents
-| WHERE incident_id == "{{incident_id}}" OR business_name LIKE "*{{incident_id}}*"
+| WHERE incident_id == ?incident_id OR business_name == ?incident_id
 | SORT detected_at DESC
 | LIMIT 1
 | LOOKUP JOIN businesses ON business_id
@@ -46,8 +59,8 @@ TOOLS = [
     time_since_detection = DATE_DIFF("minute", detected_at, NOW()),
     business_original_rating = stars
 | KEEP incident_id, incident_type, status, severity, business_name, city,
-       review_count, avg_rating, avg_trust_score,
-       unique_reviewers, detected_at, time_since_detection,
+       metrics.review_count, metrics.average_rating, metrics.avg_trust,
+       metrics.unique_attackers, detected_at, time_since_detection,
        impact_assessment, business_original_rating""",
             "params": {
                 "incident_id": {
@@ -63,7 +76,7 @@ TOOLS = [
         "description": "Analyzes the reviewers/attackers involved in a review fraud incident. Shows their trust scores, account ages, review patterns, and risk levels. Use this to understand who is behind an attack and identify coordination patterns.",
         "configuration": {
             "query": """FROM reviews
-| WHERE business_id == "{{business_id}}"
+| WHERE business_id == ?business_id
 | WHERE date > NOW() - 24 hours
 | WHERE stars <= 2
 | LOOKUP JOIN users ON user_id
@@ -103,7 +116,7 @@ TOOLS = [
         "description": "Finds reviews that are semantically similar to a given text using ELSER. Use this to understand attack narratives, find common themes in malicious reviews, or discover patterns in what attackers are claiming. Works by meaning, not just keywords - 'food poisoning' will find reviews about illness even if they don't use those exact words.",
         "configuration": {
             "query": """FROM reviews METADATA _score
-| WHERE text_semantic: "{{search_text}}"
+| WHERE text_semantic: ?search_text
 | SORT _score DESC
 | KEEP review_id, user_id, business_id, stars, text, date, _score
 | LIMIT 10""",
@@ -137,7 +150,7 @@ Always provide actionable insights:
 - Recommend next steps for the investigation
 
 Be concise but thorough. Format your responses with clear sections when presenting multiple pieces of information.""",
-        "tools": [{"tool_ids": ["incident_summary", "reviewer_analysis", "similar_reviews"]}]
+        "tools": [{"tool_ids": ["recent_incidents", "incident_summary", "reviewer_analysis", "similar_reviews"]}]
     },
     "avatar_color": "#BD271E",  # Red for security/trust
     "avatar_symbol": "shield"

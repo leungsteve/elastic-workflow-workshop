@@ -767,13 +767,13 @@ curl -X POST -H "Authorization: ApiKey $API_KEY" -H "kbn-xsrf: true" \
   }
 }
 
-// CORRECT - API schema
+// CORRECT - API schema (note ?param syntax, NOT {{param}})
 {
   "id": "my_tool",
   "type": "esql",
   "description": "Tool description",
   "configuration": {
-    "query": "FROM reviews | WHERE business_id == \"{{business_id}}\" | LIMIT 10",
+    "query": "FROM reviews | WHERE business_id == ?business_id | LIMIT 10",
     "params": {
       "business_id": {
         "type": "text",
@@ -789,6 +789,54 @@ curl -X POST -H "Authorization: ApiKey $API_KEY" -H "kbn-xsrf: true" \
 - Use `configuration.params` object (keyed by param name) not `esql.parameters` array
 - Each param is an object with `type` and `description` properties
 - For no parameters, use `"params": {}` (empty object)
+- **CRITICAL: Use `?param` syntax in queries, NOT `{{param}}`** - the API will reject `{{param}}` with "Defined parameters not used in query"
+
+---
+
+### Agent Builder ES|QL Parameter Syntax: Use `?param` NOT `{{param}}`
+
+**Problem:** Creating ES|QL tools via Agent Builder API failed with:
+```
+Invalid configuration for tool type esql: Defined parameters not used in query: param_name
+Query parameters: none
+```
+
+**Root Cause:** Agent Builder uses `?param` syntax for ES|QL parameters, NOT `{{param}}` which is used in Elastic Workflows.
+
+**Wrong (Workflow syntax - won't work in Agent Builder):**
+```esql
+FROM incidents
+| WHERE incident_id == "{{incident_id}}"
+```
+
+**Correct (Agent Builder syntax):**
+```esql
+FROM incidents
+| WHERE incident_id == ?incident_id
+```
+
+**Key Points:**
+- No quotes around the parameter: `== ?incident_id` (not `== "?incident_id"`)
+- Parameter name after `?` must match key in `params` object exactly
+- The API validates that every defined param is used in the query
+- For LIKE patterns, you cannot use dynamic concatenation - use exact match instead
+
+**Working Example:**
+```json
+{
+  "id": "incident_summary",
+  "type": "esql",
+  "configuration": {
+    "query": "FROM incidents | WHERE incident_id == ?incident_id | LIMIT 1",
+    "params": {
+      "incident_id": {
+        "type": "text",
+        "description": "The incident ID to look up"
+      }
+    }
+  }
+}
+```
 
 ---
 
