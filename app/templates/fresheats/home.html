@@ -9,7 +9,7 @@
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <h1 class="text-white text-center mb-4 fw-bold">Find the best local restaurants</h1>
-                <form action="/yelp" method="get">
+                <form action="/fresheats" method="get">
                     <div class="fe-search-bar d-flex">
                         <div class="flex-grow-1 d-flex align-items-center">
                             <i class="bi bi-search text-muted ms-3 me-2"></i>
@@ -66,7 +66,7 @@
                     </div>
                     <div class="flex-grow-1">
                         <h3>
-                            <a href="/yelp/biz/{{ biz.business_id }}">{{ biz.name }}</a>
+                            <a href="/fresheats/biz/{{ biz.business_id }}">{{ biz.name }}</a>
                             {% if biz.rating_protected %}
                             <span class="fe-protected-badge ms-2">
                                 <i class="bi bi-shield-check"></i> Under Review
@@ -134,14 +134,14 @@
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">Filter by Category</h6>
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="/yelp?category=Restaurants" class="btn btn-sm btn-outline-secondary">Restaurants</a>
-                        <a href="/yelp?category=Coffee" class="btn btn-sm btn-outline-secondary">Coffee</a>
-                        <a href="/yelp?category=Bars" class="btn btn-sm btn-outline-secondary">Bars</a>
-                        <a href="/yelp?category=Pizza" class="btn btn-sm btn-outline-secondary">Pizza</a>
-                        <a href="/yelp?category=Mexican" class="btn btn-sm btn-outline-secondary">Mexican</a>
-                        <a href="/yelp?category=Chinese" class="btn btn-sm btn-outline-secondary">Chinese</a>
-                        <a href="/yelp?category=Italian" class="btn btn-sm btn-outline-secondary">Italian</a>
-                        <a href="/yelp?category=Sandwiches" class="btn btn-sm btn-outline-secondary">Sandwiches</a>
+                        <a href="/fresheats?category=Restaurants" class="btn btn-sm btn-outline-secondary">Restaurants</a>
+                        <a href="/fresheats?category=Coffee" class="btn btn-sm btn-outline-secondary">Coffee</a>
+                        <a href="/fresheats?category=Bars" class="btn btn-sm btn-outline-secondary">Bars</a>
+                        <a href="/fresheats?category=Pizza" class="btn btn-sm btn-outline-secondary">Pizza</a>
+                        <a href="/fresheats?category=Mexican" class="btn btn-sm btn-outline-secondary">Mexican</a>
+                        <a href="/fresheats?category=Chinese" class="btn btn-sm btn-outline-secondary">Chinese</a>
+                        <a href="/fresheats?category=Italian" class="btn btn-sm btn-outline-secondary">Italian</a>
+                        <a href="/fresheats?category=Sandwiches" class="btn btn-sm btn-outline-secondary">Sandwiches</a>
                     </div>
                 </div>
             </div>
@@ -167,51 +167,51 @@
     <!-- Browse Categories -->
     <h2 class="mb-4">Browse by Category</h2>
     <div class="fe-category-grid mb-5">
-        <a href="/yelp?category=Restaurants" class="fe-category-card">
+        <a href="/fresheats?category=Restaurants" class="fe-category-card">
             <i class="bi bi-cup-hot"></i>
             <span>Restaurants</span>
         </a>
-        <a href="/yelp?category=Coffee" class="fe-category-card">
+        <a href="/fresheats?category=Coffee" class="fe-category-card">
             <i class="bi bi-cup"></i>
             <span>Coffee & Tea</span>
         </a>
-        <a href="/yelp?category=Bars" class="fe-category-card">
+        <a href="/fresheats?category=Bars" class="fe-category-card">
             <i class="bi bi-cup-straw"></i>
             <span>Bars</span>
         </a>
-        <a href="/yelp?category=Pizza" class="fe-category-card">
+        <a href="/fresheats?category=Pizza" class="fe-category-card">
             <i class="bi bi-circle"></i>
             <span>Pizza</span>
         </a>
-        <a href="/yelp?category=Mexican" class="fe-category-card">
+        <a href="/fresheats?category=Mexican" class="fe-category-card">
             <i class="bi bi-fire"></i>
             <span>Mexican</span>
         </a>
-        <a href="/yelp?category=Chinese" class="fe-category-card">
+        <a href="/fresheats?category=Chinese" class="fe-category-card">
             <i class="bi bi-box"></i>
             <span>Chinese</span>
         </a>
-        <a href="/yelp?category=Italian" class="fe-category-card">
+        <a href="/fresheats?category=Italian" class="fe-category-card">
             <i class="bi bi-heart"></i>
             <span>Italian</span>
         </a>
-        <a href="/yelp?category=Sandwiches" class="fe-category-card">
+        <a href="/fresheats?category=Sandwiches" class="fe-category-card">
             <i class="bi bi-basket"></i>
             <span>Sandwiches</span>
         </a>
-        <a href="/yelp?category=Breakfast" class="fe-category-card">
+        <a href="/fresheats?category=Breakfast" class="fe-category-card">
             <i class="bi bi-sunrise"></i>
             <span>Breakfast</span>
         </a>
-        <a href="/yelp?category=Desserts" class="fe-category-card">
+        <a href="/fresheats?category=Desserts" class="fe-category-card">
             <i class="bi bi-cake2"></i>
             <span>Desserts</span>
         </a>
-        <a href="/yelp?category=Seafood" class="fe-category-card">
+        <a href="/fresheats?category=Seafood" class="fe-category-card">
             <i class="bi bi-water"></i>
             <span>Seafood</span>
         </a>
-        <a href="/yelp?category=Burgers" class="fe-category-card">
+        <a href="/fresheats?category=Burgers" class="fe-category-card">
             <i class="bi bi-stack"></i>
             <span>Burgers</span>
         </a>
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="fe-biz-card h-100">
                         <h3 style="font-size: 1.1rem;">
-                            <a href="/yelp/biz/${biz.business_id}">${biz.name}</a>
+                            <a href="/fresheats/biz/${biz.business_id}">${biz.name}</a>
                             ${biz.rating_protected ? '<span class="fe-protected-badge ms-1"><i class="bi bi-shield-check"></i></span>' : ''}
                         </h3>
                         <div class="d-flex align-items-center mb-1">

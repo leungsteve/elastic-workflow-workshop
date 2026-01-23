@@ -169,7 +169,7 @@ async def notifications_page(request: Request):
 # FreshEats Consumer UI (Yelp-like interface)
 # ============================================================
 
-@app.get("/yelp", response_class=HTMLResponse)
+@app.get("/fresheats", response_class=HTMLResponse)
 async def fresheats_home(
     request: Request,
     q: str = None,
@@ -249,7 +249,7 @@ async def fresheats_home(
     )
 
 
-@app.get("/yelp/biz/{business_id}", response_class=HTMLResponse)
+@app.get("/fresheats/biz/{business_id}", response_class=HTMLResponse)
 async def fresheats_business(
     request: Request,
     business_id: str,
