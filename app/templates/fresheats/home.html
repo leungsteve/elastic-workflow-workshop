@@ -1,0 +1,272 @@
+{% extends "fresheats/base.html" %}
+
+{% block title %}FreshEats - Find Great Local Restaurants{% endblock %}
+
+{% block content %}
+<!-- Search Hero -->
+<section class="fe-search-hero">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="text-white text-center mb-4 fw-bold">Find the best local restaurants</h1>
+                <form action="/yelp" method="get">
+                    <div class="fe-search-bar d-flex">
+                        <div class="flex-grow-1 d-flex align-items-center">
+                            <i class="bi bi-search text-muted ms-3 me-2"></i>
+                            <input type="text"
+                                   name="q"
+                                   class="form-control"
+                                   placeholder="tacos, coffee, brunch..."
+                                   value="{{ query or '' }}">
+                        </div>
+                        <div class="d-flex align-items-center border-start">
+                            <i class="bi bi-geo-alt text-muted ms-3 me-2"></i>
+                            <input type="text"
+                                   name="city"
+                                   class="form-control"
+                                   placeholder="Philadelphia"
+                                   value="{{ city or '' }}"
+                                   style="max-width: 150px;">
+                        </div>
+                        <button type="submit" class="btn btn-danger ms-2">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container py-4">
+    {% if query or category or city %}
+    <!-- Search Results -->
+    <div class="row">
+        <div class="col-lg-8">
+            <h2 class="mb-3">
+                {% if query %}
+                    Results for "{{ query }}"
+                {% elif category %}
+                    {{ category }}
+                {% else %}
+                    Restaurants in {{ city }}
+                {% endif %}
+                {% if total > 0 %}
+                    <small class="text-muted fs-6">({{ total }} found)</small>
+                {% endif %}
+            </h2>
+
+            {% if businesses %}
+                {% for biz in businesses %}
+                <div class="fe-biz-card d-flex">
+                    <div class="me-3">
+                        <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #f5f5f5, #e0e0e0); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-shop text-muted" style="font-size: 2.5rem;"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h3>
+                            <a href="/yelp/biz/{{ biz.business_id }}">{{ biz.name }}</a>
+                            {% if biz.rating_protected %}
+                            <span class="fe-protected-badge ms-2">
+                                <i class="bi bi-shield-check"></i> Under Review
+                            </span>
+                            {% endif %}
+                        </h3>
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="fe-stars me-2">
+                                {% for i in range(biz.stars|int) %}
+                                <i class="bi bi-star-fill"></i>
+                                {% endfor %}
+                                {% if biz.stars % 1 >= 0.5 %}
+                                <i class="bi bi-star-half"></i>
+                                {% endif %}
+                                {% for i in range(5 - (biz.stars|int) - (1 if biz.stars % 1 >= 0.5 else 0)) %}
+                                <i class="bi bi-star"></i>
+                                {% endfor %}
+                            </span>
+                            <span class="text-muted small">{{ biz.review_count or 0 }} reviews</span>
+                        </div>
+                        <div class="category">{{ biz.categories or 'Restaurant' }}</div>
+                        <div class="text-muted small mt-1">
+                            <i class="bi bi-geo-alt"></i>
+                            {{ biz.city }}{% if biz.address %}, {{ biz.address }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="fe-rating-badge">{{ "%.1f"|format(biz.stars or 0) }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if total > page_size %}
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page > 1 %}
+                        <li class="page-item">
+                            <a class="page-link" href="?q={{ query or '' }}&city={{ city or '' }}&category={{ category or '' }}&page={{ page - 1 }}">Previous</a>
+                        </li>
+                        {% endif %}
+                        <li class="page-item active">
+                            <span class="page-link">Page {{ page }}</span>
+                        </li>
+                        {% if page * page_size < total %}
+                        <li class="page-item">
+                            <a class="page-link" href="?q={{ query or '' }}&city={{ city or '' }}&category={{ category or '' }}&page={{ page + 1 }}">Next</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-search text-muted" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3">No results found</h4>
+                    <p class="text-muted">Try adjusting your search terms or browse categories below.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Sidebar -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Filter by Category</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="/yelp?category=Restaurants" class="btn btn-sm btn-outline-secondary">Restaurants</a>
+                        <a href="/yelp?category=Coffee" class="btn btn-sm btn-outline-secondary">Coffee</a>
+                        <a href="/yelp?category=Bars" class="btn btn-sm btn-outline-secondary">Bars</a>
+                        <a href="/yelp?category=Pizza" class="btn btn-sm btn-outline-secondary">Pizza</a>
+                        <a href="/yelp?category=Mexican" class="btn btn-sm btn-outline-secondary">Mexican</a>
+                        <a href="/yelp?category=Chinese" class="btn btn-sm btn-outline-secondary">Chinese</a>
+                        <a href="/yelp?category=Italian" class="btn btn-sm btn-outline-secondary">Italian</a>
+                        <a href="/yelp?category=Sandwiches" class="btn btn-sm btn-outline-secondary">Sandwiches</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-info-circle text-fe-red"></i> Workshop Info
+                    </h6>
+                    <p class="small text-muted mb-2">
+                        This is a demo for the Review Fraud Detection Workshop.
+                        Try searching for "Reading Terminal Market" to see a high-profile target.
+                    </p>
+                    <a href="/attack" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-lightning"></i> Launch Attack
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Browse Categories -->
+    <h2 class="mb-4">Browse by Category</h2>
+    <div class="fe-category-grid mb-5">
+        <a href="/yelp?category=Restaurants" class="fe-category-card">
+            <i class="bi bi-cup-hot"></i>
+            <span>Restaurants</span>
+        </a>
+        <a href="/yelp?category=Coffee" class="fe-category-card">
+            <i class="bi bi-cup"></i>
+            <span>Coffee & Tea</span>
+        </a>
+        <a href="/yelp?category=Bars" class="fe-category-card">
+            <i class="bi bi-cup-straw"></i>
+            <span>Bars</span>
+        </a>
+        <a href="/yelp?category=Pizza" class="fe-category-card">
+            <i class="bi bi-circle"></i>
+            <span>Pizza</span>
+        </a>
+        <a href="/yelp?category=Mexican" class="fe-category-card">
+            <i class="bi bi-fire"></i>
+            <span>Mexican</span>
+        </a>
+        <a href="/yelp?category=Chinese" class="fe-category-card">
+            <i class="bi bi-box"></i>
+            <span>Chinese</span>
+        </a>
+        <a href="/yelp?category=Italian" class="fe-category-card">
+            <i class="bi bi-heart"></i>
+            <span>Italian</span>
+        </a>
+        <a href="/yelp?category=Sandwiches" class="fe-category-card">
+            <i class="bi bi-basket"></i>
+            <span>Sandwiches</span>
+        </a>
+        <a href="/yelp?category=Breakfast" class="fe-category-card">
+            <i class="bi bi-sunrise"></i>
+            <span>Breakfast</span>
+        </a>
+        <a href="/yelp?category=Desserts" class="fe-category-card">
+            <i class="bi bi-cake2"></i>
+            <span>Desserts</span>
+        </a>
+        <a href="/yelp?category=Seafood" class="fe-category-card">
+            <i class="bi bi-water"></i>
+            <span>Seafood</span>
+        </a>
+        <a href="/yelp?category=Burgers" class="fe-category-card">
+            <i class="bi bi-stack"></i>
+            <span>Burgers</span>
+        </a>
+    </div>
+
+    <!-- Featured / Popular Businesses -->
+    <h2 class="mb-4">Popular in Philadelphia</h2>
+    <div class="row" id="popularBusinesses">
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-danger" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if not query and not category and not city %}
+// Load popular businesses on homepage
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const data = await api.get('/api/businesses?page_size=6');
+        const container = document.getElementById('popularBusinesses');
+
+        if (data.businesses && data.businesses.length > 0) {
+            container.innerHTML = data.businesses.map(biz => `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="fe-biz-card h-100">
+                        <h3 style="font-size: 1.1rem;">
+                            <a href="/yelp/biz/${biz.business_id}">${biz.name}</a>
+                            ${biz.rating_protected ? '<span class="fe-protected-badge ms-1"><i class="bi bi-shield-check"></i></span>' : ''}
+                        </h3>
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="fe-stars me-2">${renderStars(biz.stars || 0)}</span>
+                            <span class="text-muted small">${biz.review_count || 0}</span>
+                        </div>
+                        <div class="category small">${biz.categories || 'Restaurant'}</div>
+                        <div class="text-muted small mt-1">
+                            <i class="bi bi-geo-alt"></i> ${biz.city || 'Philadelphia'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<div class="col-12"><p class="text-muted">No businesses found.</p></div>';
+        }
+    } catch (e) {
+        console.error('Failed to load businesses:', e);
+        document.getElementById('popularBusinesses').innerHTML =
+            '<div class="col-12"><p class="text-danger">Failed to load businesses. Is Elasticsearch running?</p></div>';
+    }
+});
+{% endif %}
+</script>
+{% endblock %}

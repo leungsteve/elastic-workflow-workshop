@@ -1,0 +1,380 @@
+{% extends "fresheats/base.html" %}
+
+{% block title %}{{ business.name }} - FreshEats{% endblock %}
+
+{% block content %}
+<!-- Business Header -->
+<section class="fe-biz-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <h1>
+                    {{ business.name }}
+                    {% if business.rating_protected %}
+                    <span class="fe-protected-badge ms-2" style="font-size: 0.5em; vertical-align: middle;">
+                        <i class="bi bi-shield-check"></i> Rating Protected
+                    </span>
+                    {% endif %}
+                </h1>
+
+                <div class="d-flex align-items-center mb-2">
+                    <span class="fe-stars fe-stars-large me-2">
+                        {% for i in range(business.stars|int) %}
+                        <i class="bi bi-star-fill"></i>
+                        {% endfor %}
+                        {% if business.stars % 1 >= 0.5 %}
+                        <i class="bi bi-star-half"></i>
+                        {% endif %}
+                        {% for i in range(5 - (business.stars|int) - (1 if business.stars % 1 >= 0.5 else 0)) %}
+                        <i class="bi bi-star"></i>
+                        {% endfor %}
+                    </span>
+                    <span class="fe-rating-badge me-2">{{ "%.1f"|format(business.stars or 0) }}</span>
+                    <span class="text-muted">{{ business.review_count or 0 }} reviews</span>
+                </div>
+
+                <div class="mb-2">
+                    <span class="badge bg-secondary me-1">{{ business.categories or 'Restaurant' }}</span>
+                    {% if business.is_open %}
+                    <span class="badge bg-success">Open</span>
+                    {% else %}
+                    <span class="badge bg-danger">Closed</span>
+                    {% endif %}
+                </div>
+
+                <p class="location mb-0">
+                    <i class="bi bi-geo-alt"></i>
+                    {% if business.address %}{{ business.address }}, {% endif %}
+                    {{ business.city }}{% if business.state %}, {{ business.state }}{% endif %}
+                    {% if business.postal_code %} {{ business.postal_code }}{% endif %}
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="/attack?target={{ business.business_id }}" class="btn btn-outline-danger">
+                    <i class="bi bi-lightning"></i> Simulate Attack
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="container py-4">
+    {% if business.rating_protected %}
+    <!-- Protection Alert -->
+    <div class="fe-incident-alert critical">
+        <div class="d-flex align-items-start">
+            <i class="bi bi-shield-exclamation text-danger me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h5 class="mb-1">This business is currently under rating protection</h5>
+                <p class="mb-0 text-muted small">
+                    Our fraud detection system has identified suspicious review activity targeting this business.
+                    New reviews are being held for manual review to protect the business's rating integrity.
+                    {% if business.protection_reason %}
+                    <br><strong>Reason:</strong> {{ business.protection_reason }}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if incident %}
+    <!-- Active Incident -->
+    <div class="fe-incident-alert">
+        <div class="d-flex align-items-start">
+            <i class="bi bi-exclamation-triangle text-warning me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <h5 class="mb-1">Active Incident: {{ incident.incident_id }}</h5>
+                <p class="mb-0 text-muted small">
+                    <strong>Status:</strong> {{ incident.status }}
+                    | <strong>Severity:</strong> {{ incident.severity }}
+                    | <strong>Detected:</strong> {{ incident.detected_at }}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- Reviews Section -->
+        <div class="col-lg-8">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Reviews</h2>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="?filter=all">All Reviews</a></li>
+                        <li><a class="dropdown-item" href="?filter=recent">Recent (24h)</a></li>
+                        <li><a class="dropdown-item" href="?filter=held">Held Reviews</a></li>
+                        <li><a class="dropdown-item" href="?filter=suspicious">Suspicious Only</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="reviewsList">
+                {% if reviews %}
+                    {% for review in reviews %}
+                    <div class="fe-review {% if review.status == 'held' %}held{% endif %}">
+                        <div class="d-flex">
+                            <div class="user-avatar me-3">
+                                {{ (review.user_id or 'U')[0]|upper }}
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <span class="user-name">{{ review.user_name or review.user_id[:8] }}</span>
+                                        {% if review.trust_score is defined and review.trust_score < 0.4 %}
+                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">
+                                            Low Trust
+                                        </span>
+                                        {% endif %}
+                                        {% if review.status == 'held' %}
+                                        <span class="fe-held-badge ms-1">
+                                            <i class="bi bi-pause-circle"></i> HELD
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <span class="fe-stars">
+                                        {% for i in range(review.stars|int) %}
+                                        <i class="bi bi-star-fill"></i>
+                                        {% endfor %}
+                                        {% for i in range(5 - review.stars|int) %}
+                                        <i class="bi bi-star"></i>
+                                        {% endfor %}
+                                    </span>
+                                </div>
+                                <div class="review-meta mb-2">
+                                    {{ review.date[:10] if review.date else 'Unknown date' }}
+                                    {% if review.is_simulated %}
+                                    <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">SIMULATED</span>
+                                    {% endif %}
+                                </div>
+                                <p class="review-text mb-0">{{ review.text or 'No review text.' }}</p>
+
+                                {% if review.status == 'held' %}
+                                <div class="mt-2 small text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    This review is being held for manual review due to suspicious activity patterns.
+                                    {% if review.held_reason %}({{ review.held_reason }}){% endif %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Load More -->
+                    {% if has_more_reviews %}
+                    <div class="text-center py-3">
+                        <button class="btn btn-outline-secondary" id="loadMoreBtn" onclick="loadMoreReviews()">
+                            Load More Reviews
+                        </button>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-chat-left-text" style="font-size: 3rem;"></i>
+                        <p class="mt-3">No reviews yet for this business.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Stats -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-graph-up text-fe-red"></i> Quick Stats
+                    </h6>
+                    <div class="row g-3 text-center">
+                        <div class="col-6">
+                            <div class="fw-bold fs-4">{{ "%.1f"|format(business.stars or 0) }}</div>
+                            <div class="text-muted small">Rating</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="fw-bold fs-4">{{ business.review_count or 0 }}</div>
+                            <div class="text-muted small">Reviews</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card mb-3" id="recentActivityCard">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-activity text-fe-red"></i> Recent Activity (24h)
+                    </h6>
+                    <div id="recentActivity">
+                        <div class="text-center py-3">
+                            <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Info -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">
+                        <i class="bi bi-info-circle text-fe-red"></i> Business Info
+                    </h6>
+                    {% if business.address %}
+                    <p class="small mb-2">
+                        <i class="bi bi-geo-alt text-muted me-2"></i>
+                        {{ business.address }}<br>
+                        <span class="ms-4">{{ business.city }}{% if business.state %}, {{ business.state }}{% endif %} {{ business.postal_code or '' }}</span>
+                    </p>
+                    {% endif %}
+                    {% if business.categories %}
+                    <p class="small mb-2">
+                        <i class="bi bi-tag text-muted me-2"></i>
+                        {{ business.categories }}
+                    </p>
+                    {% endif %}
+                    <p class="small mb-0">
+                        <i class="bi bi-key text-muted me-2"></i>
+                        <code class="small">{{ business.business_id }}</code>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Workshop Actions -->
+            <div class="card border-danger">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3 text-danger">
+                        <i class="bi bi-lightning"></i> Workshop Actions
+                    </h6>
+                    <div class="d-grid gap-2">
+                        <a href="/attack?target={{ business.business_id }}" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-lightning"></i> Launch Attack on This Business
+                        </a>
+                        <a href="/incidents?business_id={{ business.business_id }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-exclamation-triangle"></i> View Incidents
+                        </a>
+                        <a href="/" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-speedometer2"></i> Go to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const businessId = "{{ business.business_id }}";
+let currentPage = 1;
+
+// Load recent activity stats
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const stats = await api.get(`/api/businesses/${businessId}/stats?hours=24`);
+        const container = document.getElementById('recentActivity');
+
+        container.innerHTML = `
+            <div class="row g-2 text-center">
+                <div class="col-4">
+                    <div class="fw-bold ${stats.recent_review_count > 5 ? 'text-danger' : ''}">${stats.recent_review_count}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">New Reviews</div>
+                </div>
+                <div class="col-4">
+                    <div class="fw-bold">${stats.recent_average_rating?.toFixed(1) || 'N/A'}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Avg Rating</div>
+                </div>
+                <div class="col-4">
+                    <div class="fw-bold ${stats.suspicious_review_count > 0 ? 'text-warning' : ''}">${stats.suspicious_review_count}</div>
+                    <div class="text-muted" style="font-size: 0.7rem;">Suspicious</div>
+                </div>
+            </div>
+            ${stats.is_under_attack ? `
+            <div class="alert alert-danger py-2 px-3 mt-3 mb-0 small">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <strong>Attack Detected!</strong> Unusual review pattern identified.
+            </div>
+            ` : ''}
+            <div class="mt-3 small text-muted">
+                <strong>Velocity:</strong> ${stats.review_velocity?.toFixed(1) || 0} reviews/hour<br>
+                <strong>Trend:</strong> ${stats.rating_trend > 0 ? '+' : ''}${stats.rating_trend?.toFixed(2) || 0} stars
+            </div>
+        `;
+    } catch (e) {
+        console.error('Failed to load stats:', e);
+        document.getElementById('recentActivity').innerHTML =
+            '<p class="text-muted small mb-0">Unable to load activity stats.</p>';
+    }
+});
+
+// Load more reviews function
+async function loadMoreReviews() {
+    const btn = document.getElementById('loadMoreBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Loading...';
+
+    try {
+        currentPage++;
+        const data = await api.get(`/api/reviews?business_id=${businessId}&page=${currentPage}&page_size=10`);
+
+        if (data.reviews && data.reviews.length > 0) {
+            const container = document.getElementById('reviewsList');
+            const btnContainer = btn.parentElement;
+
+            data.reviews.forEach(review => {
+                const reviewHtml = createReviewHtml(review);
+                btnContainer.insertAdjacentHTML('beforebegin', reviewHtml);
+            });
+
+            if (data.reviews.length < 10) {
+                btn.remove();
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = 'Load More Reviews';
+            }
+        } else {
+            btn.remove();
+        }
+    } catch (e) {
+        console.error('Failed to load more reviews:', e);
+        btn.disabled = false;
+        btn.innerHTML = 'Load More Reviews';
+    }
+}
+
+function createReviewHtml(review) {
+    const isHeld = review.status === 'held';
+    const stars = Array(5).fill(0).map((_, i) =>
+        i < review.stars ? '<i class="bi bi-star-fill"></i>' : '<i class="bi bi-star"></i>'
+    ).join('');
+
+    return `
+        <div class="fe-review ${isHeld ? 'held' : ''}">
+            <div class="d-flex">
+                <div class="user-avatar me-3">${(review.user_id || 'U')[0].toUpperCase()}</div>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="user-name">${review.user_name || review.user_id?.substring(0, 8) || 'User'}</span>
+                            ${review.trust_score < 0.4 ? '<span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Low Trust</span>' : ''}
+                            ${isHeld ? '<span class="fe-held-badge ms-1"><i class="bi bi-pause-circle"></i> HELD</span>' : ''}
+                        </div>
+                        <span class="fe-stars">${stars}</span>
+                    </div>
+                    <div class="review-meta mb-2">
+                        ${review.date ? review.date.substring(0, 10) : 'Unknown date'}
+                        ${review.is_simulated ? '<span class="badge bg-danger ms-1" style="font-size: 0.6rem;">SIMULATED</span>' : ''}
+                    </div>
+                    <p class="review-text mb-0">${review.text || 'No review text.'}</p>
+                    ${isHeld ? `<div class="mt-2 small text-muted"><i class="bi bi-info-circle"></i> This review is being held for manual review.</div>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+</script>
+{% endblock %}
