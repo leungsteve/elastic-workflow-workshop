@@ -1,10 +1,10 @@
 {
   "name": "incident_summary",
-  "description": "Summarize a review bomb incident by ID to get attack metrics, affected business details, and timeline information. Use this tool when a user asks about a specific incident, wants to understand an attack, or needs an overview of what happened to a business.",
+  "description": "Summarize a review fraud incident by ID to get attack metrics, affected business details, and timeline information. Use this tool when a user asks about a specific incident, wants to understand an attack, or needs an overview of what happened to a business.",
   "parameters": {
     "incident_id": {
       "type": "string",
-      "description": "The incident ID to summarize (e.g., INC-abc123). This is the unique identifier for the review bomb incident.",
+      "description": "The incident ID to summarize (e.g., INC-abc123). This is the unique identifier for the review fraud incident.",
       "required": true
     }
   },
@@ -13,8 +13,8 @@
     "incident_id": "Unique identifier for this incident",
     "business_id": "Unique identifier of the affected business",
     "business_name": "Name of the business that was targeted",
-    "detected_at": "Timestamp when the review bomb was first detected",
-    "incident_type": "Type of attack detected (e.g., review_bomb, fake_reviews)",
+    "detected_at": "Timestamp when the review fraud was first detected",
+    "incident_type": "Type of attack detected (e.g., review_fraud, fake_reviews)",
     "severity": "Severity level: low, medium, high, or critical",
     "status": "Current status: open, investigating, resolved, or false_positive",
     "review_count": "Total number of suspicious reviews in this incident",

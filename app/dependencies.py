@@ -1,4 +1,4 @@
-"""Dependency injection for Review Bomb Workshop."""
+"""Dependency injection for Review Fraud Workshop."""
 
 from typing import AsyncGenerator, Optional
 

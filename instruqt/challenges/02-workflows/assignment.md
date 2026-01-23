@@ -3,8 +3,12 @@
 ## Time
 20 minutes
 
+## Theme Focus: SIMPLIFY + OPTIMIZE
+> **SIMPLIFY:** Build automation visually—no code required.
+> **OPTIMIZE:** Automated 24/7 detection eliminates manual monitoring costs.
+
 ## Objective
-Create an automated workflow that detects review bomb attacks and responds in real-time using Elastic Workflows.
+Create an automated workflow that detects review fraud attacks and responds in real-time using Elastic Workflows.
 
 ---
 
@@ -19,7 +23,7 @@ In Challenge 1, you learned to identify suspicious review patterns using ES|QL q
 
 In this challenge, you'll create a workflow that:
 1. Runs every 5 minutes
-2. Detects businesses under review bomb attack
+2. Detects businesses under review fraud attack
 3. Holds suspicious reviews for manual review
 4. Protects targeted businesses
 5. Creates incidents for investigation
@@ -78,14 +82,14 @@ POST kbn://internal/kibana/settings
 
 ---
 
-### Task 2: Create the Review Bomb Detection Workflow (10 min)
+### Task 2: Create the Review Fraud Detection Workflow (10 min)
 
 1. In the Workflows app, click **Create a new workflow**
 2. You'll see a YAML editor. **Delete any placeholder content** and paste the following workflow definition:
 
 ```yaml
-name: Review Bomb Detection
-description: Detects coordinated review bombing attacks and automatically protects targeted businesses.
+name: Review Fraud Detection
+description: Detects coordinated review frauding attacks and automatically protects targeted businesses.
 enabled: true
 
 triggers:
@@ -94,7 +98,7 @@ triggers:
       every: 5m
 
 steps:
-  - name: detect_review_bombs
+  - name: detect_review_frauds
     type: elasticsearch.esql.query
     with:
       query: |
@@ -111,11 +115,11 @@ steps:
   - name: log_detection
     type: console
     with:
-      message: "Detected {{ steps.detect_review_bombs.output.values | size }} potential attacks"
+      message: "Detected {{ steps.detect_review_frauds.output.values | size }} potential attacks"
 
   - name: process_attacks
     type: foreach
-    foreach: "{{ steps.detect_review_bombs.output.values }}"
+    foreach: "{{ steps.detect_review_frauds.output.values }}"
     steps:
       - name: protect_business
         type: elasticsearch.update
@@ -124,14 +128,14 @@ steps:
           id: "{{ foreach.item.business_id }}"
           doc:
             rating_protected: true
-            protection_reason: review_bomb_detected
+            protection_reason: review_fraud_detected
 
       - name: create_incident
         type: elasticsearch.bulk
         with:
           index: incidents
           operations:
-            - incident_type: review_bomb
+            - incident_type: review_fraud
               status: open
               severity: high
               business_id: "{{ foreach.item.business_id }}"
@@ -142,16 +146,16 @@ steps:
         with:
           index: notifications
           operations:
-            - type: review_bomb_detected
+            - type: review_fraud_detected
               severity: high
-              title: "Review Bomb Detected: {{ foreach.item.name }}"
+              title: "Review Fraud Detected: {{ foreach.item.name }}"
               business_id: "{{ foreach.item.business_id }}"
               read: false
 
   - name: completion_log
     type: console
     with:
-      message: Review bomb detection workflow completed
+      message: Review fraud detection workflow completed
 ```
 
 3. Click **Save** to create the workflow
@@ -165,9 +169,9 @@ Let's break down each section of the workflow:
 
 #### Metadata
 ```yaml
-name: Review Bomb Detection
+name: Review Fraud Detection
 description: |
-  Detects coordinated review bombing attacks...
+  Detects coordinated review frauding attacks...
 enabled: true
 ```
 - `name`: Display name in the UI
@@ -187,7 +191,7 @@ triggers:
 
 #### Detection Query (ES|QL)
 ```yaml
-- name: detect_review_bombs
+- name: detect_review_frauds
   type: elasticsearch.esql.query
   with:
     query: |
@@ -198,13 +202,13 @@ triggers:
 ```
 - `name:` identifies the step (used for referencing output)
 - `type: elasticsearch.esql.query` runs an ES|QL query
-- Access results via `{{ steps.detect_review_bombs.output.values }}`
+- Access results via `{{ steps.detect_review_frauds.output.values }}`
 
 #### For Each Loop
 ```yaml
 - name: process_attacks
   type: foreach
-  foreach: "{{ steps.detect_review_bombs.output.values }}"
+  foreach: "{{ steps.detect_review_frauds.output.values }}"
   steps:
     ...
 ```
@@ -232,7 +236,7 @@ Access data using Liquid-style templates:
 ### Task 4: Verify and Test the Workflow (3 min)
 
 **Verify the workflow was created:**
-1. In the Workflows app, you should see "Review Bomb Detection" in the list
+1. In the Workflows app, you should see "Review Fraud Detection" in the list
 2. Click on the workflow to view its details
 3. Verify the status shows "Enabled"
 

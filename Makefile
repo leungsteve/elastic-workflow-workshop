@@ -1,8 +1,8 @@
 .PHONY: setup install prepare-data load-data run dev clean verify help test lint format docker-build docker-run sample-data
 
 help:
-	@echo "Review Bomb Workshop - Available Commands"
-	@echo "=========================================="
+	@echo "Review Fraud Detection Workshop - Available Commands"
+	@echo "====================================================="
 	@echo ""
 	@echo "Setup & Installation:"
 	@echo "  setup          - Create venv and install dependencies"
@@ -99,10 +99,10 @@ clean:
 
 # Docker
 docker-build:
-	docker build -t review-bomb-workshop .
+	docker build -t review-fraud-workshop .
 
 docker-run:
-	docker run -p 8000:8000 --env-file .env review-bomb-workshop
+	docker run -p 8000:8000 --env-file .env review-fraud-workshop
 
 # Connection test
 test-connection:

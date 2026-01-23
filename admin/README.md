@@ -1,6 +1,6 @@
-# Admin Scripts for Review Bomb Workshop
+# Admin Scripts for Review Fraud Detection Workshop
 
-This directory contains scripts for preparing data for the Review Bomb Detection Workshop. These scripts process the Yelp Academic Dataset and prepare it for use with Elasticsearch.
+This directory contains scripts for preparing data for the Review Fraud Detection Workshop. These scripts process the Yelp Academic Dataset and prepare it for use with Elasticsearch.
 
 ## Prerequisites
 

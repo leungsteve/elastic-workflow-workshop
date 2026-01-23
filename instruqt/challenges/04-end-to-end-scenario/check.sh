@@ -32,7 +32,7 @@ INCIDENT_CHECK=$(curl -s "${ELASTICSEARCH_URL}/incidents/_search" \
         "query": {
             "bool": {
                 "must": [
-                    { "term": { "incident_type": "review_bomb" } }
+                    { "term": { "incident_type": "review_fraud" } }
                 ],
                 "filter": [
                     { "range": { "created_at": { "gte": "now-2h" } } }
@@ -52,7 +52,7 @@ if [ "${INCIDENT_COUNT:-0}" -gt "0" ] 2>/dev/null; then
     INCIDENT_SEV=$(echo "$INCIDENT_CHECK" | grep -o '"severity":"[^"]*"' | head -1 | cut -d'"' -f4 || echo "Unknown")
     echo "  Details: ${INCIDENT_BIZ} (${INCIDENT_SEV} severity)"
 else
-    echo "  FAIL: No review bomb incidents found in the last 2 hours."
+    echo "  FAIL: No review fraud incidents found in the last 2 hours."
     echo "        Please launch an attack and ensure your workflow detects it."
     ERRORS=$((ERRORS + 1))
 fi
@@ -180,7 +180,7 @@ echo "=============================================="
 echo "CONGRATULATIONS!"
 echo "=============================================="
 echo ""
-echo "You have completed the Review Bomb Detection Workshop!"
+echo "You have completed the Review Fraud Detection Workshop!"
 echo ""
 echo "What you accomplished:"
 echo "  - Explored data with ES|QL and LOOKUP JOIN"

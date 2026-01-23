@@ -1,5 +1,5 @@
-# Review Bomb Detection Workshop
-## What's New in Elastic Search 9.3: From Insight to Action with Workflows
+# Review Integrity & Fraud Detection Workshop
+## What's New in Elastic 9.3: Simplify, Optimize, Innovate with AI
 
 ---
 
@@ -14,66 +14,95 @@ Note: Welcome participants, ensure they have environment access
 
 ---
 
+# Three Themes for Today
+
+| Simplify | Optimize | Innovate with AI |
+|----------|----------|------------------|
+| ES\|QL readable queries | LOOKUP JOIN: one query, not ten | Agent Builder: ask in English |
+| Workflows: visual, no-code | Auto-response: instant protection | ELSER: search by meaning |
+
+> **Protecting review integrity at scale—detect fraud, automate response, investigate with AI.**
+
+Note: These three themes run through everything in Elastic 9.3
+
+---
+
 # Today's Key Message
 
-> **"Search finds the insight.**
-> **Workflows acts on it.**
-> **Agent Builder explains it."**
+> **"Search finds the insight. Workflows acts on it. Agent Builder explains it."**
+
+**Mapped to our themes:**
+- **Simplify** → ES|QL + Workflows make it easy
+- **Optimize** → Automated response reduces manual work
+- **Innovate with AI** → Natural language investigation
 
 Note: This is the theme that runs through everything we'll cover today
 
 ---
 
-# The Problem: Review Bombing
+# The Problem: Review Fraud
 
 [Screenshot: Example of a business with sudden rating drop]
 
-A **coordinated attack** where bad actors flood a business with fake negative reviews to damage its reputation.
+**Coordinated fake reviews** damage business reputation and erode consumer trust.
 
-Note: Ask audience if they've heard of review bombing or seen it happen
+This pattern affects ANY review system:
+- 🍽️ **Restaurants:** Yelp, Google Business, TripAdvisor
+- 🛒 **E-commerce:** Amazon, Home Depot, Walmart
+- 📱 **Apps:** App Store, Google Play
+- 💼 **B2B:** G2, Capterra, Trustpilot
+
+Note: Ask audience if they've seen fake reviews affect purchasing decisions
 
 ---
 
-# Real-World Impact
+# Why Review Integrity Matters
 
 **For Businesses:**
-- Revenue loss of 5-9% per star
-- Reputation damage
+- Revenue loss of 5-9% per star drop
+- Reputation damage takes months to recover
 - Customer trust erosion
 
 **For Platforms:**
-- User trust decline
-- Content moderation costs
+- User trust decline = user churn
+- Content moderation costs at scale
 - Legal and compliance risks
+
+**For Consumers:**
+- False information leads to poor decisions
+- Erosion of trust in review systems
 
 Note: Share that a one-star drop can mean significant revenue loss
 
 ---
 
-# The Attack Pattern
+# The Fraud Pattern
 
 ```
-1. Attacker identifies target (successful business)
-2. Creates multiple fake accounts
-3. Submits coordinated negative reviews
-4. Business rating drops rapidly
-5. Legitimate customers see false information
+1. Attacker identifies target (successful business/product)
+2. Creates multiple fake accounts (low trust signals)
+3. Submits coordinated negative reviews (velocity spike)
+4. Rating drops rapidly (integrity compromised)
+5. Consumers see false information (trust eroded)
 ```
 
 [Screenshot: Timeline showing review velocity spike]
 
-Note: Walk through each step, emphasize the speed and coordination
+Note: Walk through each step—this pattern is identical across Yelp, Amazon, App Store
 
 ---
 
 # What We'll Build Today
 
-A **complete detection and response system:**
+A **complete fraud detection and response system:**
 
-1. **Detect** - ES|QL queries with LOOKUP JOIN
-2. **Automate** - Workflows for real-time response
-3. **Investigate** - Agent Builder for analysis
-4. **Resolve** - Incident management workflow
+| Theme | What You'll Learn |
+|-------|-------------------|
+| **Simplify** | ES\|QL queries anyone can read and write |
+| **Optimize** | LOOKUP JOIN + automated response = less manual work |
+| **Innovate with AI** | Agent Builder for natural language investigation |
+
+**The Flow:** Detect → Protect → Investigate → Resolve
 
 Note: Preview the four challenges they'll work through
 
@@ -83,15 +112,17 @@ Note: Preview the four challenges they'll work through
 
 ---
 
-# Headline Feature: Workflows
+# Theme 1: SIMPLIFY with Workflows
 
 [Screenshot: Workflows UI in Kibana]
 
 **Native automation for search operations**
 
-- Built into Elasticsearch
-- No external tools required
-- Trigger, Condition, Action pattern
+- ✅ Built into Elasticsearch—no external tools
+- ✅ Visual builder—no code required
+- ✅ Trigger → Condition → Action pattern
+
+> **Simplify:** What used to require Lambda + SQS + custom code is now point-and-click
 
 Note: Emphasize this is the headline feature for 9.3
 
@@ -136,27 +167,29 @@ Note: Show the YAML structure, emphasize simplicity
 
 ---
 
-# Why Workflows Matter
+# Theme 2: OPTIMIZE with Workflows
 
 **Before Workflows:**
-- External orchestration tools
-- Complex integrations
-- Data leaving the cluster
-- Latency in response
+- External orchestration tools (cost 💰)
+- Complex integrations (maintenance 🔧)
+- Data leaving the cluster (latency ⏱️)
+- Manual triage (people cost 👥)
 
 **With Workflows:**
-- Native to Elasticsearch
-- Data stays in cluster
-- Sub-second response times
-- Simpler architecture
+- Native to Elasticsearch (no extra cost)
+- Data stays in cluster (sub-second response)
+- Automated response (24/7, no fatigue)
+- Simpler architecture (less to maintain)
+
+> **Optimize:** Reduce operational cost and response time simultaneously
 
 Note: Draw the architecture comparison if time permits
 
 ---
 
-# ES|QL with LOOKUP JOIN
+# SIMPLIFY: ES|QL with LOOKUP JOIN
 
-**Cross-index correlation for real-time detection**
+**Cross-index correlation in readable syntax**
 
 ```sql
 FROM reviews
@@ -169,43 +202,50 @@ FROM reviews
 | WHERE review_count > 10 AND avg_trust < 0.4
 ```
 
+> **Simplify:** Anyone can read this. Compare to equivalent DSL (30+ lines)
+
 Note: Explain how LOOKUP JOIN enriches review data with user trust scores
 
 ---
 
-# Why LOOKUP JOIN?
+# OPTIMIZE: Why LOOKUP JOIN?
 
 **The Challenge:**
 Reviews don't contain user trust scores directly
 
-**The Solution:**
-Join review data with user data at query time
+**Before LOOKUP JOIN:**
+- Query reviews → Get user IDs → Query users → Join in application
+- Multiple round trips, complex code, high latency
 
-**The Result:**
-Rich, correlated insights for detection
+**With LOOKUP JOIN:**
+- Single query, single round trip, milliseconds
+
+> **Optimize:** One query replaces an entire microservice
 
 Note: This is key for anomaly detection across related data
 
 ---
 
-# Agent Builder
+# Theme 3: INNOVATE WITH AI - Agent Builder
 
 [Screenshot: Agent Builder interface in Kibana]
 
 **AI-powered investigation tools**
 
-- Natural language queries
-- Custom tools with ES|QL
-- Context-aware responses
+- 🗣️ Natural language queries—no ES|QL knowledge required
+- 🛠️ Custom tools powered by ES|QL under the hood
+- 🔍 ELSER semantic search—find by meaning, not keywords
+
+> **Innovate with AI:** Your analysts ask questions in English, AI handles the queries
 
 Note: Explain that this turns ES|QL into natural language interfaces
 
 ---
 
-# Agent Builder in Action
+# INNOVATE: Agent Builder in Action
 
 **User asks:**
-"Summarize the incident for Mario's Pizza"
+"Summarize the fraud incident for Mario's Pizza"
 
 **Agent uses tool:**
 ```sql
@@ -217,7 +257,9 @@ FROM incidents
 ```
 
 **Agent responds:**
-"Mario's Pizza received 15 suspicious reviews in 30 minutes..."
+"Mario's Pizza received 15 suspicious reviews in 30 minutes from accounts with an average trust score of 0.15. This is classified as CRITICAL severity. The business rating has been protected and 15 reviews are held for manual review."
+
+> **Innovate with AI:** Investigation that took hours now takes seconds
 
 Note: Show the flow from question to query to answer
 
@@ -230,14 +272,16 @@ Note: Show the flow from question to query to answer
 # Our Demo Scenario
 
 **Review Platform Data:**
-- 10,000+ restaurants
-- 50,000+ user accounts
+- 10,000+ businesses (restaurants in demo, but pattern applies to any product/service)
+- 50,000+ user accounts with trust scores
 - 200,000+ historical reviews
 
 **Target:**
-A popular 4.5-star restaurant in Las Vegas
+A popular 4.5-star restaurant—"The Golden Spoon"
 
-Note: Introduce the Yelp-based dataset
+**Universal Pattern:** Same detection works for Amazon products, App Store apps, hotel reviews
+
+Note: Introduce the Yelp-based dataset, emphasize universal applicability
 
 ---
 
@@ -322,35 +366,37 @@ Note: Walk through each clause, explain the logic
 
 ---
 
-# Demo: The Workflow
+# Demo: The Workflow (SIMPLIFY + OPTIMIZE)
 
 [Screenshot: Workflow definition in Kibana]
 
-**Review Bomb Detection Workflow:**
+**Review Fraud Detection Workflow:**
 
-1. Runs every 5 minutes
-2. Executes detection query
-3. For each anomaly:
-   - Hold suspicious reviews
-   - Protect business rating
-   - Create incident
-   - Send notification
+1. Runs every 5 minutes (scheduled trigger)
+2. Executes ES|QL detection query (SIMPLIFY)
+3. For each anomaly detected:
+   - Hold suspicious reviews ✅
+   - Protect business rating ✅
+   - Create incident ✅
+   - Send notification ✅
+
+> **Optimize:** This automated response runs 24/7—no analyst fatigue
 
 Note: Show the workflow YAML structure
 
 ---
 
-# Demo: Launching the Attack
+# Demo: Simulating Fraud
 
 [Screenshot: Attack UI in web application]
 
 **Using the Workshop UI:**
-1. Select target business
-2. Generate attack reviews
-3. Submit 15 reviews rapidly
-4. Watch the dashboard
+1. Select target business ("The Golden Spoon")
+2. Launch coordinated fake reviews
+3. Submit 15 low-trust reviews rapidly
+4. Watch detection and response in real-time
 
-Note: Actually launch an attack in the live demo
+Note: Actually simulate fraud in the live demo
 
 ---
 
@@ -611,12 +657,12 @@ Note: Advanced query for reference
 
 ---
 
-# Incident Summary Tool
+# Incident Summary Tool (INNOVATE WITH AI)
 
 ```json
 {
   "name": "incident_summary",
-  "description": "Summarize a review bomb incident",
+  "description": "Summarize a review fraud incident",
   "parameters": {
     "incident_id": {
       "type": "string",
@@ -658,3 +704,58 @@ Note: Tool definition for Agent Builder
 ```
 
 Note: Tool definition for Agent Builder
+
+---
+
+# Summary: Three Themes in Action
+
+| Theme | What You Learned | Business Value |
+|-------|------------------|----------------|
+| **SIMPLIFY** | ES\|QL + Workflows | Anyone can build detection logic |
+| **OPTIMIZE** | LOOKUP JOIN + Auto-response | Reduce cost, instant protection |
+| **INNOVATE WITH AI** | Agent Builder + ELSER | Natural language investigation |
+
+---
+
+# What You Built Today
+
+✅ **Fraud Detection** - ES|QL queries that correlate reviews with user trust
+✅ **Automated Response** - Workflows that protect businesses instantly
+✅ **AI Investigation** - Agent Builder tools for natural language analysis
+✅ **Universal Pattern** - Applicable to any review system (Yelp, Amazon, App Store)
+
+---
+
+# Key Takeaways
+
+1. **Simplify:** Complex detection in readable ES|QL, not verbose DSL
+2. **Optimize:** One LOOKUP JOIN query replaces multiple API calls
+3. **Optimize:** Automated workflows = 24/7 response without analyst fatigue
+4. **Innovate with AI:** Analysts ask questions in English, AI handles queries
+5. **Universal:** Same patterns work for restaurants, products, apps, services
+
+---
+
+# Next Steps
+
+**Continue Learning:**
+- Elastic Search Labs blog
+- ES|QL documentation
+- Workflows documentation
+- Agent Builder guides
+
+**Apply to Your Use Case:**
+- Content moderation
+- Fraud detection
+- Security monitoring
+- Customer feedback analysis
+
+---
+
+# Thank You!
+
+**Questions?**
+
+Workshop materials available in your lab environment
+
+Note: Open for Q&A, remind participants about resources

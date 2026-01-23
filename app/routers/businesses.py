@@ -1,4 +1,4 @@
-"""Business API router for Review Bomb Workshop."""
+"""Business API router for Review Fraud Workshop."""
 
 from typing import Optional
 
@@ -139,7 +139,7 @@ async def get_business_stats(
     settings: Settings = Depends(get_app_settings),
 ) -> BusinessStats:
     """
-    Get statistics for a business, including review bomb detection metrics.
+    Get statistics for a business, including review fraud detection metrics.
 
     - **business_id**: The unique identifier of the business
     - **hours**: Number of hours to analyze for recent activity (default: 24)

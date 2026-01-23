@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Extract users who reviewed filtered businesses for the Review Bomb Workshop.
+Extract users who reviewed filtered businesses for the Review Fraud Workshop.
 
 Reads the filtered businesses file and the raw review/user datasets to
 extract only users who have reviewed the businesses we're using.

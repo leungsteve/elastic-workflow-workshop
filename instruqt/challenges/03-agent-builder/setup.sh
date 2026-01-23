@@ -74,7 +74,7 @@ curl -s -X PUT "${ELASTICSEARCH_URL}/businesses/_doc/biz_sample_001" \
         "is_open": true,
         "categories": ["Italian", "Restaurant", "Pizza"],
         "rating_protected": true,
-        "protection_reason": "review_bomb_detected"
+        "protection_reason": "review_fraud_detected"
     }' > /dev/null 2>&1
 echo "  Sample business created: Mario's Italian Kitchen"
 
@@ -84,7 +84,7 @@ curl -s -X POST "${ELASTICSEARCH_URL}/incidents/_doc" \
     -H "Content-Type: application/json" \
     -d '{
         "incident_id": "INC-biz_sample_001-'$(date +%Y%m%d%H%M%S)'",
-        "incident_type": "review_bomb",
+        "incident_type": "review_fraud",
         "status": "open",
         "severity": "high",
         "business_id": "biz_sample_001",
@@ -128,7 +128,7 @@ for i in 1 2 3 4 5; do
             "trust_score": 0.'$((RANDOM % 25 + 5))',
             "account_age_days": '$ACCOUNT_AGE',
             "flagged": true,
-            "flag_reason": "review_bomb_participant",
+            "flag_reason": "review_fraud_participant",
             "synthetic": true
         }' > /dev/null 2>&1
 done
@@ -164,7 +164,7 @@ for i in 1 2 3 4 5 6 7 8; do
             "funny": 0,
             "cool": 0,
             "status": "held",
-            "held_reason": "review_bomb_detection",
+            "held_reason": "review_fraud_detection",
             "incident_id": "INC-biz_sample_001",
             "synthetic": true
         }' > /dev/null 2>&1
@@ -184,7 +184,7 @@ echo "=============================================="
 echo ""
 echo "Sample data created for testing:"
 echo "  - Business: Mario's Italian Kitchen (biz_sample_001)"
-echo "  - Incident: High severity review bomb attack"
+echo "  - Incident: High severity review fraud attack"
 echo "  - Attackers: 5 low-trust accounts"
 echo "  - Reviews: 8 suspicious 1-2 star reviews"
 echo ""

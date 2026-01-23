@@ -3,6 +3,9 @@
 ## Time
 15 minutes
 
+## Theme Focus: SIMPLIFY
+> In this challenge, you'll see how ES|QL makes complex queries **readable and accessible** to anyone—not just query experts.
+
 ## Objective
 Explore the review platform data, understand the data model, and write detection queries using ES|QL and LOOKUP JOIN.
 
@@ -12,7 +15,7 @@ Explore the review platform data, understand the data model, and write detection
 
 You are a Trust & Safety analyst at a popular review platform called "FreshEats" - a restaurant discovery site where diners leave reviews for local businesses.
 
-Recently, your platform has been experiencing **review bomb attacks** - coordinated campaigns where bad actors flood a business with fake negative reviews to damage its reputation. These attacks can devastate small businesses overnight.
+Recently, your platform has been experiencing **review fraud attacks** - coordinated campaigns where bad actors flood a business with fake negative reviews to damage its reputation. These attacks can devastate small businesses overnight.
 
 Your job is to detect these attacks before they cause harm. But first, you need to understand your data.
 
@@ -60,7 +63,7 @@ FROM businesses
 | LIMIT 5
 ```
 
-**What to notice:** This shows which cities have the most highly-rated restaurants. These successful businesses are prime targets for review bombs.
+**What to notice:** This shows which cities have the most highly-rated restaurants. These successful businesses are prime targets for review frauds.
 
 6. Find specific high-profile targets:
 
@@ -286,7 +289,7 @@ FROM reviews
 
 ## Challenge: Write Your Own Detection Query
 
-Using what you've learned, write a query that identifies potential review bomb attacks with these criteria:
+Using what you've learned, write a query that identifies potential review fraud attacks with these criteria:
 
 - Reviews from the last 30 minutes
 - Rating of 2 stars or less

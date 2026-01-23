@@ -1,4 +1,4 @@
-"""Review models for Review Bomb Workshop."""
+"""Review models for Review Fraud Workshop."""
 
 from datetime import datetime
 from typing import Optional

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Setup Agent Builder tools and agent for the Review Bomb Workshop.
+Setup Agent Builder tools and agent for the Review Fraud Workshop.
 
 This script creates:
 - 3 investigation tools (incident_summary, reviewer_analysis, similar_reviews)
-- 1 custom agent (Review Bomb Investigator) with all tools assigned
+- 1 custom agent (Review Fraud Investigator) with all tools assigned
 
 Usage:
     python admin/setup_agent_builder.py
@@ -30,7 +30,7 @@ TOOLS = [
     {
         "id": "incident_summary",
         "type": "esql",
-        "description": "Retrieves a summary of a review bomb incident including the targeted business, attack severity, and current status. Use this tool when asked about incident details, incident status, or what happened to a specific business.",
+        "description": "Retrieves a summary of a review fraud incident including the targeted business, attack severity, and current status. Use this tool when asked about incident details, incident status, or what happened to a specific business.",
         "configuration": {
             "query": """FROM incidents
 | WHERE incident_id == "{{incident_id}}" OR business_name LIKE "*{{incident_id}}*"
@@ -60,7 +60,7 @@ TOOLS = [
     {
         "id": "reviewer_analysis",
         "type": "esql",
-        "description": "Analyzes the reviewers/attackers involved in a review bomb incident. Shows their trust scores, account ages, review patterns, and risk levels. Use this to understand who is behind an attack and identify coordination patterns.",
+        "description": "Analyzes the reviewers/attackers involved in a review fraud incident. Shows their trust scores, account ages, review patterns, and risk levels. Use this to understand who is behind an attack and identify coordination patterns.",
         "configuration": {
             "query": """FROM reviews
 | WHERE business_id == "{{business_id}}"
@@ -120,11 +120,11 @@ TOOLS = [
 # Agent definition
 # Note: 'type' field is auto-assigned by the API, do not include it in the request
 AGENT = {
-    "id": "review_bomb_investigator",
-    "name": "Review Bomb Investigator",
-    "description": "Investigates review bomb attacks on businesses. Can summarize incidents, analyze attacker patterns, and find similar malicious reviews.",
+    "id": "review_fraud_investigator",
+    "name": "Review Fraud Investigator",
+    "description": "Investigates review fraud attacks on businesses. Can summarize incidents, analyze attacker patterns, and find similar malicious reviews.",
     "configuration": {
-        "instructions": """You are a Trust & Safety analyst investigating review bomb attacks on the FreshEats platform.
+        "instructions": """You are a Trust & Safety analyst investigating review fraud attacks on the FreshEats platform.
 
 When investigating incidents:
 1. Start by getting the incident summary to understand the scope
@@ -287,7 +287,7 @@ def delete_agent(kibana_url, api_key, agent_id, dry_run=False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Setup Agent Builder tools and agent for Review Bomb Workshop"
+        description="Setup Agent Builder tools and agent for Review Fraud Workshop"
     )
     parser.add_argument(
         "--delete",
@@ -302,7 +302,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("Agent Builder Setup for Review Bomb Workshop")
+    print("Agent Builder Setup for Review Fraud Workshop")
     print("=" * 60)
 
     kibana_url = get_kibana_url()
@@ -341,7 +341,7 @@ def main():
         print()
         print("Next steps:")
         print("1. Open Kibana and navigate to Agent Builder")
-        print("2. Find the 'Review Bomb Investigator' agent")
+        print("2. Find the 'Review Fraud Investigator' agent")
         print("3. Click 'Chat' to start investigating")
         print()
         print("Try asking:")

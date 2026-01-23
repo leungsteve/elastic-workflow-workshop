@@ -1,6 +1,6 @@
 // Recent Incidents Query
 //
-// Purpose: List recent review bomb incidents, optionally filtered by status,
+// Purpose: List recent review fraud incidents, optionally filtered by status,
 // for dashboard display and incident management
 //
 // This query provides a paginated list of incidents sorted by detection time

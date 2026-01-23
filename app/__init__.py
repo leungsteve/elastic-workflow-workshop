@@ -1,1 +1,1 @@
-# Review Bomb Workshop - FastAPI Application
+# Review Fraud Workshop - FastAPI Application

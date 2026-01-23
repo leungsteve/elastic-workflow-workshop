@@ -1,4 +1,4 @@
-"""Services for Review Bomb Workshop."""
+"""Services for Review Fraud Workshop."""
 
 from app.services.elasticsearch import ElasticsearchService
 from app.services.review_generator import ReviewGenerator

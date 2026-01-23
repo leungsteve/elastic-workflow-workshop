@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Sample Data Generator for the Review Bomb Workshop.
+Sample Data Generator for the Review Fraud Workshop.
 
 Generates realistic sample data for development/testing without needing
 the full Yelp dataset. Creates NDJSON files for businesses, users, and reviews,
-plus a small set of attack data to simulate review bombing scenarios.
+plus a small set of attack data to simulate review frauding scenarios.
 
 Example usage:
     # Generate default sample data
@@ -335,7 +335,7 @@ def main(
 
     Creates NDJSON files for businesses, users, and reviews with realistic
     data using Faker. Also generates a small attack dataset to simulate
-    review bombing scenarios.
+    review frauding scenarios.
     """
     # Resolve output path
     output_path = Path(output)

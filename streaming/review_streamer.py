@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Review Streamer for Review Bomb Workshop.
+Review Streamer for Review Fraud Workshop.
 
 Streams reviews to Elasticsearch in three modes:
 - replay: Stream legitimate reviews from data files at configured rate
@@ -645,7 +645,7 @@ def load_config() -> Dict[str, Any]:
 async def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="Review Streamer for Review Bomb Workshop",
+        description="Review Streamer for Review Fraud Workshop",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

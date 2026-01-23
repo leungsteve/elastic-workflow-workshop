@@ -1,8 +1,8 @@
 version: 1
 
-name: Review Bomb Detection
+name: Review Fraud Detection
 description: |
-  Detects coordinated review bombing attacks by analyzing review patterns.
+  Detects coordinated review frauding attacks by analyzing review patterns.
   Identifies businesses receiving suspicious clusters of low-trust, negative reviews
   and automatically creates incidents for investigation.
 
@@ -35,11 +35,11 @@ triggers:
     interval: 5m
   # Also trigger when webhook is called
   - type: webhook
-    path: /workflow/review-bomb-detection/trigger
+    path: /workflow/review-fraud-detection/trigger
 
 steps:
-  # Step 1: Detect potential review bombs using ES|QL
-  - id: detect_review_bombs
+  # Step 1: Detect potential review frauds using ES|QL
+  - id: detect_review_frauds
     type: elasticsearch.esql
     connectorId: "{{config.elasticsearch_connector_id}}"
     with:
@@ -65,8 +65,8 @@ steps:
   # Step 2: Enrich each detected business with additional context
   - id: enrich_businesses
     type: foreach
-    collection: "{{detect_review_bombs.results}}"
-    as: bomb
+    collection: "{{detect_review_frauds.results}}"
+    as: attack
     steps:
       - id: get_business_details
         type: elasticsearch.esql
@@ -74,7 +74,7 @@ steps:
         with:
           query: |
             FROM businesses
-            | WHERE business_id == "{{bomb.business_id}}"
+            | WHERE business_id == "{{attack.business_id}}"
             | EVAL
                 historical_avg_rating = COALESCE(avg_rating, 0.0),
                 total_reviews = COALESCE(review_count, 0)
@@ -87,22 +87,22 @@ steps:
         with:
           query: |
             FROM reviews
-            | WHERE business_id == "{{bomb.business_id}}"
+            | WHERE business_id == "{{attack.business_id}}"
               AND @timestamp > NOW() - 7 days
               AND trust_score >= 0.6
             | STATS
                 normal_review_count = COUNT(*),
                 normal_avg_stars = AVG(stars)
 
-  # Step 3: Create incident documents for each detected bomb
+  # Step 3: Create incident documents for each detected attack
   - id: create_incidents
     type: foreach
-    collection: "{{detect_review_bombs.results}}"
-    as: bomb
+    collection: "{{detect_review_frauds.results}}"
+    as: attack
     steps:
       - id: determine_severity
         type: if
-        condition: "{{bomb.review_count > 20}}"
+        condition: "{{attack.review_count > 20}}"
         then:
           - id: set_critical
             type: set
@@ -112,7 +112,7 @@ steps:
         else:
           - id: check_high_severity
             type: if
-            condition: "{{bomb.review_count > 10}}"
+            condition: "{{attack.review_count > 10}}"
             then:
               - id: set_high
                 type: set
@@ -132,29 +132,29 @@ steps:
         with:
           index: incidents
           document:
-            incident_id: "INC-{{bomb.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
-            incident_type: review_bomb
+            incident_id: "INC-{{attack.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+            incident_type: review_fraud
             status: open
             severity: "{{severity}}"
-            business_id: "{{bomb.business_id}}"
-            business_name: "{{bomb.business_name}}"
-            category: "{{bomb.category}}"
-            city: "{{bomb.city}}"
+            business_id: "{{attack.business_id}}"
+            business_name: "{{attack.business_name}}"
+            category: "{{attack.category}}"
+            city: "{{attack.city}}"
             detection_time: "{{execution.started_at}}"
             metrics:
-              review_count: "{{bomb.review_count}}"
-              avg_trust_score: "{{bomb.avg_trust_score}}"
-              avg_stars: "{{bomb.avg_stars}}"
-              unique_reviewers: "{{bomb.unique_reviewers}}"
-            affected_review_ids: "{{bomb.review_ids}}"
+              review_count: "{{attack.review_count}}"
+              avg_trust_score: "{{attack.avg_trust_score}}"
+              avg_stars: "{{attack.avg_stars}}"
+              unique_reviewers: "{{attack.unique_reviewers}}"
+            affected_review_ids: "{{attack.review_ids}}"
             created_at: "{{execution.started_at}}"
             updated_at: "{{execution.started_at}}"
 
   # Step 4: Hold affected reviews for investigation
   - id: hold_reviews
     type: foreach
-    collection: "{{detect_review_bombs.results}}"
-    as: bomb
+    collection: "{{detect_review_frauds.results}}"
+    as: attack
     steps:
       - id: update_reviews_to_held
         type: elasticsearch.update_by_query
@@ -165,7 +165,7 @@ steps:
             bool:
               must:
                 - term:
-                    business_id: "{{bomb.business_id}}"
+                    business_id: "{{attack.business_id}}"
                 - range:
                     "@timestamp":
                       gte: "now-30m"
@@ -178,7 +178,7 @@ steps:
           script:
             source: |
               ctx._source.status = 'held';
-              ctx._source.held_reason = 'review_bomb_detection';
+              ctx._source.held_reason = 'review_fraud_detection';
               ctx._source.held_at = params.held_at;
             params:
               held_at: "{{execution.started_at}}"
@@ -186,25 +186,25 @@ steps:
   # Step 5: Enable rating protection on affected businesses
   - id: protect_businesses
     type: foreach
-    collection: "{{detect_review_bombs.results}}"
-    as: bomb
+    collection: "{{detect_review_frauds.results}}"
+    as: attack
     steps:
       - id: enable_rating_protection
         type: elasticsearch.update
         connectorId: "{{config.elasticsearch_connector_id}}"
         with:
           index: businesses
-          id: "{{bomb.business_id}}"
+          id: "{{attack.business_id}}"
           document:
             rating_protected: true
             protection_enabled_at: "{{execution.started_at}}"
-            protection_reason: review_bomb_detected
+            protection_reason: review_fraud_detected
 
   # Step 6: Create notifications for stakeholders
   - id: create_notifications
     type: foreach
-    collection: "{{detect_review_bombs.results}}"
-    as: bomb
+    collection: "{{detect_review_frauds.results}}"
+    as: attack
     steps:
       - id: create_ops_notification
         type: elasticsearch.index
@@ -212,30 +212,30 @@ steps:
         with:
           index: notifications
           document:
-            notification_id: "NOTIF-{{bomb.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
-            notification_type: review_bomb_detected
+            notification_id: "NOTIF-{{attack.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+            notification_type: review_fraud_detected
             recipient_type: operations
             priority: "{{severity}}"
-            title: "Review Bomb Detected: {{bomb.business_name}}"
+            title: "Review Fraud Detected: {{attack.business_name}}"
             message: |
-              A potential review bombing attack has been detected.
+              A potential review frauding attack has been detected.
 
-              Business: {{bomb.business_name}}
-              Location: {{bomb.city}}
-              Category: {{bomb.category}}
+              Business: {{attack.business_name}}
+              Location: {{attack.city}}
+              Category: {{attack.category}}
 
               Attack Metrics:
-              - Suspicious Reviews: {{bomb.review_count}}
-              - Average Trust Score: {{bomb.avg_trust_score | round(2)}}
-              - Average Stars: {{bomb.avg_stars | round(1)}}
-              - Unique Attackers: {{bomb.unique_reviewers}}
+              - Suspicious Reviews: {{attack.review_count}}
+              - Average Trust Score: {{attack.avg_trust_score | round(2)}}
+              - Average Stars: {{attack.avg_stars | round(1)}}
+              - Unique Attackers: {{attack.unique_reviewers}}
 
               Actions Taken:
               - Reviews placed on hold
               - Business rating protection enabled
               - Incident created for investigation
-            business_id: "{{bomb.business_id}}"
-            incident_id: "INC-{{bomb.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+            business_id: "{{attack.business_id}}"
+            incident_id: "INC-{{attack.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
             created_at: "{{execution.started_at}}"
             read: false
 
@@ -245,12 +245,12 @@ steps:
         with:
           index: notifications
           document:
-            notification_id: "NOTIF-OWNER-{{bomb.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
+            notification_id: "NOTIF-OWNER-{{attack.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
             notification_type: rating_protection_enabled
             recipient_type: business_owner
-            recipient_business_id: "{{bomb.business_id}}"
+            recipient_business_id: "{{attack.business_id}}"
             priority: high
-            title: "Rating Protection Enabled for {{bomb.business_name}}"
+            title: "Rating Protection Enabled for {{attack.business_name}}"
             message: |
               We've detected unusual review activity on your business listing and have
               temporarily enabled rating protection. This means recent suspicious reviews

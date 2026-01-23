@@ -1,4 +1,4 @@
-"""Elasticsearch service helpers for Review Bomb Workshop."""
+"""Elasticsearch service helpers for Review Fraud Workshop."""
 
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional

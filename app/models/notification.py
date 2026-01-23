@@ -1,4 +1,4 @@
-"""Notification models for Review Bomb Workshop."""
+"""Notification models for Review Fraud Workshop."""
 
 from datetime import datetime
 from enum import Enum
@@ -28,7 +28,7 @@ class NotificationPriority(str, Enum):
 
 
 class Notification(BaseModel):
-    """Notification model for alerting on review bomb activity."""
+    """Notification model for alerting on review fraud activity."""
 
     notification_id: str = Field(..., description="Unique notification identifier")
     type: NotificationType = Field(..., description="Type of notification")
@@ -55,7 +55,7 @@ class Notification(BaseModel):
                 "notification_id": "notif_001",
                 "type": "attack_detected",
                 "priority": "high",
-                "title": "Review Bomb Attack Detected",
+                "title": "Review Fraud Attack Detected",
                 "message": "Joe's Coffee Shop is experiencing a coordinated negative review attack",
                 "business_id": "abc123",
                 "incident_id": "inc_001",

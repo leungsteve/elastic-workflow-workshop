@@ -1,4 +1,4 @@
-"""Business models for Review Bomb Workshop."""
+"""Business models for Review Fraud Workshop."""
 
 from datetime import datetime
 from typing import Dict, List, Optional, Union
@@ -77,7 +77,7 @@ class Business(BaseModel):
 
 
 class BusinessStats(BaseModel):
-    """Statistics for a business, used in review bomb detection."""
+    """Statistics for a business, used in review fraud detection."""
 
     business_id: str
     name: str
@@ -88,7 +88,7 @@ class BusinessStats(BaseModel):
     rating_trend: float = Field(default=0.0, description="Rating change trend")
     review_velocity: float = Field(default=0.0, description="Reviews per hour")
     suspicious_review_count: int = Field(default=0, description="Count of potentially suspicious reviews")
-    is_under_attack: bool = Field(default=False, description="Whether business appears to be under review bomb attack")
+    is_under_attack: bool = Field(default=False, description="Whether business appears to be under review fraud attack")
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:

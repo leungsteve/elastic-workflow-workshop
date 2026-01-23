@@ -3,7 +3,7 @@
 # Setup Workshop Data for Instruqt
 #
 # This script initializes the Elasticsearch indices and loads pre-generated
-# sample data for the Review Bomb Detection workshop.
+# sample data for the Review Fraud Detection workshop.
 #
 # Usage:
 #   ./admin/setup_workshop_data.sh

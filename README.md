@@ -1,16 +1,28 @@
-# Review Bomb Detection Workshop
+# Review Integrity & Fraud Detection Workshop
 
-**What's New in Elastic Search 9.3: From Insight to Action with Workflows**
+**What's New in Elastic 9.3: Simplify, Optimize, Innovate with AI**
 
-A hands-on workshop demonstrating Elastic's Workflows feature using a review bomb detection scenario. Participants learn to detect coordinated fake review attacks, automate protective responses, and investigate incidents using Agent Builder.
+A hands-on workshop demonstrating how to protect review integrity using Elastic's latest features. Participants learn to detect coordinated fake reviews, automate protective responses, and investigate incidents using AI—applicable to any review system (Yelp, Amazon, App Store, etc.).
 
-> **Key Message:** "Search finds the insight. Workflows acts on it. Agent Builder explains it."
+> **Key Message:** "Protecting review integrity at scale—detect fraud, automate response, investigate with AI."
+
+---
+
+## Three Themes
+
+| Theme | What You'll Learn | Business Value |
+|-------|-------------------|----------------|
+| **SIMPLIFY** | ES\|QL readable queries, Workflows visual builder | Anyone can build detection logic |
+| **OPTIMIZE** | LOOKUP JOIN, automated response | Reduce cost, instant protection |
+| **INNOVATE WITH AI** | Agent Builder, ELSER semantic search | Natural language investigation |
 
 ---
 
 ## Overview
 
-Review bombing is a coordinated attack where bad actors flood a business with fake negative reviews to damage its reputation. This workshop teaches participants to build a complete detection and response system using Elastic's latest features.
+Review fraud is a universal problem affecting any platform with user-generated reviews—restaurants on Yelp, products on Amazon, apps in the App Store, hotels on TripAdvisor. Bad actors create fake accounts and submit coordinated fake reviews to manipulate ratings, damaging businesses and eroding consumer trust.
+
+This workshop teaches participants to build a complete fraud detection and response system using Elastic's latest features. **The same patterns work for any review system.**
 
 **Workshop Duration:** 90 minutes
 
@@ -19,46 +31,60 @@ Review bombing is a coordinated attack where bad actors flood a business with fa
 
 **Target Audience:**
 
+- Trust & Safety teams
 - Data analysts building search applications
-- Developers implementing search operations
+- Developers implementing content moderation
 - Solutions architects evaluating Elastic capabilities
 
 ---
 
 ## What You'll Learn
 
-| Challenge | Duration | Skills |
-|-----------|----------|--------|
-| Getting to Know Your Data | 15 min | ES\|QL queries, LOOKUP JOIN, detection logic |
-| Workflows | 20 min | Automated detection and response pipelines |
-| Agent Builder | 10 min | Natural language investigation tools |
-| End-to-End Scenario | 15 min | Full attack lifecycle simulation |
+| Challenge | Duration | Theme | Skills |
+|-----------|----------|-------|--------|
+| Getting to Know Your Data | 15 min | SIMPLIFY | ES\|QL queries, LOOKUP JOIN, detection logic |
+| Workflows | 20 min | SIMPLIFY + OPTIMIZE | Automated detection and response pipelines |
+| Agent Builder | 10 min | INNOVATE WITH AI | Natural language investigation tools |
+| End-to-End Scenario | 15 min | All Three | Full fraud lifecycle simulation |
 
 ---
 
 ## Features Highlighted
 
-### Elastic 9.3 Capabilities
+### Elastic 9.3 Capabilities (Mapped to Themes)
 
-- **Workflows** - Native automation engine for search operations (headline feature)
-- **ES|QL with LOOKUP JOIN** - Cross-index correlation for anomaly detection
-- **Agent Builder** - AI-powered investigation tools
-- **Semantic Search** - ELSER-powered content analysis
+| Feature | Theme | Description |
+|---------|-------|-------------|
+| **ES\|QL** | SIMPLIFY | Readable query syntax anyone can understand |
+| **LOOKUP JOIN** | OPTIMIZE | One query replaces multiple API calls |
+| **Workflows** | SIMPLIFY + OPTIMIZE | Visual, no-code automation |
+| **Agent Builder** | INNOVATE WITH AI | Natural language investigation |
+| **ELSER Semantic Search** | INNOVATE WITH AI | Search by meaning, not keywords |
 
 ### Workshop Scenario
 
-1. **Detect** - Identify abnormal review patterns using ES|QL
-2. **Correlate** - Cross-reference with user trust scores via LOOKUP JOIN
-3. **Automate** - Trigger workflows to hold reviews and protect businesses
-4. **Investigate** - Use Agent Builder to analyze attack patterns
-5. **Resolve** - Process incidents and restore business ratings
+1. **Detect** - Identify abnormal review patterns using ES|QL (SIMPLIFY)
+2. **Correlate** - Cross-reference with user trust scores via LOOKUP JOIN (OPTIMIZE)
+3. **Automate** - Trigger workflows to protect businesses instantly (OPTIMIZE)
+4. **Investigate** - Use Agent Builder for natural language analysis (INNOVATE WITH AI)
+5. **Resolve** - Process incidents and restore business integrity
+
+### Universal Applicability
+
+The fraud detection patterns in this workshop apply to ANY review system:
+
+- 🍽️ **Restaurants:** Yelp, Google Business, TripAdvisor
+- 🛒 **E-commerce:** Amazon, Home Depot, Walmart, Target
+- 📱 **Apps:** App Store, Google Play
+- 💼 **B2B:** G2, Capterra, Trustpilot
+- 🏨 **Travel:** Booking.com, Airbnb, Hotels.com
 
 ### Automated Response Actions
 
-When an attack is detected, the workflow automatically:
+When fraud is detected, the workflow automatically:
 - **Protects business ratings** - Sets `rating_protected: true` to freeze displayed rating
-- **Holds suspicious reviews** - Marks attack reviews as `status: "held"` for manual review
-- **Creates incidents** - Logs attack with severity classification (critical/high/medium/low)
+- **Holds suspicious reviews** - Marks fraudulent reviews as `status: "held"` for manual review
+- **Creates incidents** - Logs fraud with severity classification (critical/high/medium/low)
 - **Records actions** - Tracks all response actions taken for audit purposes
 
 ---
@@ -66,7 +92,7 @@ When an attack is detected, the workflow automatically:
 ## Repository Structure
 
 ```
-review-bomb-workshop/
+review-fraud-workshop/
 ├── admin/                    # Pre-workshop setup scripts
 │   ├── prepare_data.sh       # Master setup script
 │   ├── filter_businesses.py  # Filter Yelp data by city/category
@@ -97,7 +123,7 @@ review-bomb-workshop/
 │   └── investigation/
 │
 ├── workflows/                # Workflow definitions (YAML)
-│   ├── review-bomb-detection.yaml
+│   ├── review-fraud-detection.yaml
 │   ├── reviewer-flagging.yaml
 │   └── incident-resolution.yaml
 │
@@ -145,8 +171,8 @@ review-bomb-workshop/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/elastic/review-bomb-workshop.git
-cd review-bomb-workshop
+git clone https://github.com/elastic/review-fraud-workshop.git
+cd review-fraud-workshop
 ```
 
 ### 2. Set Up Python Environment
@@ -272,7 +298,7 @@ This creates:
 - **incident_summary** tool - ES|QL query for incident details
 - **reviewer_analysis** tool - Attacker pattern analysis with risk levels
 - **similar_reviews** tool - ELSER semantic search for attack narratives
-- **Review Bomb Investigator** agent - Custom agent with all tools assigned
+- **Review Fraud Investigator** agent - Custom agent with all tools assigned
 
 Options:
 ```bash
@@ -317,7 +343,7 @@ CATEGORIES = ["Restaurants", "Food", "Bars"]
 
 ### Adjusting Detection Thresholds
 
-Edit `workflows/review-bomb-detection.yaml`:
+Edit `workflows/review-fraud-detection.yaml`:
 
 ```yaml
 # Adjust these thresholds based on your data volume
@@ -362,7 +388,7 @@ See `instruqt/README.md` for detailed deployment instructions.
 
 | Document                                       | Description                       |
 | ---------------------------------------------- | --------------------------------- |
-| [Specification](review-bomb-workshop-spec.md)  | Complete technical specification  |
+| [Specification](docs/review-fraud-workshop-spec.md)  | Complete technical specification  |
 | [Admin Setup Guide](docs/admin-setup-guide.md) | Detailed facilitator instructions |
 | [Talk Track](docs/talk-track.md)               | Presenter speaking notes          |
 | [Troubleshooting](docs/troubleshooting.md)     | Common issues and solutions       |
@@ -426,6 +452,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/elastic/review-bomb-workshop/issues)
+- **Issues:** [GitHub Issues](https://github.com/elastic/review-fraud-workshop/issues)
 - **Discussions:** [Elastic Community](https://discuss.elastic.co/)
 - **Slack:** [Elastic Community Slack](https://ela.st/slack)

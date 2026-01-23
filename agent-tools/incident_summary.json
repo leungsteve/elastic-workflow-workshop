@@ -1,6 +1,6 @@
 {
   "name": "incident_summary",
-  "description": "Summarize a review bomb incident including affected business, review patterns, and current status. Use this to get an overview of a specific incident.",
+  "description": "Summarize a review fraud incident including affected business, review patterns, and current status. Use this to get an overview of a specific incident.",
   "parameters": {
     "incident_id": {
       "type": "string",

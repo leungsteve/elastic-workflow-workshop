@@ -1,8 +1,8 @@
-# Review Bomb Workshop Configuration
+# Review Fraud Workshop Configuration
 # Non-sensitive settings (committed to repo)
 
 app:
-  name: "Review Bomb Workshop"
+  name: "Review Fraud Workshop"
   port: 8000
   debug: false
 

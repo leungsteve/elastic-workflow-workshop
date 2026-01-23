@@ -2,7 +2,7 @@ version: 1
 
 name: Reviewer Flagging
 description: |
-  Automatically flags suspicious user accounts when review bomb incidents are created.
+  Automatically flags suspicious user accounts when review fraud incidents are created.
   Analyzes the reviewers involved in detected attacks and updates their trust profiles.
 enabled: true
 
@@ -11,7 +11,7 @@ triggers:
     index: incidents
     filters:
       - field: incident_type
-        value: review_bomb
+        value: review_fraud
       - field: status
         value: open
 
@@ -245,7 +245,7 @@ steps:
             priority: critical
             title: "ESCALATION: Coordinated Attack Detected - {{trigger.document.business_name}}"
             message: |
-              A coordinated review bombing attack has been detected and escalated.
+              A coordinated review frauding attack has been detected and escalated.
 
               Incident: {{trigger.document.incident_id}}
               Business: {{trigger.document.business_name}}
@@ -255,7 +255,7 @@ steps:
               - Coordination Score: {{check_coordinated_attack.results[0].coordination_score | round(2)}}
 
               This attack involves multiple users who have participated in previous
-              review bombing incidents. Immediate attention required.
+              review frauding incidents. Immediate attention required.
             incident_id: "{{trigger.document.incident_id}}"
             created_at: "{{execution.started_at}}"
             read: false

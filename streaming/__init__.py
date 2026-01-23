@@ -1,4 +1,4 @@
-"""Streaming module for Review Bomb Workshop."""
+"""Streaming module for Review Fraud Workshop."""
 
 from .review_streamer import ReviewStreamer
 

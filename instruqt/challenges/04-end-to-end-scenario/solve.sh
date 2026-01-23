@@ -31,7 +31,7 @@ curl -s -X PUT "${ELASTICSEARCH_URL}/businesses/_doc/target_biz_001" \
         "is_open": true,
         "categories": ["Restaurant", "American", "Brunch"],
         "rating_protected": true,
-        "protection_reason": "review_bomb_detected",
+        "protection_reason": "review_fraud_detected",
         "protected_since": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
     }' > /dev/null 2>&1
 echo "  Done: Target business created and protected"
@@ -100,7 +100,7 @@ for i in {1..12}; do
             "funny": 0,
             "cool": 0,
             "status": "held",
-            "held_reason": "review_bomb_detection",
+            "held_reason": "review_fraud_detection",
             "held_at": "'${TIMESTAMP}'",
             "synthetic": true
         }' > /dev/null 2>&1
@@ -119,7 +119,7 @@ curl -s -X POST "${ELASTICSEARCH_URL}/incidents/_doc" \
     -H "Content-Type: application/json" \
     -d '{
         "incident_id": "'${INCIDENT_ID}'",
-        "incident_type": "review_bomb",
+        "incident_type": "review_fraud",
         "status": "open",
         "severity": "high",
         "business_id": "target_biz_001",

@@ -1,4 +1,4 @@
-"""FastAPI application entry point for Review Bomb Workshop."""
+"""FastAPI application entry point for Review Fraud Workshop."""
 
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -23,7 +23,7 @@ from app.routers import (
 async def lifespan(app: FastAPI):
     """Manage application lifespan - startup and shutdown events."""
     # Startup
-    print("Starting Review Bomb Workshop...")
+    print("Starting Review Fraud Workshop...")
     try:
         await init_es_client()
         print("Elasticsearch client initialized")
@@ -33,15 +33,15 @@ async def lifespan(app: FastAPI):
     yield
 
     # Shutdown
-    print("Shutting down Review Bomb Workshop...")
+    print("Shutting down Review Fraud Workshop...")
     await close_es_client()
     print("Elasticsearch client closed")
 
 
 # Create FastAPI application
 app = FastAPI(
-    title="Review Bomb Workshop",
-    description="A workshop application for detecting and analyzing review bomb attacks using Elasticsearch",
+    title="Review Fraud Workshop",
+    description="A workshop application for detecting and analyzing review fraud attacks using Elasticsearch",
     version="1.0.0",
     lifespan=lifespan,
 )

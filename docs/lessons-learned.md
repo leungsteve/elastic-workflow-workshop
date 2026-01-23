@@ -1,4 +1,4 @@
-# Lessons Learned - Review Bomb Workshop
+# Lessons Learned - Review Fraud Detection Workshop
 
 Patterns, gotchas, and recommendations discovered during development. Use this to accelerate future projects.
 
@@ -1120,7 +1120,7 @@ class IncidentService:
             id=business_id,
             doc={
                 "rating_protected": True,
-                "protection_reason": "review_bomb_detected",
+                "protection_reason": "review_fraud_detected",
                 "protected_since": datetime.utcnow().isoformat(),
             },
             refresh=True
@@ -1141,7 +1141,7 @@ class IncidentService:
                 }
             },
             script={
-                "source": "ctx._source.status = 'held'; ctx._source.hold_reason = 'review_bomb_detected'"
+                "source": "ctx._source.status = 'held'; ctx._source.hold_reason = 'review_fraud_detected'"
             },
             refresh=True
         )

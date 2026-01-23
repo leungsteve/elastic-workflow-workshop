@@ -283,7 +283,7 @@ def main(
         python -m admin.verify_environment --fail-on-warning
     """
     echo_info("=" * 60)
-    echo_info("Review Bomb Workshop - Environment Verification")
+    echo_info("Review Fraud Workshop - Environment Verification")
     echo_info("=" * 60)
 
     result = VerificationResult()

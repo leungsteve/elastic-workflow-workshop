@@ -1,4 +1,4 @@
-# Review Bomb Detection Workshop - Talk Track
+# Review Integrity & Fraud Detection Workshop - Talk Track
 
 ## Speaker Notes and Demo Script
 
@@ -6,7 +6,9 @@
 - Presentation & Demo: 30 minutes
 - Hands-on Labs: 60 minutes
 
-**Key Message:** "Search finds the insight - ES|QL detects the anomaly, semantic search reveals the narrative. Workflows acts on it. Agent Builder explains it."
+**Three Themes:** Simplify | Optimize | Innovate with AI
+
+**Key Message:** "Protecting review integrity at scale—detect fraud, automate response, investigate with AI."
 
 ---
 
@@ -18,12 +20,12 @@
 
 **Key Points:**
 - Welcome everyone to the workshop
-- Introduce yourself and any co-facilitators
+- Introduce the three themes: Simplify, Optimize, Innovate with AI
 - Confirm participants have access to their lab environments
 - Quick overview: 30 min presentation, then 60 min hands-on
 
 **Say:**
-> "Welcome to 'What's New in Elastic Search 9.3.' Today we're going to build a complete review bomb detection system using powerful new features: Workflows, ES|QL with LOOKUP JOIN, Semantic Search with ELSER, and Agent Builder."
+> "Welcome to 'What's New in Elastic 9.3.' Today we're going to build a complete review fraud detection system. Everything we cover today maps to three themes that run through all of Elastic's innovations: Simplify operations, Optimize costs and performance, and Innovate with AI. By the end, you'll have a working fraud detection system that demonstrates all three."
 
 **Do:**
 - Ask participants to raise hands if they've used Elasticsearch before
@@ -31,82 +33,85 @@
 
 ---
 
-### Slide: Today's Key Message
+### Slide: Three Themes
 
 **Time:** 1:00 - 2:00
 
 **Key Points:**
-- Introduce the core theme that ties everything together
-- This message will be reinforced throughout
-- Emphasize the two types of search working together
+- Introduce the three themes that tie everything together
+- Map features to themes
+- These themes will be reinforced throughout
 
 **Say:**
-> "Here's the key message I want you to take away today: Search finds the insight - but search comes in two flavors. ES|QL detects the anomaly through metadata patterns - velocity, trust scores, timing. Semantic search reveals the narrative - what attackers are actually claiming. Workflows acts on the insight - automating the response. And Agent Builder explains it - enabling natural language investigation. By the end of this workshop, you'll see how these four capabilities work together seamlessly."
+> "Let me share three themes that run through everything we'll cover today. First, SIMPLIFY - ES|QL makes complex queries readable, Workflows makes automation visual and no-code. Second, OPTIMIZE - LOOKUP JOIN reduces ten queries to one, automated response runs 24/7 without analyst fatigue. Third, INNOVATE WITH AI - Agent Builder lets analysts ask questions in English, ELSER semantic search finds fraud by meaning, not just keywords. By the end of this workshop, you'll see how these three themes come together in a real fraud detection system."
 
 ---
 
-### Slide: The Problem - Review Bombing
+### Slide: The Problem - Review Fraud
 
 **Time:** 2:00 - 3:30
 
 **Key Points:**
-- Define review bombing
-- Make it relatable with real examples
-- Set up why this matters
+- Define review fraud (broader than just "bombing")
+- Make it relatable - this applies to ALL review systems
+- Set up why this matters for review integrity
 
 **Say:**
-> "Let me start with a question - has anyone heard of review bombing? It's a coordinated attack where bad actors create multiple fake accounts and flood a business with negative reviews. The goal is simple: destroy a business's reputation."
+> "Let me start with a question - have you ever looked at reviews on Amazon, Yelp, or the App Store and wondered if they were real? Review fraud is a massive problem. Bad actors create fake accounts and submit coordinated fake reviews to manipulate ratings. It affects restaurants on Yelp, products on Amazon, apps in the App Store, hotels on TripAdvisor - anywhere user reviews influence purchasing decisions. The pattern we're building today works for ALL of these."
 
 **Engagement:**
-- Ask if anyone has personally seen this happen
-- Mention high-profile cases (games, restaurants during controversies)
+- Ask if anyone has personally seen suspicious reviews
+- Mention that Amazon removes millions of fake reviews yearly
 
 **Do:**
 - Show the screenshot of a business with a sudden rating drop
 
 ---
 
-### Slide: Real-World Impact
+### Slide: Why Review Integrity Matters
 
 **Time:** 3:30 - 4:30
 
 **Key Points:**
 - Quantify the business impact
-- Explain platform risks
+- Explain platform and consumer risks
+- Frame as an integrity problem, not just a security problem
 
 **Say:**
-> "The impact is very real. Studies show businesses can lose 5-9% of revenue for each star they drop. For a restaurant doing a million dollars a year, that's $50,000 to $90,000. For platforms, it's about trust - if users see fake reviews everywhere, they stop trusting the platform entirely."
+> "The impact is very real. Businesses can lose 5-9% of revenue for each star they drop. For platforms, it's about trust - if users see fake reviews everywhere, they stop trusting the platform entirely. But most importantly, it's about consumers - they make purchasing decisions based on reviews. Fake reviews mean people waste money on bad products or miss great businesses. This is why we call it review integrity - it's about preserving trust in the entire ecosystem."
 
 ---
 
-### Slide: The Attack Pattern
+### Slide: The Fraud Pattern
 
 **Time:** 4:30 - 5:00
 
 **Key Points:**
 - Walk through how attacks actually work
+- Emphasize this pattern is universal (Yelp, Amazon, App Store)
 - Set up the detection challenge
 
 **Say:**
-> "The attack pattern is pretty consistent. Attackers identify a successful business - usually one with good ratings that depends on reviews. They create fake accounts, often many at once. Then they submit coordinated negative reviews, typically all 1-star, within a short time window. The business rating plummets before anyone notices."
+> "The fraud pattern is consistent whether it's Yelp, Amazon, or the App Store. Attackers identify a target - could be a competitor's product, a controversial business, or just an extortion scheme. They create fake accounts with no history and low trust signals. Then they submit coordinated negative reviews within a short time window. The rating drops before anyone notices. Same pattern, different platforms - same detection approach."
 
 **Transition:**
-> "So how do we detect this? That's what we're building today - and we'll use two complementary search approaches to do it."
+> "So how do we detect this? That's what we're building today - and I'll show you how Elastic's new features make this simpler, more efficient, and smarter."
 
 ---
 
 ## Section 2: Elastic 9.3 Features (10 minutes)
 
-### Slide: Headline Feature - Workflows
+### Slide: Theme 1 - SIMPLIFY with Workflows
 
 **Time:** 5:00 - 6:30
 
 **Key Points:**
 - Workflows is THE headline feature for 9.3
-- Native automation - no external tools needed
+- SIMPLIFY: Native automation - no external tools needed
+- Visual builder, no code required
 
 **Say:**
-> "The headline feature for Elastic Search 9.3 is Workflows. This is native automation built directly into Elasticsearch. No more external orchestration tools. No more moving data out of the cluster for processing. You can now build complete automated pipelines that respond to your data in real-time."
+> "Let's start with our first theme: SIMPLIFY. The headline feature for Elastic 9.3 is Workflows. This is native automation built directly into Elasticsearch. No more external orchestration tools. No more Lambda functions. No more moving data out of the cluster for processing. It's visual, it's no-code, and it's built right in. That's simplification."
 
 **Do:**
 - Show the Workflows UI screenshot
@@ -120,49 +125,49 @@
 
 **Key Points:**
 - Define components: Triggers, Steps, Actions
-- Compare to familiar concepts
+- Emphasize the SIMPLIFY theme
 
 **Say:**
-> "Think of Workflows like AWS Lambda or Azure Functions, but built into Elastic. You have Triggers - things that start the workflow like a schedule or a document change. You have Steps - queries and transformations. And you have Actions - updates, notifications, API calls. The key difference is your data never leaves the cluster."
+> "Think of Workflows like AWS Lambda or Azure Functions, but dramatically simpler because it's built into Elastic. Triggers start the workflow - a schedule, a document change, or a webhook. Steps do the work - queries and transformations. Actions respond - updates, notifications, API calls. But here's the key: your data never leaves the cluster, and you don't need to be a developer to build one."
 
 ---
 
-### Slide: Workflow Pattern
+### Slide: Workflow Pattern (SIMPLIFY)
 
 **Time:** 8:00 - 9:00
 
 **Key Points:**
 - Show the YAML structure
-- Emphasize simplicity
+- Emphasize readability
 
 **Say:**
-> "Here's what a workflow looks like. It's YAML-based, declarative, and readable. A schedule trigger, an ES|QL query for detection, and an action to respond. This particular workflow detects suspicious review patterns and marks those reviews as held. Simple, powerful, native."
+> "Here's what a workflow looks like. It's YAML-based, declarative, and readable. A schedule trigger, an ES|QL query for detection, and an action to respond. This workflow detects suspicious review patterns and marks reviews as held. Compare this to the Lambda code, SQS queues, and IAM policies you'd need otherwise. That's SIMPLIFY in action."
 
 ---
 
-### Slide: Why Workflows Matter
+### Slide: Theme 2 - OPTIMIZE with Workflows
 
 **Time:** 9:00 - 9:30
 
 **Key Points:**
-- Before/after comparison
-- Architecture simplification
+- OPTIMIZE: Before/after comparison
+- Reduce operational cost and response time
 
 **Say:**
-> "Before Workflows, you'd need external tools - maybe Kafka for streaming, Lambda for processing, custom integrations to write back to Elastic. Now, all of that happens inside the cluster. Simpler architecture, lower latency, easier to maintain."
+> "Now let's talk about OPTIMIZE. Before Workflows, you'd need external tools - Kafka for streaming, Lambda for processing, custom integrations to write back to Elastic. That's infrastructure cost, maintenance cost, and people cost. With Workflows, all of that happens inside the cluster. Sub-second response times. 24/7 automation without analyst fatigue. Lower cost, faster response - that's optimization."
 
 ---
 
-### Slide: ES|QL with LOOKUP JOIN
+### Slide: SIMPLIFY + OPTIMIZE: ES|QL with LOOKUP JOIN
 
 **Time:** 9:30 - 10:30
 
 **Key Points:**
-- This is the detection engine
-- Cross-index correlation is key
+- SIMPLIFY: Readable query syntax
+- OPTIMIZE: One query replaces multiple API calls
 
 **Say:**
-> "ES|QL is our analytical detection engine. But here's the challenge: reviews don't contain user trust scores. That data is in a separate users index. LOOKUP JOIN lets us correlate across indices at query time. Now I can ask: show me reviews from the last 30 minutes, enriched with user trust scores, grouped by business. If a business has many reviews from low-trust users, that's our signal."
+> "ES|QL is our analytical detection engine, and it demonstrates both SIMPLIFY and OPTIMIZE. Look at this query - it's readable, almost like English. But here's the OPTIMIZE part: reviews don't contain user trust scores. Without LOOKUP JOIN, you'd query reviews, extract user IDs, query users, then join in application code - multiple round trips. With LOOKUP JOIN, one query does it all. That's a massive optimization."
 
 **Do:**
 - Walk through the query on screen
@@ -170,30 +175,30 @@
 
 ---
 
-### Slide: Why LOOKUP JOIN
+### Slide: Why LOOKUP JOIN Matters
 
 **Time:** 10:30 - 11:00
 
 **Key Points:**
-- Solve the data correlation problem
-- Enable anomaly detection across related data
+- OPTIMIZE: Solve the data correlation problem
+- Enable real-time anomaly detection
 
 **Say:**
-> "Without LOOKUP JOIN, you'd have to denormalize everything into one index - which means data duplication and staleness issues. Or you'd have to do multiple queries and join in application code. LOOKUP JOIN gives you real-time correlation at query time. This is essential for any anomaly detection across related entities."
+> "Without LOOKUP JOIN, you'd have to denormalize everything into one index - data duplication, staleness, storage costs. Or multiple queries and application code - latency, complexity, maintenance. LOOKUP JOIN gives you real-time correlation at query time. One query instead of ten. That's the OPTIMIZE theme in action - and this pattern works whether you're detecting fake reviews, fraud, or security threats."
 
 ---
 
-### Slide: Semantic Search with ELSER
+### Slide: Theme 3 - INNOVATE WITH AI: Semantic Search
 
 **Time:** 11:00 - 12:00
 
 **Key Points:**
-- Introduce semantic search as complementary to ES|QL
-- The `semantic_text` field type
-- ELSER model for embeddings
+- INNOVATE WITH AI: Search by meaning, not just keywords
+- The `semantic_text` field type + ELSER
+- AI-powered content understanding
 
 **Say:**
-> "ES|QL finds anomalies in metadata - velocity, trust scores, timing. But what about the content itself? That's where semantic search comes in. With ELSER - the Elastic Learned Sparse EncodeR - we can understand what reviews actually mean, not just match keywords. The `semantic_text` field type makes this simple: just mark a field as semantic, and Elasticsearch automatically generates embeddings at index time."
+> "Now let's talk about our third theme: INNOVATE WITH AI. ES|QL finds anomalies in metadata - velocity, trust scores, timing. But what about the content itself? That's where ELSER comes in - the Elastic Learned Sparse EncodeR. It's AI that understands what text means, not just what words it contains. Search for 'food poisoning' and it finds reviews about 'got sick from the meal' even without those exact words. The `semantic_text` field makes this simple - mark a field, and AI handles the rest."
 
 **Do:**
 - Show the mapping with `semantic_text` field type
@@ -201,50 +206,50 @@
 
 ---
 
-### Slide: Why Semantic Search Matters
+### Slide: Why Semantic Search Matters (INNOVATE WITH AI)
 
 **Time:** 12:00 - 12:30
 
 **Key Points:**
-- Content understanding vs. metadata patterns
-- Revealing the attack narrative
-- Finding similar legitimate complaints
+- AI-powered content understanding for fraud detection
+- Finding attack narratives and patterns
+- Distinguishing coordinated fraud from legitimate complaints
 
 **Say:**
-> "Here's why this matters for fraud detection: attackers often use similar language - they're copying from a template or following a script. Semantic search can find reviews with similar meaning even when the words are different. And critically, it lets us ask: are there legitimate reviews with the same complaints? That's how we distinguish a real problem from a coordinated attack."
+> "Here's why this AI capability matters for fraud detection: attackers often use similar language - they're copying from a template or following a script. Semantic search finds reviews with similar meaning even when words differ. And critically, it lets us ask: are there legitimate reviews with the same complaints? That's how we distinguish a real problem from coordinated fraud. The AI does the semantic understanding - you just ask the question."
 
 **Transition:**
-> "So we have two types of search working together: ES|QL detects the anomaly through patterns, semantic search reveals what attackers are claiming."
+> "Now let's see the ultimate INNOVATE WITH AI feature - Agent Builder."
 
 ---
 
-### Slide: Agent Builder
+### Slide: INNOVATE WITH AI: Agent Builder
 
 **Time:** 12:30 - 13:30
 
 **Key Points:**
-- AI-powered investigation
-- Custom tools with ES|QL backend
-- Semantic search tools for content analysis
+- AI-powered investigation in natural language
+- No query skills required
+- Custom tools powered by ES|QL and semantic search
 
 **Say:**
-> "Once we detect an incident, someone needs to investigate. That's where Agent Builder comes in. You create custom tools - powered by ES|QL queries and semantic search - and the AI assistant can use them to answer natural language questions. Instead of writing queries, an analyst can simply ask: 'Tell me about the incident at Mario's Pizza' or 'Find reviews similar to this complaint.'"
+> "Agent Builder is where all our AI innovation comes together. You create custom tools - powered by ES|QL queries and semantic search - and analysts can ask questions in plain English. Instead of learning query syntax, an analyst simply asks: 'Tell me about the fraud incident at Mario's Pizza' or 'Find reviews similar to this complaint.' The AI handles the queries, formats the response, and enables anyone to investigate - not just technical experts. That's INNOVATE WITH AI in action."
 
 ---
 
-### Slide: Agent Builder in Action
+### Slide: Agent Builder in Action (INNOVATE WITH AI)
 
 **Time:** 13:30 - 15:00
 
 **Key Points:**
-- Show the flow: question -> tool -> query -> answer
-- Highlight both analytical and semantic tools
+- INNOVATE: Natural language → AI → Query → Response
+- Democratize investigation - anyone can investigate
 
 **Say:**
-> "Here's how it works. The user asks a natural language question. The Agent selects the appropriate tool you created. The tool executes an ES|QL query or semantic search. The Agent formats the response naturally. The analyst never needs to write a query - they just ask questions. And with semantic search tools, they can ask things like 'find similar reviews' or 'what complaints are people making?'"
+> "Here's how it works. Analyst asks a natural language question. The AI Agent selects the appropriate tool. The tool executes an ES|QL query or semantic search. The Agent formats the response naturally. The analyst never writes a query - they just ask questions. This is how AI democratizes investigation. Your security analyst, your trust & safety team, your compliance officer - they can all investigate fraud without learning ES|QL. That's innovation with AI."
 
 **Transition:**
-> "Now let's see all of this in action."
+> "Now let's see all three themes in action - Simplify, Optimize, Innovate with AI."
 
 ---
 
@@ -256,10 +261,11 @@
 
 **Key Points:**
 - Introduce the dataset
+- Emphasize universal applicability
 - Set the scene
 
 **Say:**
-> "We have a review platform with real Yelp data - over 10,000 restaurants, 50,000 user accounts, 200,000 reviews. We're going to target a popular restaurant in Las Vegas and launch a review bomb attack. Then we'll watch our automated defenses respond - and use semantic search to understand what the attackers are claiming."
+> "We have a review platform with real Yelp data - over 10,000 restaurants, 50,000 user accounts, 200,000 reviews. We're going to target a popular restaurant - The Golden Spoon - and simulate a coordinated fraud attack. Then we'll watch all three themes in action: SIMPLIFY with readable ES|QL, OPTIMIZE with automated response, and INNOVATE WITH AI for investigation. Remember - this exact same pattern works for Amazon products, App Store apps, or any review system."
 
 ---
 
@@ -326,7 +332,7 @@
 
 **Do:**
 1. Navigate to Workflows in Kibana
-2. Open the Review Bomb Detection workflow
+2. Open the Review Fraud Detection workflow
 3. Walk through the structure
 
 **Say:**

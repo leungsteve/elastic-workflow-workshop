@@ -1,5 +1,5 @@
 """
-Elasticsearch client utilities for the Review Bomb Workshop.
+Elasticsearch client utilities for the Review Fraud Workshop.
 
 Provides sync and async Elasticsearch clients with support for both
 API key and username/password authentication.

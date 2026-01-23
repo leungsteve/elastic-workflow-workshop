@@ -1,6 +1,6 @@
 // Velocity Detection Query
 //
-// Purpose: Detect abnormal review velocity that may indicate a coordinated review bomb attack
+// Purpose: Detect abnormal review velocity that may indicate a coordinated review fraud attack
 //
 // This query identifies businesses that have received a high volume of negative reviews
 // in a short time window (30 minutes), which is a key indicator of coordinated attacks.

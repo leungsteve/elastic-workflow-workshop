@@ -1,4 +1,4 @@
-"""Review generator service for simulating review bomb attacks."""
+"""Review generator service for simulating review fraud attacks."""
 
 import random
 import uuid

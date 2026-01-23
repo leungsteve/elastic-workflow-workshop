@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Calculate trust scores for users in the Review Bomb Workshop.
+Calculate trust scores for users in the Review Fraud Workshop.
 
 Reads the raw extracted users file and adds trust scores based on
 account activity, engagement, and behavior patterns.

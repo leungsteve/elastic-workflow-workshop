@@ -1,4 +1,4 @@
-"""API routers for Review Bomb Workshop."""
+"""API routers for Review Fraud Workshop."""
 
 from app.routers.businesses import router as businesses_router
 from app.routers.incidents import router as incidents_router

@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Master script to prepare all data for the Review Bomb Workshop.
+# Master script to prepare all data for the Review Fraud Workshop.
 #
 # This script runs all data preparation steps in the correct order:
 # 1. Create Elasticsearch indices
@@ -329,7 +329,7 @@ generate_sample_if_needed() {
 main() {
     echo -e "${GREEN}"
     echo "=============================================================="
-    echo "       Review Bomb Workshop - Data Preparation"
+    echo "       Review Fraud Workshop - Data Preparation"
     echo "=============================================================="
     echo -e "${NC}"
     echo "Started at: $(date '+%Y-%m-%d %H:%M:%S')"

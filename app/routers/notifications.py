@@ -1,4 +1,4 @@
-"""Notifications API router for Review Bomb Workshop."""
+"""Notifications API router for Review Fraud Workshop."""
 
 from datetime import datetime
 from typing import Optional
