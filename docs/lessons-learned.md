@@ -1476,3 +1476,128 @@ attacker = {
     "synthetic": True
 }
 ```
+
+---
+
+## FreshEats Consumer UI
+
+### Why Build a Consumer UI?
+
+**Problem:** Workshop participants struggled to relate to raw ES|QL queries and index data. The attack simulation felt abstract.
+
+**Solution:** Build a Yelp-like consumer interface called "FreshEats" where participants can:
+- Browse real businesses and reviews
+- See attacks unfold visually in real-time
+- Watch protection badges and held reviews appear after workflow response
+
+**Impact:** The visual feedback makes the workshop much more engaging. Participants can "feel" the attack and response.
+
+### UI Architecture
+
+**Stack:**
+- FastAPI (existing backend)
+- Jinja2 templates
+- Bootstrap 5 + custom CSS
+- No separate frontend build step
+
+**Routes:**
+| Route | Description |
+|-------|-------------|
+| `/fresheats` | Home/search page with category browsing |
+| `/fresheats/biz/{id}` | Business detail page with reviews |
+
+**Templates:**
+```
+app/templates/fresheats/
+├── base.html      # Yelp-styled base layout (red theme)
+├── home.html      # Search and category browse
+└── business.html  # Business detail with reviews
+```
+
+### Visual Indicators
+
+**Key UI elements that show workflow response:**
+
+| Indicator | When Shown | CSS Class/Element |
+|-----------|------------|-------------------|
+| **Rating Protected** badge | `business.rating_protected == true` | `.fe-protected-badge` |
+| **HELD** badge on reviews | `review.status == "held"` | `.fe-held-badge` |
+| **Low Trust** badge | `review.trust_score < 0.4` | Bootstrap warning badge |
+| **SIMULATED** badge | `review.is_simulated == true` | Bootstrap danger badge |
+| **Incident Alert** banner | Active incident exists | `.fe-incident-alert` |
+
+### Styling (Yelp-like Theme)
+
+**Color Palette:**
+```css
+:root {
+    --fe-red: #d32323;        /* Primary brand color */
+    --fe-red-dark: #af1f1f;   /* Hover states */
+    --fe-star: #ff8c00;       /* Star ratings */
+    --fe-gray-dark: #333;     /* Text */
+    --fe-gray-light: #999;    /* Secondary text */
+}
+```
+
+**Key Design Decisions:**
+1. Red color scheme mimics Yelp branding
+2. Star ratings use orange (universally recognized)
+3. Cards have subtle hover effects
+4. Protection/held states use yellow (warning) background
+5. Clear visual hierarchy: business name > rating > reviews
+
+### Integration with Workshop
+
+**Best Practice:** Keep consumer UI separate from admin UI:
+- `/fresheats/*` - Consumer experience (what users see)
+- `/` - Admin dashboard (what analysts see)
+- `/attack` - Attack simulator (workshop tool)
+
+**Links between UIs:**
+- FreshEats header links to Admin
+- Business page has "Launch Attack" button
+- Admin sidebar links to FreshEats
+
+### Implementation Tips
+
+**Fetching Data in Templates:**
+For the home page, we fetch businesses server-side before rendering:
+```python
+@app.get("/fresheats", response_class=HTMLResponse)
+async def fresheats_home(request: Request, q: str = None, ...):
+    businesses = []
+    if q:
+        # Search Elasticsearch
+        response = await es.search(...)
+        businesses = [hit["_source"] for hit in response["hits"]["hits"]]
+
+    return templates.TemplateResponse(
+        "fresheats/home.html",
+        {"request": request, "businesses": businesses, ...}
+    )
+```
+
+**Jinja2 Star Rating Rendering:**
+```html
+{% for i in range(business.stars|int) %}
+<i class="bi bi-star-fill"></i>
+{% endfor %}
+{% if business.stars % 1 >= 0.5 %}
+<i class="bi bi-star-half"></i>
+{% endif %}
+```
+
+**Real-time Stats Sidebar:**
+Fetch stats via JavaScript after page load:
+```javascript
+const stats = await api.get(`/api/businesses/${businessId}/stats?hours=24`);
+// Update sidebar with review velocity, trend, etc.
+```
+
+### Lessons Learned
+
+1. **Refresh-based updates are fine** - No need for WebSockets; participants can refresh to see changes
+2. **Bootstrap is fast to prototype** - Custom CSS on top of Bootstrap 5 gives Yelp-like look quickly
+3. **Keep it simple** - MVP that "looks enough like Yelp" is sufficient for workshop purposes
+4. **Visual feedback matters** - Badges and alerts make abstract concepts tangible
+5. **Separate concerns** - Consumer UI vs Admin UI vs Attack Simulator each have clear purposes

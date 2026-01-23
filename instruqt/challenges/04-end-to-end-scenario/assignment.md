@@ -51,6 +51,17 @@ This simulates how your system would protect real businesses from coordinated at
 
 > **Target Business:** This challenge uses **Reading Terminal Market** (`ytynqOUb3hjKeJfRj5Tshw`), a famous Philadelphia landmark with a 4.6 star rating and 1,860+ reviews - a realistic high-value target for attackers.
 
+### Open the FreshEats Consumer UI
+
+Before we begin, open the **FreshEats** consumer interface - this is a Yelp-like UI where you can browse businesses and see reviews just like a real user would.
+
+1. Open **FreshEats** in a new browser tab: `http://localhost:8000/fresheats`
+2. Search for "Reading Terminal Market" or browse the **Restaurants** category
+3. Click on **Reading Terminal Market** to view its business page
+4. Keep this tab open - you'll use it throughout this challenge to see the attack unfold visually
+
+**Direct link to target business:** `http://localhost:8000/fresheats/biz/ytynqOUb3hjKeJfRj5Tshw`
+
 ---
 
 ### Task 1: Check Baseline State (2 min)
@@ -99,7 +110,7 @@ Before the attack, verify the target business is in a normal state.
 Now you'll launch a simulated review fraud attack against the target business.
 
 1. Open the **Attack Simulator** tab
-   - URL: `http://localhost:8080` or use the "Attack Simulator" tab in Instruqt
+   - URL: `http://localhost:8000/attack` or use the "Attack Simulator" tab in Instruqt
 
 2. Configure the attack:
 
@@ -107,16 +118,18 @@ Now you'll launch a simulated review fraud attack against the target business.
    |---------|-------|
    | **Target Business** | Reading Terminal Market |
    | **Business ID** | `ytynqOUb3hjKeJfRj5Tshw` |
-   | **Number of Reviews** | 12 |
+   | **Number of Reviews** | 15 |
    | **Rating Range** | 1-2 stars |
    | **Attacker Profiles** | Low trust (0.1-0.3) |
 
 3. Click **Launch Attack**
 
-4. Watch the attack progress:
-   - Review counter increases
-   - Attack reviews appear in the feed
-   - Low-trust accounts submit negative reviews
+4. **Watch the attack in FreshEats:**
+   - Switch to your FreshEats tab with Reading Terminal Market
+   - **Refresh the page** to see the attack reviews appear
+   - Notice the negative reviews with **SIMULATED** badges
+   - See the **Low Trust** badges on attacker accounts
+   - Check the "Recent Activity (24h)" sidebar - review count and velocity spike
 
 5. Monitor with this query (run every 30 seconds):
    ```esql
@@ -151,7 +164,15 @@ Your workflow should detect the attack automatically. Let's observe it in action
    - Business is protected
    - Incident is created
 
-6. Verify the response with these queries:
+6. **See the response in FreshEats:**
+   - Switch to your FreshEats tab and **refresh the page**
+   - You should now see:
+     - **"Rating Protected"** badge in the business header
+     - **Orange incident alert banner** below the header
+     - Attack reviews now show **"HELD"** badges with yellow background
+     - The 4.6 star rating is preserved (protected from the attack!)
+
+7. Verify the response with these queries:
 
    **Check held reviews:**
    ```esql
@@ -341,9 +362,12 @@ You've completed a full attack lifecycle:
 
 Verify you have completed all phases:
 
+- [ ] Opened FreshEats and viewed the target business
 - [ ] Checked baseline state of target business
 - [ ] Launched attack via simulator
+- [ ] Saw attack reviews appear in FreshEats (SIMULATED badges)
 - [ ] Observed workflow detection and response
+- [ ] Saw protection badge and held reviews in FreshEats
 - [ ] Reviews were automatically held
 - [ ] Business was automatically protected
 - [ ] Incident was automatically created
@@ -357,11 +381,12 @@ Verify you have completed all phases:
 ## Key Takeaways
 
 1. **Real-time protection** - Workflows can respond in minutes, not hours
-2. **Minimal false positives** - Multiple signals (trust score, rating, volume) reduce errors
-3. **Business continuity** - Rating protection prevents immediate reputation damage
-4. **Semantic understanding** - ELSER reveals what attackers claim, beyond just keywords
-5. **Audit trail** - Incidents and held reviews provide compliance documentation
-6. **Natural language access** - Analysts don't need to be ES|QL experts
+2. **Visual feedback** - FreshEats UI shows protection badges and held reviews instantly
+3. **Minimal false positives** - Multiple signals (trust score, rating, volume) reduce errors
+4. **Business continuity** - Rating protection prevents immediate reputation damage
+5. **Semantic understanding** - ELSER reveals what attackers claim, beyond just keywords
+6. **Audit trail** - Incidents and held reviews provide compliance documentation
+7. **Natural language access** - Analysts don't need to be ES|QL experts
 
 ---
 
