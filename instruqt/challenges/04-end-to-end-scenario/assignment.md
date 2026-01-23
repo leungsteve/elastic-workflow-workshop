@@ -71,10 +71,10 @@ Before the attack, verify the target business is in a normal state.
    - Rating: 4.6 stars
    - `rating_protected`: false (not under protection)
 
-3. Verify no open incidents exist for this business:
+3. Verify no active incidents exist for this business:
    ```esql
    FROM incidents
-   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw" AND status == "open"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw" AND status == "detected"
    | STATS count = COUNT(*)
    ```
 
@@ -177,7 +177,7 @@ Your workflow should detect the attack automatically. Let's observe it in action
    ```esql
    FROM incidents
    | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
-   | WHERE status == "open"
+   | WHERE status == "detected"
    | KEEP incident_id, severity, metrics.review_count, metrics.unique_attackers, detected_at
    ```
 
@@ -270,7 +270,7 @@ Complete the incident lifecycle by resolving it.
    First, find the incident ID:
    ```esql
    FROM incidents
-   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw" AND status == "open"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw" AND status == "detected"
    | KEEP incident_id
    | LIMIT 1
    ```
@@ -284,12 +284,12 @@ Complete the incident lifecycle by resolving it.
          "bool": {
            "must": [
              { "term": { "business_id": "ytynqOUb3hjKeJfRj5Tshw" } },
-             { "term": { "status": "open" } }
+             { "term": { "status": "detected" } }
            ]
          }
        },
        "script": {
-         "source": "ctx._source.status = '\''resolved'\''; ctx._source.resolved_at = params.timestamp; ctx._source.resolution_notes = params.notes",
+         "source": "ctx._source.status = '\''resolved'\''; ctx._source.resolved_at = params.timestamp; ctx._source.resolution = params.notes",
          "params": {
            "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
            "notes": "Confirmed review fraud attack. Malicious reviews held. Attacker accounts flagged."
@@ -316,7 +316,7 @@ Complete the incident lifecycle by resolving it.
    | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | SORT detected_at DESC
    | LIMIT 1
-   | KEEP incident_id, status, severity, resolved_at, resolution_notes
+   | KEEP incident_id, status, severity, resolved_at, resolution
    ```
 
    **Expected result:** status = "resolved"

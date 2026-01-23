@@ -116,7 +116,7 @@ curl -s -X POST "${ELASTICSEARCH_URL}/incidents/_doc" \
     -d '{
         "incident_id": "'${INCIDENT_ID}'",
         "incident_type": "review_fraud",
-        "status": "open",
+        "status": "detected",
         "severity": "high",
         "business_id": "'${TARGET_BIZ_ID}'",
         "business_name": "'${TARGET_BIZ_NAME}'",
