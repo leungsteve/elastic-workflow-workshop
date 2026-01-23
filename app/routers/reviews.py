@@ -94,16 +94,19 @@ async def bulk_attack(
             operations.append(user_doc)
             users_created.add(user_id)
 
+        timestamp = datetime.utcnow().isoformat() + "Z"
         review_doc = {
             "review_id": review_id,
             "business_id": business_id,
             "user_id": user_id,
             "stars": float(stars),
             "text": text,
-            "date": datetime.utcnow().isoformat() + "Z",
+            "date": timestamp,
+            "@timestamp": timestamp,  # For workflow detection
             "useful": 0,
             "funny": 0,
             "cool": 0,
+            "status": "pending",  # For workflow to detect and hold
             "is_simulated": True,
             "attacker_id": f"turbo_{uuid.uuid4().hex[:6]}"
         }

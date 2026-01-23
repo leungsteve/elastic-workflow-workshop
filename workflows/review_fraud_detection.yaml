@@ -45,10 +45,11 @@ steps:
     with:
       query: |
         FROM reviews
-        | WHERE @timestamp > NOW() - 30 minutes
-          AND trust_score < 0.4
+        | WHERE date > NOW() - 30 minutes
           AND stars <= 2
-          AND status = "pending"
+          AND (status == "pending" OR status IS NULL)
+        | LOOKUP JOIN users ON user_id
+        | WHERE trust_score < 0.4
         | STATS
             review_count = COUNT(*),
             avg_trust_score = AVG(trust_score),
@@ -58,8 +59,9 @@ steps:
           BY business_id
         | WHERE review_count >= 5
         | LOOKUP JOIN businesses ON business_id
-        | KEEP business_id, business_name, review_count, avg_trust_score,
-              avg_stars, unique_reviewers, review_ids, category, city
+        | KEEP business_id, name, review_count, avg_trust_score,
+              avg_stars, unique_reviewers, review_ids, categories, city
+        | RENAME name AS business_name, categories AS category
         | SORT review_count DESC
 
   # Step 2: Enrich each detected business with additional context
@@ -88,8 +90,9 @@ steps:
           query: |
             FROM reviews
             | WHERE business_id == "{{attack.business_id}}"
-              AND @timestamp > NOW() - 7 days
-              AND trust_score >= 0.6
+              AND date > NOW() - 7 days
+            | LOOKUP JOIN users ON user_id
+            | WHERE trust_score >= 0.6
             | STATS
                 normal_review_count = COUNT(*),
                 normal_avg_stars = AVG(stars)
@@ -167,14 +170,19 @@ steps:
                 - term:
                     business_id: "{{attack.business_id}}"
                 - range:
-                    "@timestamp":
+                    date:
                       gte: "now-30m"
-                - range:
-                    trust_score:
-                      lt: 0.4
                 - range:
                     stars:
                       lte: 2
+              should:
+                - term:
+                    status: "pending"
+                - bool:
+                    must_not:
+                      - exists:
+                          field: status
+              minimum_should_match: 1
           script:
             source: |
               ctx._source.status = 'held';
