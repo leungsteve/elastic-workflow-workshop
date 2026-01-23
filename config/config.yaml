@@ -20,26 +20,18 @@ elasticsearch:
 
 # Data filtering settings
 data:
-  # Cities well-represented in Yelp data
-  # Note: Update these based on your Yelp dataset version
-  cities:
-    - "Philadelphia"
-    - "Tucson"
-    - "Tampa"
+  # City for the workshop dataset
+  city: "Philadelphia"
 
-  # Business categories to include
-  categories:
-    - "Restaurants"
-    - "Food"
-    - "Bars"
-    - "Cafes"
+  # Number of top businesses to include (by review count)
+  # Use admin/generate_philly_dataset.py to generate
+  business_count: 100
 
   # Review partitioning
   historical_ratio: 0.8  # 80% historical, 20% streaming
 
-  # Limits for workshop (reduce data size)
-  max_businesses: 20000
-  max_users: 100000
+  # Note: We no longer limit users - all users who reviewed
+  # selected businesses are included to avoid orphaned reviews
 
 # Streaming settings
 streaming:

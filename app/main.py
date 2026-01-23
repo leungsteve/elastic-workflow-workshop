@@ -11,6 +11,7 @@ from fastapi.templating import Jinja2Templates
 from app.config import get_settings
 from app.dependencies import init_es_client, close_es_client, get_es_client
 from app.routers import (
+    admin_router,
     businesses_router,
     reviews_router,
     incidents_router,
@@ -62,6 +63,7 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Include routers
+app.include_router(admin_router)
 app.include_router(businesses_router)
 app.include_router(reviews_router)
 app.include_router(incidents_router)
@@ -361,11 +363,12 @@ async def fresheats_business(
                 user_id = review.get("user_id")
                 if user_id and user_id in users_map:
                     user = users_map[user_id]
-                    review["user_name"] = user.get("name", user_id[:12])
+                    review["user_name"] = user.get("name", f"User {user_id[-6:]}")
                     review["trust_score"] = user.get("trust_score")
                     review["account_age_days"] = user.get("account_age_days")
                 else:
-                    review["user_name"] = user_id[:12] if user_id else "Anonymous"
+                    # Fallback: show "User xxxxxx" for users not in our index
+                    review["user_name"] = f"User {user_id[-6:]}" if user_id else "Anonymous"
                 reviews.append(review)
 
             total_reviews = review_response["hits"]["total"]["value"]

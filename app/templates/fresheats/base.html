@@ -348,6 +348,16 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" href="/attack" title="Attack Simulator">
+                            <i class="bi bi-lightning-charge"></i> Attack
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showResetModal(); return false;" title="Reset Environment">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" href="/" title="Workshop Admin Panel">
                             <i class="bi bi-gear"></i> Admin
                         </a>
@@ -399,6 +409,48 @@
         </div>
     </footer>
 
+    <!-- Reset Environment Modal -->
+    <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="resetModalLabel">
+                        <i class="bi bi-arrow-counterclockwise"></i> Reset Environment
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="resetStats" class="mb-3">
+                        <p class="text-muted">Loading current status...</p>
+                    </div>
+                    <div id="resetOptions">
+                        <p class="fw-bold">This will remove:</p>
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check-square text-danger"></i> All attack/simulated reviews</li>
+                            <li><i class="bi bi-check-square text-danger"></i> All attacker user accounts</li>
+                            <li><i class="bi bi-check-square text-warning"></i> Business protection flags</li>
+                            <li><i class="bi bi-check-square text-warning"></i> All incidents</li>
+                            <li><i class="bi bi-check-square text-secondary"></i> All notifications</li>
+                        </ul>
+                        <div class="alert alert-info small">
+                            <i class="bi bi-info-circle"></i>
+                            Use this to reset the environment before running a new attack simulation.
+                        </div>
+                    </div>
+                    <div id="resetResult" class="d-none">
+                        <!-- Will be populated after reset -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="resetButton" onclick="performReset()">
+                        <i class="bi bi-trash"></i> Reset Environment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -439,6 +491,107 @@
                 day: 'numeric'
             });
         }
+
+        // Reset Modal Functions
+        let resetModal = null;
+
+        function showResetModal() {
+            resetModal = new bootstrap.Modal(document.getElementById('resetModal'));
+            resetModal.show();
+            loadResetStats();
+        }
+
+        async function loadResetStats() {
+            const statsDiv = document.getElementById('resetStats');
+            try {
+                const response = await fetch('/api/admin/stats');
+                const stats = await response.json();
+
+                let html = '<table class="table table-sm">';
+                html += '<tr><td>Attack reviews</td><td class="text-end"><strong class="text-danger">' + stats.attack_reviews + '</strong></td></tr>';
+                html += '<tr><td>Attacker users</td><td class="text-end"><strong class="text-danger">' + stats.attacker_users + '</strong></td></tr>';
+                html += '<tr><td>Protected businesses</td><td class="text-end"><strong class="text-warning">' + stats.protected_businesses + '</strong></td></tr>';
+                html += '<tr><td>Active incidents</td><td class="text-end"><strong class="text-warning">' + stats.active_incidents + '</strong></td></tr>';
+                html += '<tr><td>Notifications</td><td class="text-end"><strong>' + stats.notifications + '</strong></td></tr>';
+                html += '<tr class="table-light"><td>Total reviews</td><td class="text-end">' + stats.total_reviews.toLocaleString() + '</td></tr>';
+                html += '<tr class="table-light"><td>Total users</td><td class="text-end">' + stats.total_users.toLocaleString() + '</td></tr>';
+                html += '</table>';
+
+                const totalAttack = stats.attack_reviews + stats.attacker_users + stats.protected_businesses + stats.active_incidents;
+                if (totalAttack === 0) {
+                    html += '<div class="alert alert-success"><i class="bi bi-check-circle"></i> Environment is clean. No attack data found.</div>';
+                    document.getElementById('resetButton').disabled = true;
+                } else {
+                    document.getElementById('resetButton').disabled = false;
+                }
+
+                statsDiv.innerHTML = html;
+            } catch (error) {
+                statsDiv.innerHTML = '<div class="alert alert-danger">Failed to load stats: ' + error.message + '</div>';
+            }
+        }
+
+        async function performReset() {
+            const resetButton = document.getElementById('resetButton');
+            const originalText = resetButton.innerHTML;
+            resetButton.disabled = true;
+            resetButton.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Resetting...';
+
+            try {
+                const response = await fetch('/api/admin/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+
+                const resultDiv = document.getElementById('resetResult');
+                const optionsDiv = document.getElementById('resetOptions');
+                const statsDiv = document.getElementById('resetStats');
+
+                optionsDiv.classList.add('d-none');
+                statsDiv.classList.add('d-none');
+                resultDiv.classList.remove('d-none');
+
+                if (result.success) {
+                    let html = '<div class="alert alert-success"><i class="bi bi-check-circle"></i> ' + result.message + '</div>';
+                    html += '<table class="table table-sm">';
+                    html += '<tr><td>Attack reviews deleted</td><td class="text-end">' + result.details.attack_reviews_deleted + '</td></tr>';
+                    html += '<tr><td>Attacker users deleted</td><td class="text-end">' + result.details.attacker_users_deleted + '</td></tr>';
+                    html += '<tr><td>Businesses reset</td><td class="text-end">' + result.details.businesses_reset + '</td></tr>';
+                    html += '<tr><td>Incidents deleted</td><td class="text-end">' + result.details.incidents_deleted + '</td></tr>';
+                    html += '<tr><td>Notifications deleted</td><td class="text-end">' + result.details.notifications_deleted + '</td></tr>';
+                    html += '</table>';
+                    html += '<p class="text-muted small">Refresh the page to see the updated state.</p>';
+                    resultDiv.innerHTML = html;
+
+                    resetButton.innerHTML = '<i class="bi bi-check"></i> Done';
+                    resetButton.classList.remove('btn-danger');
+                    resetButton.classList.add('btn-success');
+                } else {
+                    resultDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Reset failed: ' + result.message + '</div>';
+                    resetButton.innerHTML = originalText;
+                    resetButton.disabled = false;
+                }
+            } catch (error) {
+                document.getElementById('resetResult').innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Error: ' + error.message + '</div>';
+                document.getElementById('resetResult').classList.remove('d-none');
+                resetButton.innerHTML = originalText;
+                resetButton.disabled = false;
+            }
+        }
+
+        // Reset modal state when closed
+        document.getElementById('resetModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('resetOptions').classList.remove('d-none');
+            document.getElementById('resetStats').classList.remove('d-none');
+            document.getElementById('resetResult').classList.add('d-none');
+            document.getElementById('resetResult').innerHTML = '';
+            const resetButton = document.getElementById('resetButton');
+            resetButton.innerHTML = '<i class="bi bi-trash"></i> Reset Environment';
+            resetButton.classList.remove('btn-success');
+            resetButton.classList.add('btn-danger');
+            resetButton.disabled = false;
+        });
     </script>
 
     {% block extra_js %}{% endblock %}
