@@ -265,7 +265,7 @@
 - Set the scene
 
 **Say:**
-> "We have a review platform with real Yelp data - over 10,000 restaurants, 50,000 user accounts, 200,000 reviews. We're going to target a popular restaurant - The Golden Spoon - and simulate a coordinated fraud attack. Then we'll watch all three themes in action: SIMPLIFY with readable ES|QL, OPTIMIZE with automated response, and INNOVATE WITH AI for investigation. Remember - this exact same pattern works for Amazon products, App Store apps, or any review system."
+> "We have a review platform with real Yelp data - over 14,000 businesses, 100,000 user accounts, 1 million+ reviews from the Yelp Academic Dataset. We're going to target a famous Philadelphia landmark - Reading Terminal Market - with 4.6 stars and 1,860+ reviews, and simulate a coordinated fraud attack. Then we'll watch all three themes in action: SIMPLIFY with readable ES|QL, OPTIMIZE with automated response, and INNOVATE WITH AI for investigation. Remember - this exact same pattern works for Amazon products, App Store apps, or any review system."
 
 ---
 

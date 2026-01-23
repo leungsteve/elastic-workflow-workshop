@@ -121,7 +121,7 @@ fi
 echo ""
 echo "[4/4] Checking target business state..."
 
-TARGET_CHECK=$(curl -s "${ELASTICSEARCH_URL}/businesses/_doc/target_biz_001" 2>/dev/null || echo '{"found":false}')
+TARGET_CHECK=$(curl -s "${ELASTICSEARCH_URL}/businesses/_doc/ytynqOUb3hjKeJfRj5Tshw" 2>/dev/null || echo '{"found":false}')
 
 if echo "$TARGET_CHECK" | grep -q '"found":true'; then
     TARGET_NAME=$(echo "$TARGET_CHECK" | grep -o '"name":"[^"]*"' | cut -d'"' -f4 || echo "Unknown")
@@ -136,7 +136,7 @@ if echo "$TARGET_CHECK" | grep -q '"found":true'; then
         echo "  INFO: Target business is not protected (may have been resolved)."
     fi
 else
-    echo "  WARN: Target business (target_biz_001) not found."
+    echo "  WARN: Target business (Reading Terminal Market) not found."
     WARNINGS=$((WARNINGS + 1))
 fi
 
@@ -189,6 +189,7 @@ echo "  - Created AI-powered investigation tools"
 echo "  - Ran a complete attack simulation"
 echo ""
 echo "Key message: Search finds the insight."
+echo "             Semantic search reveals the meaning."
 echo "             Workflows acts on it."
 echo "             Agent Builder explains it."
 echo ""

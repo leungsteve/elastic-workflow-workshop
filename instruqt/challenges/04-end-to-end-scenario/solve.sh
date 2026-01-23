@@ -13,28 +13,24 @@ echo "Solving Challenge 4: End-to-End Attack Simulation"
 echo "=============================================="
 
 # ----------------------------------------------
-# Setup target business
+# Setup target business (protect the real Yelp business)
 # ----------------------------------------------
 echo ""
 echo "[1/5] Setting up target business..."
 
-curl -s -X PUT "${ELASTICSEARCH_URL}/businesses/_doc/target_biz_001" \
+TARGET_BIZ_ID="ytynqOUb3hjKeJfRj5Tshw"
+TARGET_BIZ_NAME="Reading Terminal Market"
+
+curl -s -X POST "${ELASTICSEARCH_URL}/businesses/_update/${TARGET_BIZ_ID}" \
     -H "Content-Type: application/json" \
     -d '{
-        "business_id": "target_biz_001",
-        "name": "The Golden Spoon",
-        "address": "456 Oak Avenue",
-        "city": "Austin",
-        "state": "TX",
-        "stars": 4.7,
-        "review_count": 523,
-        "is_open": true,
-        "categories": ["Restaurant", "American", "Brunch"],
-        "rating_protected": true,
-        "protection_reason": "review_fraud_detected",
-        "protected_since": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+        "doc": {
+            "rating_protected": true,
+            "protection_reason": "review_fraud_detected",
+            "protected_since": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+        }
     }' > /dev/null 2>&1
-echo "  Done: Target business created and protected"
+echo "  Done: Target business (${TARGET_BIZ_NAME}) protected"
 
 # ----------------------------------------------
 # Create attacker accounts
@@ -92,7 +88,7 @@ for i in {1..12}; do
         -d '{
             "review_id": "solve_attack_review_'$(printf '%03d' $i)'",
             "user_id": "'${ATTACKER_ID}'",
-            "business_id": "target_biz_001",
+            "business_id": "'${TARGET_BIZ_ID}'",
             "stars": '$((RANDOM % 2 + 1))',
             "date": "'${REVIEW_TIME}'",
             "text": "'"${ATTACK_TEXTS[$TEXT_INDEX]}"'",
@@ -113,7 +109,7 @@ echo "  Done: 12 attack reviews created (held)"
 echo ""
 echo "[4/5] Creating incident..."
 
-INCIDENT_ID="INC-target_biz_001-$(date +%Y%m%d%H%M%S)"
+INCIDENT_ID="INC-${TARGET_BIZ_ID}-$(date +%Y%m%d%H%M%S)"
 
 curl -s -X POST "${ELASTICSEARCH_URL}/incidents/_doc" \
     -H "Content-Type: application/json" \
@@ -122,9 +118,9 @@ curl -s -X POST "${ELASTICSEARCH_URL}/incidents/_doc" \
         "incident_type": "review_fraud",
         "status": "open",
         "severity": "high",
-        "business_id": "target_biz_001",
-        "business_name": "The Golden Spoon",
-        "city": "Austin",
+        "business_id": "'${TARGET_BIZ_ID}'",
+        "business_name": "'${TARGET_BIZ_NAME}'",
+        "city": "Philadelphia",
         "metrics": {
             "review_count": 12,
             "avg_stars": 1.4,
@@ -154,7 +150,7 @@ echo "=============================================="
 echo ""
 echo "Simulated attack completed:"
 echo ""
-echo "  Target: The Golden Spoon (target_biz_001)"
+echo "  Target: ${TARGET_BIZ_NAME} (${TARGET_BIZ_ID})"
 echo "  Status: Protected"
 echo ""
 echo "  Attack Details:"

@@ -49,13 +49,7 @@ This simulates how your system would protect real businesses from coordinated at
 
 ## Tasks
 
-> **Setup Required:** Before starting, ensure the target business exists by running:
->
-> ```bash
-> python admin/setup_target_business.py
-> ```
->
-> This creates "The Golden Spoon" (`target_biz_001`) as the attack target. In Instruqt, this runs automatically.
+> **Target Business:** This challenge uses **Reading Terminal Market** (`ytynqOUb3hjKeJfRj5Tshw`), a famous Philadelphia landmark with a 4.6 star rating and 1,860+ reviews - a realistic high-value target for attackers.
 
 ---
 
@@ -68,19 +62,19 @@ Before the attack, verify the target business is in a normal state.
 2. Check the target business:
    ```esql
    FROM businesses
-   | WHERE business_id == "target_biz_001"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | KEEP business_id, name, city, stars, review_count, rating_protected
    ```
 
    **Expected result:**
-   - Name: "The Golden Spoon"
-   - Rating: ~4.7 stars
+   - Name: "Reading Terminal Market"
+   - Rating: 4.6 stars
    - `rating_protected`: false (not under protection)
 
 3. Verify no open incidents exist for this business:
    ```esql
    FROM incidents
-   | WHERE business_id == "target_biz_001" AND status == "open"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw" AND status == "open"
    | STATS count = COUNT(*)
    ```
 
@@ -89,7 +83,7 @@ Before the attack, verify the target business is in a normal state.
 4. Check recent review activity:
    ```esql
    FROM reviews
-   | WHERE business_id == "target_biz_001"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | WHERE date > NOW() - 1 hour
    | STATS total = COUNT(*), avg_stars = AVG(stars) BY status
    ```
@@ -111,11 +105,11 @@ Now you'll launch a simulated review fraud attack against the target business.
 
    | Setting | Value |
    |---------|-------|
-   | **Target Business** | The Golden Spoon (target_biz_001) |
+   | **Target Business** | Reading Terminal Market |
+   | **Business ID** | `ytynqOUb3hjKeJfRj5Tshw` |
    | **Number of Reviews** | 12 |
    | **Rating Range** | 1-2 stars |
    | **Attacker Profiles** | Low trust (0.1-0.3) |
-   | **Attack Duration** | 5 minutes |
 
 3. Click **Launch Attack**
 
@@ -127,7 +121,7 @@ Now you'll launch a simulated review fraud attack against the target business.
 5. Monitor with this query (run every 30 seconds):
    ```esql
    FROM reviews
-   | WHERE business_id == "target_biz_001"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | WHERE date > NOW() - 10 minutes
    | LOOKUP JOIN users ON user_id
    | STATS total = COUNT(*), avg_stars = AVG(stars), avg_trust = AVG(trust_score)
@@ -162,7 +156,7 @@ Your workflow should detect the attack automatically. Let's observe it in action
    **Check held reviews:**
    ```esql
    FROM reviews
-   | WHERE business_id == "target_biz_001"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | WHERE status == "held"
    | WHERE date > NOW() - 30 minutes
    | STATS held_count = COUNT(*)
@@ -173,7 +167,7 @@ Your workflow should detect the attack automatically. Let's observe it in action
    **Check business protection:**
    ```esql
    FROM businesses
-   | WHERE business_id == "target_biz_001"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | KEEP name, rating_protected, protection_reason, protected_since
    ```
 
@@ -182,7 +176,7 @@ Your workflow should detect the attack automatically. Let's observe it in action
    **Check incident creation:**
    ```esql
    FROM incidents
-   | WHERE business_id == "target_biz_001"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | WHERE status == "open"
    | KEEP incident_id, severity, metrics.review_count, metrics.unique_attackers, detected_at
    ```
@@ -203,7 +197,7 @@ Now use the **Review Fraud Investigator** agent you created in Challenge 3 to un
 
    or
 
-   > "Summarize the incident for The Golden Spoon"
+   > "Summarize the incident for Reading Terminal Market"
 
 3. Review the incident summary - you should see:
    - Business name and location
@@ -213,7 +207,7 @@ Now use the **Review Fraud Investigator** agent you created in Challenge 3 to un
    - Impact assessment
 
 4. Analyze the attackers:
-   > "Analyze the attackers who targeted target_biz_001 in the last hour"
+   > "Analyze the attackers who targeted ytynqOUb3hjKeJfRj5Tshw in the last hour"
 
 5. Review the attacker profiles:
    - Low trust scores
@@ -242,7 +236,7 @@ Now use the **Review Fraud Investigator** agent you created in Challenge 3 to un
    > "What would be the rating impact if these reviews were published?"
 
 9. Generate an investigation summary:
-   > "Generate an incident report for the attack on The Golden Spoon"
+   > "Generate an incident report for the attack on Reading Terminal Market"
 
 ---
 
@@ -253,7 +247,7 @@ Complete the incident lifecycle by resolving it.
 1. Review the held reviews in Kibana:
    ```esql
    FROM reviews
-   | WHERE business_id == "target_biz_001"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | WHERE status == "held"
    | KEEP review_id, user_id, stars, text, date
    | SORT date DESC
@@ -276,7 +270,7 @@ Complete the incident lifecycle by resolving it.
    First, find the incident ID:
    ```esql
    FROM incidents
-   | WHERE business_id == "target_biz_001" AND status == "open"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw" AND status == "open"
    | KEEP incident_id
    | LIMIT 1
    ```
@@ -289,7 +283,7 @@ Complete the incident lifecycle by resolving it.
        "query": {
          "bool": {
            "must": [
-             { "term": { "business_id": "target_biz_001" } },
+             { "term": { "business_id": "ytynqOUb3hjKeJfRj5Tshw" } },
              { "term": { "status": "open" } }
            ]
          }
@@ -306,7 +300,7 @@ Complete the incident lifecycle by resolving it.
 
 5. Optionally, remove protection from the business:
    ```bash
-   curl -X POST "${ELASTICSEARCH_URL}/businesses/_update/target_biz_001" \
+   curl -X POST "${ELASTICSEARCH_URL}/businesses/_update/ytynqOUb3hjKeJfRj5Tshw" \
      -H "Content-Type: application/json" \
      -d '{
        "doc": {
@@ -319,7 +313,7 @@ Complete the incident lifecycle by resolving it.
 6. Verify the resolution:
    ```esql
    FROM incidents
-   | WHERE business_id == "target_biz_001"
+   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
    | SORT detected_at DESC
    | LIMIT 1
    | KEEP incident_id, status, severity, resolved_at, resolution_notes

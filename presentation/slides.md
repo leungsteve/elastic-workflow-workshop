@@ -271,13 +271,13 @@ Note: Show the flow from question to query to answer
 
 # Our Demo Scenario
 
-**Review Platform Data:**
-- 10,000+ businesses (restaurants in demo, but pattern applies to any product/service)
-- 50,000+ user accounts with trust scores
-- 200,000+ historical reviews
+**Review Platform Data (Real Yelp Academic Dataset):**
+- 14,000+ businesses (Philadelphia, Tampa, Tucson)
+- 100,000+ user accounts with trust scores
+- 1,000,000+ historical reviews
 
 **Target:**
-A popular 4.5-star restaurant—"The Golden Spoon"
+A famous Philadelphia landmark—"Reading Terminal Market" (4.6 stars, 1,860+ reviews)
 
 **Universal Pattern:** Same detection works for Amazon products, App Store apps, hotel reviews
 
@@ -391,7 +391,7 @@ Note: Show the workflow YAML structure
 [Screenshot: Attack UI in web application]
 
 **Using the Workshop UI:**
-1. Select target business ("The Golden Spoon")
+1. Select target business ("Reading Terminal Market")
 2. Launch coordinated fake reviews
 3. Submit 15 low-trust reviews rapidly
 4. Watch detection and response in real-time

@@ -326,10 +326,10 @@ Now test your custom agent with natural language questions.
    **Test Incident Summary:**
    > "What can you tell me about the most recent incident?"
 
-   > "Summarize the incident for The Golden Spoon"
+   > "Summarize the incident for Reading Terminal Market"
 
    **Test Reviewer Analysis:**
-   > "Analyze the attackers who targeted target_biz_001"
+   > "Analyze the attackers who targeted ytynqOUb3hjKeJfRj5Tshw"
 
    > "What patterns do the attackers have in common?"
 
@@ -442,7 +442,7 @@ FROM reviews
 - **Parameter:** `business_id` (type: `text`)
 - **Description:** Evaluates a business's vulnerability to review fraud attacks based on recent review patterns and reviewer characteristics.
 
-**Test it:** After assigning to your agent, ask: *"What's the risk level for business target_biz_001?"*
+**Test it:** After assigning to your agent, ask: *"What's the risk level for business ytynqOUb3hjKeJfRj5Tshw?"*
 
 ---
 

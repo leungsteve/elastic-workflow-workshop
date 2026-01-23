@@ -1,9 +1,10 @@
 #!/bin/bash
 #
 # Setup script for Challenge 4: End-to-End Attack Simulation
-# Prepares the target business and attacker pool for the simulation
+# Prepares the environment for attacking a real Yelp business
 #
-# This script is idempotent - safe to run multiple times
+# Target: Reading Terminal Market (ytynqOUb3hjKeJfRj5Tshw)
+# A famous Philadelphia landmark with 4.6 stars and 1,860+ reviews
 #
 
 set -e
@@ -11,6 +12,9 @@ set -e
 ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
 KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
 APP_URL="${APP_URL:-http://localhost:8080}"
+
+TARGET_BIZ_ID="ytynqOUb3hjKeJfRj5Tshw"
+TARGET_BIZ_NAME="Reading Terminal Market"
 
 echo "=============================================="
 echo "Setting up Challenge 4: End-to-End Attack Simulation"
@@ -36,62 +40,64 @@ done
 echo "  Elasticsearch is ready!"
 
 # ----------------------------------------------
-# Create/Reset target business
+# Verify target business exists
 # ----------------------------------------------
 echo ""
-echo "[2/5] Setting up target business..."
+echo "[2/5] Verifying target business..."
 
-# Create fresh target business (reset any previous state)
-curl -s -X PUT "${ELASTICSEARCH_URL}/businesses/_doc/target_biz_001" \
+BIZ_CHECK=$(curl -s "${ELASTICSEARCH_URL}/businesses/_doc/${TARGET_BIZ_ID}" 2>/dev/null || echo '{"found":false}')
+
+if echo "$BIZ_CHECK" | grep -q '"found":true'; then
+    BIZ_STARS=$(echo "$BIZ_CHECK" | grep -o '"stars":[0-9.]*' | cut -d':' -f2 || echo "?")
+    BIZ_REVIEWS=$(echo "$BIZ_CHECK" | grep -o '"review_count":[0-9]*' | cut -d':' -f2 || echo "?")
+    echo "  Found: ${TARGET_BIZ_NAME}"
+    echo "  Rating: ${BIZ_STARS} stars, ${BIZ_REVIEWS} reviews"
+else
+    echo "  WARNING: Target business not found in index."
+    echo "  Make sure the Yelp data has been loaded."
+fi
+
+# Reset any previous protection state
+curl -s -X POST "${ELASTICSEARCH_URL}/businesses/_update/${TARGET_BIZ_ID}" \
     -H "Content-Type: application/json" \
     -d '{
-        "business_id": "target_biz_001",
-        "name": "The Golden Spoon",
-        "address": "456 Oak Avenue",
-        "city": "Austin",
-        "state": "TX",
-        "postal_code": "78701",
-        "latitude": 30.2672,
-        "longitude": -97.7431,
-        "stars": 4.7,
-        "review_count": 523,
-        "is_open": true,
-        "categories": ["Restaurant", "American", "Brunch"],
-        "rating_protected": false,
-        "protection_reason": null,
-        "protected_since": null
-    }' > /dev/null 2>&1
-echo "  Target business created: The Golden Spoon (4.7 stars)"
+        "doc": {
+            "rating_protected": false,
+            "protection_reason": null,
+            "protected_since": null
+        }
+    }' > /dev/null 2>&1 || true
+echo "  Reset protection state to normal."
 
 # ----------------------------------------------
 # Clear any existing incidents for this business
 # ----------------------------------------------
 echo ""
-echo "[3/5] Clearing previous incidents..."
+echo "[3/5] Clearing previous simulation data..."
 
 curl -s -X POST "${ELASTICSEARCH_URL}/incidents/_delete_by_query" \
     -H "Content-Type: application/json" \
     -d '{
         "query": {
-            "term": { "business_id": "target_biz_001" }
+            "term": { "business_id": "'"${TARGET_BIZ_ID}"'" }
         }
     }' > /dev/null 2>&1 || true
 echo "  Previous incidents cleared."
 
-# Clear any held reviews from previous simulations
+# Clear any synthetic/attack reviews from previous simulations
 curl -s -X POST "${ELASTICSEARCH_URL}/reviews/_delete_by_query" \
     -H "Content-Type: application/json" \
     -d '{
         "query": {
             "bool": {
                 "must": [
-                    { "term": { "business_id": "target_biz_001" } },
-                    { "term": { "synthetic": true } }
+                    { "term": { "business_id": "'"${TARGET_BIZ_ID}"'" } },
+                    { "term": { "is_simulated": true } }
                 ]
             }
         }
     }' > /dev/null 2>&1 || true
-echo "  Previous synthetic reviews cleared."
+echo "  Previous attack reviews cleared."
 
 # ----------------------------------------------
 # Create attacker account pool
@@ -154,33 +160,16 @@ done
 echo "  Created 20 simulated attacker accounts (low trust, new accounts)"
 
 # ----------------------------------------------
-# Start attack simulator (if available)
+# Check attack simulator
 # ----------------------------------------------
 echo ""
 echo "[5/5] Checking attack simulator..."
 
-# Check if simulator is available
-if curl -s "${APP_URL}/health" 2>/dev/null | grep -q "ok"; then
-    echo "  Attack simulator is already running at ${APP_URL}"
+if curl -s "${APP_URL}/health" 2>/dev/null | grep -q "healthy"; then
+    echo "  Attack simulator is running at ${APP_URL}"
 else
-    # Try to start it
-    if [ -f "/workshop/app/start.sh" ]; then
-        echo "  Starting attack simulator..."
-        /workshop/app/start.sh &
-        sleep 5
-    elif command -v docker-compose &> /dev/null && [ -f "/workshop/docker-compose.yml" ]; then
-        echo "  Starting attack simulator via Docker..."
-        cd /workshop && docker-compose up -d simulator 2>/dev/null || true
-        sleep 5
-    fi
-
-    # Verify it started
-    if curl -s "${APP_URL}/health" 2>/dev/null | grep -q "ok"; then
-        echo "  Attack simulator started successfully."
-    else
-        echo "  Note: Attack simulator may need to be started manually."
-        echo "        Or use the Terminal to simulate attacks directly."
-    fi
+    echo "  Note: Attack simulator may need to be started."
+    echo "        Run: python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080"
 fi
 
 # Refresh indices
@@ -194,20 +183,19 @@ echo "=============================================="
 echo "Challenge 4 Setup Complete!"
 echo "=============================================="
 echo ""
-echo "Simulation Environment Ready:"
+echo "Target Business (Real Yelp Data):"
 echo ""
-echo "  Target Business:"
-echo "    - Name: The Golden Spoon"
-echo "    - ID: target_biz_001"
-echo "    - Rating: 4.7 stars"
-echo "    - Status: Normal (not protected)"
+echo "  Name: ${TARGET_BIZ_NAME}"
+echo "  ID: ${TARGET_BIZ_ID}"
+echo "  Location: Philadelphia"
+echo "  Status: Normal (not protected)"
 echo ""
-echo "  Attacker Pool:"
-echo "    - 20 low-trust accounts ready"
-echo "    - Trust scores: 0.05 - 0.35"
-echo "    - Account ages: 1-21 days"
+echo "Attacker Pool:"
+echo "  - 20 low-trust accounts ready"
+echo "  - Trust scores: 0.05 - 0.35"
+echo "  - Account ages: 1-21 days"
 echo ""
-echo "  Attack Simulator: ${APP_URL}"
+echo "Attack Simulator: ${APP_URL}"
 echo ""
 echo "You are ready to begin the end-to-end attack simulation!"
 echo ""
