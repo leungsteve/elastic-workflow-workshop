@@ -1219,3 +1219,212 @@ curl -s "$KIBANA_URL/api/agent_builder/agents" \
 ```
 
 This reveals the actual schema used by successful resources.
+
+---
+
+## Elastic Workflows Gotchas
+
+### ES|QL Results in Foreach Return Arrays, Not Objects
+
+**Problem:** Workflow validation error "Variable foreach.item.business_id is invalid"
+
+**Root Cause:** ES|QL queries return results as arrays of arrays (rows), not arrays of objects. Each row is an array where values are accessed by index based on the KEEP clause order.
+
+```yaml
+# WRONG - Treats ES|QL results as objects
+- name: process_attacks
+  type: foreach
+  foreach: "{{ steps.detect_review_frauds.output.values }}"
+  steps:
+    - name: protect_business
+      type: elasticsearch.update
+      with:
+        id: "{{ foreach.item.business_id }}"  # ❌ Invalid!
+```
+
+```yaml
+# CORRECT - Use array indices based on KEEP clause order
+# KEEP business_id, name, city, review_count, avg_stars, avg_trust, unique_attackers
+#      [0]          [1]   [2]   [3]           [4]        [5]        [6]
+- name: process_attacks
+  type: foreach
+  foreach: "{{ steps.detect_review_frauds.output.values }}"
+  steps:
+    - name: protect_business
+      type: elasticsearch.update
+      with:
+        id: "{{ foreach.item[0] }}"  # ✅ business_id is first column
+
+    - name: create_notification
+      with:
+        title: "Attack on {{ foreach.item[1] }}"  # ✅ name is second column
+```
+
+**Key Points:**
+1. Always add a comment showing the column order from KEEP clause
+2. Use `foreach.item[0]`, `foreach.item[1]`, etc.
+3. This applies to all ES|QL query results in workflows
+
+### Workflow Detection Query Must LOOKUP JOIN Before Filtering
+
+**Problem:** Workflow detection query filtering on `trust_score < 0.4` but `trust_score` is on the `users` index, not `reviews`.
+
+**Root Cause:** The original query tried to filter on trust_score before joining with users.
+
+```esql
+// WRONG - trust_score doesn't exist on reviews
+FROM reviews
+| WHERE date > NOW() - 30 minutes
+  AND trust_score < 0.4  // ❌ Field doesn't exist!
+  AND stars <= 2
+```
+
+```esql
+// CORRECT - LOOKUP JOIN first, then filter
+FROM reviews
+| WHERE date > NOW() - 30 minutes
+  AND stars <= 2
+| LOOKUP JOIN users ON user_id  // ✅ Join first
+| WHERE trust_score < 0.4        // ✅ Now trust_score exists
+```
+
+### Reviews Need Status Field for Workflow Detection
+
+**Problem:** Workflow couldn't detect attack reviews because they lacked required fields.
+
+**Root Cause:** The bulk-attack endpoint created reviews without `status` or `@timestamp` fields that the workflow detection query expected.
+
+**Solution:** Ensure attack reviews include all fields the workflow expects:
+
+```python
+review_doc = {
+    "review_id": review_id,
+    "business_id": business_id,
+    "user_id": user_id,
+    "stars": float(stars),
+    "text": text,
+    "date": timestamp,
+    "@timestamp": timestamp,      # ✅ For workflow detection
+    "status": "pending",          # ✅ For workflow to detect and hold
+    "is_simulated": True,
+}
+```
+
+### Use Correct Timestamp Field Name
+
+**Problem:** Workflow queries referenced `@timestamp` but reviews use `date` field.
+
+**Solution:** Check actual field names in your mappings:
+
+```esql
+// WRONG - if your index uses 'date' field
+| WHERE @timestamp > NOW() - 30 minutes
+
+// CORRECT - use actual field name
+| WHERE date > NOW() - 30 minutes
+```
+
+---
+
+## Incident Data Model Gotchas
+
+### Incident Status is "detected" Not "open"
+
+**Problem:** ES|QL queries filtering `status == "open"` returned no results.
+
+**Root Cause:** The incident service creates incidents with `status: "detected"`, not `status: "open"`.
+
+```esql
+// WRONG
+FROM incidents
+| WHERE status == "open"  // Returns 0 results
+
+// CORRECT
+FROM incidents
+| WHERE status == "detected"  // Returns incidents
+```
+
+**Incident Status Lifecycle:**
+1. `detected` - Initial status when attack is found
+2. `investigating` - Analyst is reviewing
+3. `resolved` - Investigation complete
+4. `false_positive` - Determined not an attack
+
+### Incident Metrics Use Nested Field Paths
+
+**Problem:** ES|QL query `KEEP review_count, avg_rating` failed - fields not found.
+
+**Root Cause:** Incident metrics are stored in a nested `metrics` object.
+
+```json
+{
+  "incident_id": "inc_xxx",
+  "severity": "critical",
+  "metrics": {
+    "review_count": 15,
+    "average_rating": 1.47,
+    "unique_attackers": 13
+  }
+}
+```
+
+```esql
+// WRONG - fields don't exist at top level
+| KEEP incident_id, review_count, avg_rating, unique_reviewers
+
+// CORRECT - use nested paths
+| KEEP incident_id, metrics.review_count, metrics.average_rating, metrics.unique_attackers
+```
+
+### Resolution Field Name
+
+**Problem:** Query referencing `resolution_notes` returned null.
+
+**Root Cause:** The field is named `resolution`, not `resolution_notes`.
+
+```esql
+// WRONG
+| KEEP incident_id, status, resolution_notes
+
+// CORRECT
+| KEEP incident_id, status, resolution
+```
+
+---
+
+## Real Yelp Data at Scale
+
+### Using Yelp Academic Dataset
+
+**Achievement:** Successfully loaded the full Yelp Academic Dataset:
+- **14,338 businesses** (Philadelphia, Tampa, Tucson)
+- **100,000+ users** with calculated trust scores
+- **1,090,358 reviews** with semantic embeddings
+
+**Key Learnings:**
+1. Data preparation takes significant time (~36 minutes for 1M+ reviews)
+2. Connection timeout errors during bulk loading may not indicate failure - data often loads successfully
+3. The `prepare_data.sh` script filters to specific cities to manage dataset size
+4. Trust scores must be calculated and added to user documents
+5. Semantic text fields require inference endpoint setup before loading
+
+### Target Business Selection
+
+**Best Practice:** Use a real, recognizable business for demos:
+- **Reading Terminal Market** (`ytynqOUb3hjKeJfRj5Tshw`)
+- Philadelphia landmark, 4.6 stars, 1,860+ reviews
+- High-profile target makes attack simulation more impactful
+
+### Attacker User Pool
+
+**Pattern:** Create synthetic attacker accounts with realistic low-trust characteristics:
+```python
+attacker = {
+    "user_id": f"sim_attacker_{i:03d}",
+    "name": "NewReviewer2024",
+    "trust_score": random.uniform(0.05, 0.35),  # Low trust
+    "account_age_days": random.randint(1, 21),   # New account
+    "review_count": random.randint(0, 4),        # Few reviews
+    "synthetic": True
+}
+```
