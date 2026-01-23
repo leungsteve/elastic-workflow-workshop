@@ -85,7 +85,7 @@
     <div class="col-md-7">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-activity me-2"></i>Attack Feed</span>
+                <span><i class="bi bi-activity me-2"></i>Attack Feed <span class="badge bg-success ms-2" id="liveIndicator"><i class="bi bi-circle-fill me-1" style="font-size: 0.5rem;"></i>LIVE</span></span>
                 <span class="badge bg-danger" id="attackCount">0 reviews submitted</span>
             </div>
             <div class="card-body" style="max-height: 600px; overflow-y: auto;">
@@ -362,6 +362,90 @@
         feed.insertBefore(item, feed.firstChild);
     }
 
+    // Auto-update feed functionality
+    let lastSeenReviewId = null;
+    let pollInterval = null;
+    const POLL_INTERVAL_MS = 3000; // Poll every 3 seconds
+
+    async function fetchLatestAttackReviews() {
+        try {
+            // Fetch recent simulated reviews sorted by date desc
+            const response = await api.get('/api/reviews?is_simulated=true&page_size=20');
+            if (response && response.reviews && response.reviews.length > 0) {
+                updateFeedFromServer(response.reviews, response.total);
+            }
+        } catch (e) {
+            console.error('Failed to fetch latest reviews:', e);
+        }
+    }
+
+    function updateFeedFromServer(reviews, total) {
+        const feed = document.getElementById('attackFeed');
+
+        // Check if we have new reviews by comparing the first review ID
+        const newestReviewId = reviews[0]?.review_id;
+        if (newestReviewId && newestReviewId !== lastSeenReviewId) {
+            // Clear placeholder if present
+            if (feed.querySelector('.text-muted')) {
+                feed.innerHTML = '';
+            }
+
+            // Rebuild the feed with server data
+            // Keep any turbo attack summary cards, remove review cards
+            const turboCards = feed.querySelectorAll('.card.bg-danger');
+            feed.innerHTML = '';
+            turboCards.forEach(card => feed.appendChild(card));
+
+            // Add reviews from server
+            reviews.forEach(review => {
+                const time = new Date(review.date).toLocaleTimeString();
+                const stars = review.stars || 1;
+                const starDisplay = '\u2605'.repeat(stars) + '\u2606'.repeat(5 - stars);
+                const text = review.text || '';
+
+                const item = document.createElement('div');
+                item.className = 'card review-card simulated mb-2';
+                item.dataset.reviewId = review.review_id;
+                item.innerHTML = `
+                    <div class="card-body py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="star-rating">${starDisplay}</span>
+                                <span class="badge bg-secondary">Simulated</span>
+                                <p class="mb-0 small mt-1">${text.substring(0, 100)}${text.length > 100 ? '...' : ''}</p>
+                            </div>
+                            <small class="text-muted">${time}</small>
+                        </div>
+                    </div>
+                `;
+                feed.appendChild(item);
+            });
+
+            lastSeenReviewId = newestReviewId;
+
+            // Update count from server total
+            attackCount = total;
+            document.getElementById('attackCount').textContent = `${attackCount} reviews submitted`;
+        }
+    }
+
+    function startPolling() {
+        if (!pollInterval) {
+            pollInterval = setInterval(fetchLatestAttackReviews, POLL_INTERVAL_MS);
+            document.getElementById('liveIndicator').classList.remove('bg-secondary');
+            document.getElementById('liveIndicator').classList.add('bg-success');
+        }
+    }
+
+    function stopPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+            document.getElementById('liveIndicator').classList.remove('bg-success');
+            document.getElementById('liveIndicator').classList.add('bg-secondary');
+        }
+    }
+
     // Event listeners
     document.getElementById('targetBusiness').addEventListener('change', updateTargetInfo);
     document.getElementById('turboCount').addEventListener('input', (e) => {
@@ -372,6 +456,19 @@
     document.addEventListener('DOMContentLoaded', () => {
         loadBusinessOptions();
         generateReview();
+        // Start auto-updating the feed
+        fetchLatestAttackReviews(); // Initial fetch
+        startPolling();
+    });
+
+    // Stop polling when page is hidden, resume when visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopPolling();
+        } else {
+            fetchLatestAttackReviews(); // Immediate fetch when returning
+            startPolling();
+        }
     });
 </script>
 {% endblock %}

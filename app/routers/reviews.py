@@ -5,12 +5,13 @@ from typing import List, Optional
 import uuid
 
 from elasticsearch import AsyncElasticsearch
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 
 from app.dependencies import get_es_client, get_app_settings
 from app.config import Settings
 from app.models.review import Review, ReviewCreate, ReviewResponse, ReviewBatch, ReviewGenerateRequest
 from app.services.review_generator import ReviewGenerator
+from app.services.business_stats import update_business_stats
 
 router = APIRouter(prefix="/api/reviews", tags=["reviews"])
 
@@ -32,6 +33,7 @@ async def generate_review_text():
 async def bulk_attack(
     business_id: str,
     count: int = 15,
+    background_tasks: BackgroundTasks = None,
     es: AsyncElasticsearch = Depends(get_es_client),
     settings: Settings = Depends(get_app_settings),
 ):
@@ -114,6 +116,13 @@ async def bulk_attack(
     if operations:
         await es.bulk(operations=operations, refresh=True)
 
+    # Update business stats in the background
+    if background_tasks:
+        background_tasks.add_task(update_business_stats, es, settings, business_id)
+    else:
+        # If no background tasks available, update synchronously
+        await update_business_stats(es, settings, business_id)
+
     return {
         "success": True,
         "count": count,
@@ -195,6 +204,7 @@ async def list_reviews(
 @router.post("", response_model=ReviewResponse)
 async def create_review(
     review_data: ReviewCreate,
+    background_tasks: BackgroundTasks,
     es: AsyncElasticsearch = Depends(get_es_client),
     settings: Settings = Depends(get_app_settings),
 ) -> ReviewResponse:
@@ -229,8 +239,12 @@ async def create_review(
         await es.index(
             index=settings.reviews_index,
             id=review_id,
-            document=review.model_dump(mode="json")
+            document=review.model_dump(mode="json"),
+            refresh=True
         )
+
+        # Update business stats in the background
+        background_tasks.add_task(update_business_stats, es, settings, review_data.business_id)
 
         return ReviewResponse(
             success=True,
@@ -244,6 +258,7 @@ async def create_review(
 @router.post("/generate", response_model=ReviewBatch)
 async def generate_reviews(
     request: ReviewGenerateRequest,
+    background_tasks: BackgroundTasks,
     es: AsyncElasticsearch = Depends(get_es_client),
     settings: Settings = Depends(get_app_settings),
 ) -> ReviewBatch:
@@ -276,7 +291,10 @@ async def generate_reviews(
             operations.append(review.model_dump(mode="json"))
 
         if operations:
-            await es.bulk(operations=operations)
+            await es.bulk(operations=operations, refresh=True)
+
+        # Update business stats in the background
+        background_tasks.add_task(update_business_stats, es, settings, request.business_id)
 
         return ReviewBatch(
             reviews=reviews,
@@ -327,6 +345,7 @@ async def get_review(
 @router.delete("/{review_id}")
 async def delete_review(
     review_id: str,
+    background_tasks: BackgroundTasks,
     es: AsyncElasticsearch = Depends(get_es_client),
     settings: Settings = Depends(get_app_settings),
 ) -> dict:
@@ -334,7 +353,20 @@ async def delete_review(
     Delete a review by ID.
     """
     try:
-        await es.delete(index=settings.reviews_index, id=review_id)
+        # Get the review first to find the business_id
+        business_id = None
+        try:
+            response = await es.get(index=settings.reviews_index, id=review_id)
+            business_id = response["_source"].get("business_id")
+        except Exception:
+            pass
+
+        await es.delete(index=settings.reviews_index, id=review_id, refresh=True)
+
+        # Update business stats if we found the business_id
+        if business_id:
+            background_tasks.add_task(update_business_stats, es, settings, business_id)
+
         return {"success": True, "message": f"Review {review_id} deleted"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting review: {str(e)}")
