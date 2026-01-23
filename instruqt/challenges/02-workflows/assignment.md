@@ -117,6 +117,7 @@ steps:
     with:
       message: "Detected {{ steps.detect_review_frauds.output.values | size }} potential attacks"
 
+  # ES|QL results are arrays: [business_id, name, city, review_count, avg_stars, avg_trust, unique_attackers]
   - name: process_attacks
     type: foreach
     foreach: "{{ steps.detect_review_frauds.output.values }}"
@@ -125,7 +126,7 @@ steps:
         type: elasticsearch.update
         with:
           index: businesses
-          id: "{{ foreach.item.business_id }}"
+          id: "{{ foreach.item[0] }}"
           doc:
             rating_protected: true
             protection_reason: review_fraud_detected
@@ -138,7 +139,7 @@ steps:
             - incident_type: review_fraud
               status: detected
               severity: high
-              business_id: "{{ foreach.item.business_id }}"
+              business_id: "{{ foreach.item[0] }}"
               detected_at: "{{ execution.startedAt }}"
 
       - name: create_notification
@@ -148,8 +149,8 @@ steps:
           operations:
             - type: review_fraud_detected
               severity: high
-              title: "Review Fraud Detected: {{ foreach.item.name }}"
-              business_id: "{{ foreach.item.business_id }}"
+              title: "Review Fraud Detected: {{ foreach.item[1] }}"
+              business_id: "{{ foreach.item[0] }}"
               read: false
 
   - name: completion_log
@@ -227,9 +228,11 @@ Each action in the loop:
 #### Template Variables
 Access data using Liquid-style templates:
 - `{{ steps.step_name.output }}` - Previous step results
-- `{{ foreach.item.field }}` - Current loop item field
+- `{{ foreach.item[0] }}` - First column of current ES|QL row (ES|QL returns arrays)
 - `{{ execution.startedAt }}` - When workflow started
 - `{{ execution.id }}` - Unique execution ID
+
+**Note:** ES|QL query results are arrays of arrays (rows), so use index notation like `foreach.item[0]` for the first column, `foreach.item[1]` for the second, etc.
 
 ---
 
@@ -357,6 +360,7 @@ steps:
     with:
       message: "Health check complete. Found {{ steps.find_suspicious_activity.output.values | size }} businesses with suspicious activity."
 
+  # ES|QL results are arrays: [business_id, name, suspicious_count, avg_trust]
   - name: alert_on_suspicious
     type: foreach
     foreach: "{{ steps.find_suspicious_activity.output.values }}"
@@ -364,7 +368,7 @@ steps:
       - name: log_business
         type: console
         with:
-          message: "WARNING: {{ foreach.item.name }} has {{ foreach.item.suspicious_count }} suspicious reviews"
+          message: "WARNING: {{ foreach.item[1] }} has {{ foreach.item[2] }} suspicious reviews"
 ```
 
 3. Click **Save**
