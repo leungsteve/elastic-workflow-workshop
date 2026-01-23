@@ -136,7 +136,7 @@ steps:
           index: incidents
           operations:
             - incident_type: review_fraud
-              status: open
+              status: detected
               severity: high
               business_id: "{{ foreach.item.business_id }}"
               detected_at: "{{ execution.startedAt }}"
@@ -196,7 +196,7 @@ triggers:
   with:
     query: |
       FROM reviews
-      | WHERE @timestamp > NOW() - 30 minutes
+      | WHERE date > NOW() - 30 minutes
       | LOOKUP JOIN users ON user_id
       ...
 ```
