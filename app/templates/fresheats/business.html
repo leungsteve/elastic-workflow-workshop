@@ -119,15 +119,20 @@
                     <div class="fe-review {% if review.status == 'held' %}held{% endif %}">
                         <div class="d-flex">
                             <div class="user-avatar me-3">
-                                {{ (review.user_id or 'U')[0]|upper }}
+                                {{ (review.user_name or review.user_id or 'U')[0]|upper }}
                             </div>
                             <div class="flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <span class="user-name">{{ review.user_name or review.user_id[:8] }}</span>
-                                        {% if review.trust_score is defined and review.trust_score < 0.4 %}
-                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">
-                                            Low Trust
+                                        <span class="user-name">{{ review.user_name or 'Anonymous' }}</span>
+                                        {% if review.trust_score is defined and review.trust_score is not none and review.trust_score < 0.4 %}
+                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;" title="Trust Score: {{ '%.2f'|format(review.trust_score) }}">
+                                            <i class="bi bi-exclamation-triangle-fill"></i> {{ '%.0f'|format(review.trust_score * 100) }}% Trust
+                                        </span>
+                                        {% endif %}
+                                        {% if review.account_age_days is defined and review.account_age_days is not none and review.account_age_days < 30 %}
+                                        <span class="badge bg-info text-dark ms-1" style="font-size: 0.65rem;" title="Account created {{ review.account_age_days }} days ago">
+                                            <i class="bi bi-clock"></i> {{ review.account_age_days }}d old
                                         </span>
                                         {% endif %}
                                         {% if review.status == 'held' %}
@@ -147,6 +152,11 @@
                                 </div>
                                 <div class="review-meta mb-2">
                                     {{ review.date[:10] if review.date else 'Unknown date' }}
+                                    {% if review.trust_score is defined and review.trust_score is not none and review.trust_score >= 0.4 %}
+                                    <span class="text-muted ms-1" style="font-size: 0.75rem;">
+                                        <i class="bi bi-shield-check"></i> {{ '%.0f'|format(review.trust_score * 100) }}% trust
+                                    </span>
+                                    {% endif %}
                                     {% if review.is_simulated %}
                                     <span class="badge bg-danger ms-1" style="font-size: 0.6rem;">SIMULATED</span>
                                     {% endif %}

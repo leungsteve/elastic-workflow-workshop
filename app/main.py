@@ -330,9 +330,42 @@ async def fresheats_business(
                 sort=[{"date": "desc"}]
             )
 
+            # Collect reviews and user_ids
+            raw_reviews = []
+            user_ids = set()
             for hit in review_response["hits"]["hits"]:
                 review = hit["_source"]
                 review["review_id"] = review.get("review_id", hit["_id"])
+                raw_reviews.append(review)
+                if review.get("user_id"):
+                    user_ids.add(review["user_id"])
+
+            # Fetch user data for all reviewers
+            users_map = {}
+            if user_ids:
+                try:
+                    users_response = await es.search(
+                        index=settings.users_index,
+                        query={"terms": {"user_id": list(user_ids)}},
+                        size=len(user_ids)
+                    )
+                    for hit in users_response["hits"]["hits"]:
+                        user = hit["_source"]
+                        uid = user.get("user_id", hit["_id"])
+                        users_map[uid] = user
+                except Exception as e:
+                    print(f"Error fetching users: {e}")
+
+            # Enrich reviews with user data
+            for review in raw_reviews:
+                user_id = review.get("user_id")
+                if user_id and user_id in users_map:
+                    user = users_map[user_id]
+                    review["user_name"] = user.get("name", user_id[:12])
+                    review["trust_score"] = user.get("trust_score")
+                    review["account_age_days"] = user.get("account_age_days")
+                else:
+                    review["user_name"] = user_id[:12] if user_id else "Anonymous"
                 reviews.append(review)
 
             total_reviews = review_response["hits"]["total"]["value"]
