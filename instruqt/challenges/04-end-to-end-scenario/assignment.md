@@ -214,11 +214,15 @@ Now use the **Review Fraud Investigator** agent you created in Challenge 3 to un
    - Or click **Chat** next to your agent in the Agents list
 
 2. Ask about the incident:
-   > "What can you tell me about the latest incident?"
+   ```
+   What can you tell me about the latest incident?
+   ```
 
    or
 
-   > "Summarize the incident for Reading Terminal Market"
+   ```
+   Summarize the incident for Reading Terminal Market
+   ```
 
 3. Review the incident summary - you should see:
    - Business name and location
@@ -228,7 +232,9 @@ Now use the **Review Fraud Investigator** agent you created in Challenge 3 to un
    - Impact assessment
 
 4. Analyze the attackers:
-   > "Analyze the attackers who targeted ytynqOUb3hjKeJfRj5Tshw in the last hour"
+   ```
+   Analyze the attackers who targeted ytynqOUb3hjKeJfRj5Tshw in the last hour
+   ```
 
 5. Review the attacker profiles:
    - Low trust scores
@@ -237,27 +243,41 @@ Now use the **Review Fraud Investigator** agent you created in Challenge 3 to un
 
 6. **Use semantic search to understand the attack narrative:**
 
-   > "Find reviews similar to 'food poisoning made me sick'"
+   ```
+   Find reviews similar to 'food poisoning made me sick'
+   ```
 
-   > "What are the attackers claiming in their reviews?"
+   ```
+   What are the attackers claiming in their reviews?
+   ```
 
    This uses the `similar_reviews` tool to find reviews by meaning. You'll discover the common themes attackers use - health complaints, service issues, food quality claims.
 
 7. **Compare attack reviews to legitimate reviews:**
 
-   > "Find reviews similar to 'great food and excellent service'"
+   ```
+   Find reviews similar to 'great food and excellent service'
+   ```
 
    Notice how legitimate reviews have different themes - genuine positive experiences versus the manufactured negative narratives from attackers.
 
 8. Ask follow-up questions:
-   > "What patterns do these attackers have in common?"
+   ```
+   What patterns do these attackers have in common?
+   ```
 
-   > "Were any of these accounts involved in previous attacks?"
+   ```
+   Were any of these accounts involved in previous attacks?
+   ```
 
-   > "What would be the rating impact if these reviews were published?"
+   ```
+   What would be the rating impact if these reviews were published?
+   ```
 
 9. Generate an investigation summary:
-   > "Generate an incident report for the attack on Reading Terminal Market"
+   ```
+   Generate an incident report for the attack on Reading Terminal Market
+   ```
 
 ---
 
