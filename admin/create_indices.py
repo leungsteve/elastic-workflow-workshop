@@ -7,8 +7,13 @@ indices with the specified settings and mappings.
 """
 
 import json
+import sys
 from pathlib import Path
 from copy import deepcopy
+
+# Allow running as script or module
+if __name__ == "__main__" and __package__ is None:
+    sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import click
 

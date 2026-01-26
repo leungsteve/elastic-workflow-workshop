@@ -7,9 +7,14 @@ account activity, engagement, and behavior patterns.
 """
 
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+# Allow running as script or module
+if __name__ == "__main__" and __package__ is None:
+    sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import click
 from tqdm import tqdm

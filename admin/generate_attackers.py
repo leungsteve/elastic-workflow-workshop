@@ -11,10 +11,15 @@ new accounts post negative reviews within a short time window.
 
 import json
 import random
+import sys
 import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple
+
+# Allow running as script or module
+if __name__ == "__main__" and __package__ is None:
+    sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import click
 from faker import Faker
