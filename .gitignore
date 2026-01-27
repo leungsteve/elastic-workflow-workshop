@@ -38,6 +38,7 @@ data/historical/
 data/streaming/
 data/attack/
 data/sample/
+data/small/
 
 # Testing
 .coverage

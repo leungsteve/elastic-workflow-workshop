@@ -22,7 +22,7 @@ set -e
 # ==============================================================================
 
 WORKSHOP_DIR="${WORKSHOP_DIR:-/workspace/workshop/elastic-workflow-workshop}"
-DATA_DIR="${WORKSHOP_DIR}/data/processed"
+DATA_DIR="${WORKSHOP_DIR}/data/small"
 MAPPINGS_DIR="${WORKSHOP_DIR}/mappings"
 
 ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
