@@ -222,7 +222,7 @@ bulk_load() {
 # ==============================================================================
 # Step 1: Wait for Elasticsearch
 # ==============================================================================
-echo "[1/6] Waiting for Elasticsearch..."
+echo "[1/7] Waiting for Elasticsearch..."
 MAX_RETRIES=60
 RETRY_COUNT=0
 
@@ -241,7 +241,7 @@ echo "  Elasticsearch is ready!"
 # Step 2: Check ELSER availability
 # ==============================================================================
 echo ""
-echo "[2/6] Checking ELSER inference endpoint..."
+echo "[2/7] Checking ELSER inference endpoint..."
 
 ELSER_AVAILABLE=false
 ELSER_RESPONSE=$(es_curl "${ELASTICSEARCH_URL}/_inference/.elser-2-elastic" 2>/dev/null)
@@ -257,7 +257,7 @@ fi
 # Step 3: Create indices from mapping files
 # ==============================================================================
 echo ""
-echo "[3/6] Creating indices..."
+echo "[3/7] Creating indices..."
 
 # Create lookup indices (businesses, users) and operational indices (incidents, notifications)
 for index in businesses users incidents notifications; do
@@ -284,7 +284,7 @@ fi
 # Step 4: Load data from NDJSON files
 # ==============================================================================
 echo ""
-echo "[4/6] Loading data..."
+echo "[4/7] Loading data..."
 
 # Check that data files exist
 MISSING_FILES=0
@@ -333,7 +333,7 @@ fi
 # Step 5: Refresh indices
 # ==============================================================================
 echo ""
-echo "[5/6] Refreshing indices..."
+echo "[5/7] Refreshing indices..."
 es_curl -X POST "${ELASTICSEARCH_URL}/_refresh" > /dev/null
 echo "  Indices refreshed."
 
@@ -341,7 +341,7 @@ echo "  Indices refreshed."
 # Step 6: Wait for Kibana
 # ==============================================================================
 echo ""
-echo "[6/6] Waiting for Kibana..."
+echo "[6/7] Waiting for Kibana..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
@@ -355,6 +355,29 @@ until es_curl "${KIBANA_URL}/api/status" 2>/dev/null | grep -q '"level":"availab
     sleep 5
 done
 echo "  Kibana is ready!"
+
+# ==============================================================================
+# Step 7: Enable Elastic Workflows
+# ==============================================================================
+echo ""
+echo "[7/7] Enabling Elastic Workflows..."
+
+WORKFLOWS_RESPONSE=$(curl -s -w "\n%{http_code}" \
+    -X POST "${KIBANA_URL}/internal/kibana/settings" \
+    -H "Content-Type: application/json" \
+    -H "kbn-xsrf: true" \
+    ${CURL_AUTH} \
+    -d '{"changes": {"workflows:ui:enabled": true}}' 2>/dev/null)
+
+WORKFLOWS_HTTP=$(echo "$WORKFLOWS_RESPONSE" | tail -1)
+if [ "$WORKFLOWS_HTTP" = "200" ]; then
+    echo "  Workflows UI enabled successfully"
+else
+    echo "  Warning: Could not enable Workflows UI (HTTP ${WORKFLOWS_HTTP})"
+    echo "  You can enable it manually in Kibana Dev Tools:"
+    echo "    POST kbn://internal/kibana/settings"
+    echo '    {"changes": {"workflows:ui:enabled": true}}'
+fi
 
 # ==============================================================================
 # Final status
@@ -375,6 +398,12 @@ if [ "$ELSER_AVAILABLE" = true ]; then
     echo "Semantic search: ENABLED (ELSER)"
 else
     echo "Semantic search: DISABLED (ELSER not available)"
+fi
+
+if [ "$WORKFLOWS_HTTP" = "200" ]; then
+    echo "Workflows UI:    ENABLED"
+else
+    echo "Workflows UI:    NOT ENABLED (enable manually via Dev Tools)"
 fi
 
 echo ""
