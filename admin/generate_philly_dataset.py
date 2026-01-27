@@ -25,17 +25,16 @@ from tqdm import tqdm
 PROJECT_ROOT = Path(__file__).parent.parent
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
-HISTORICAL_DIR = PROJECT_ROOT / "data" / "historical"
 
 # Raw dataset files
 RAW_BUSINESSES = RAW_DIR / "yelp_academic_dataset_business.json"
 RAW_REVIEWS = RAW_DIR / "yelp_academic_dataset_review.json"
 RAW_USERS = RAW_DIR / "yelp_academic_dataset_user.json"
 
-# Output files
+# Output files (all in data/processed/)
 OUT_BUSINESSES = PROCESSED_DIR / "businesses.ndjson"
 OUT_USERS = PROCESSED_DIR / "users.ndjson"
-OUT_REVIEWS = HISTORICAL_DIR / "reviews.ndjson"
+OUT_REVIEWS = PROCESSED_DIR / "reviews.ndjson"
 
 # Default settings
 DEFAULT_BUSINESS_COUNT = 250

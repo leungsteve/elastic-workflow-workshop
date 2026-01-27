@@ -29,14 +29,15 @@ build/
 *~
 .DS_Store
 
-# Data files (large, gitignored)
+# Data files (large, not committed)
 data/raw/
-data/processed/
+data/processed/*.ndjson
+data/processed/*.json
+!data/processed/.gitkeep
 data/historical/
 data/streaming/
-
-# Keep sample data
-!data/sample/
+data/attack/
+data/sample/
 
 # Testing
 .coverage

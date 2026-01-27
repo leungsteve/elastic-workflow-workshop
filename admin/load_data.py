@@ -40,7 +40,7 @@ DEFAULT_CONFIG = PROJECT_ROOT / "config" / "config.yaml"
 DEFAULT_PATHS = {
     "businesses": PROJECT_ROOT / "data" / "processed" / "businesses.ndjson",
     "users": PROJECT_ROOT / "data" / "processed" / "users.ndjson",
-    "reviews": PROJECT_ROOT / "data" / "historical" / "reviews.ndjson",
+    "reviews": PROJECT_ROOT / "data" / "processed" / "reviews.ndjson",
 }
 
 # Default index names

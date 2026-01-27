@@ -155,13 +155,13 @@ echo "[3/5] Loading sample data..."
 BUSINESS_COUNT=$(curl -s "${ELASTICSEARCH_URL}/businesses/_count" 2>/dev/null | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "0")
 if [ "${BUSINESS_COUNT:-0}" -lt "100" ] 2>/dev/null; then
     echo "  Loading business data..."
-    if [ -f "${WORKSHOP_DIR}/data/businesses.ndjson" ]; then
+    if [ -f "${WORKSHOP_DIR}/data/processed/businesses.ndjson" ]; then
         curl -s -X POST "${ELASTICSEARCH_URL}/businesses/_bulk" \
             -H "Content-Type: application/x-ndjson" \
-            --data-binary "@${WORKSHOP_DIR}/data/businesses.ndjson" > /dev/null
+            --data-binary "@${WORKSHOP_DIR}/data/processed/businesses.ndjson" > /dev/null
         echo "  Businesses loaded from file."
     else
-        echo "  Note: Sample data file not found. Data may need to be loaded separately."
+        echo "  Note: data/processed/businesses.ndjson not found. Run admin/generate_philly_dataset.py first."
     fi
 else
     echo "  Businesses already loaded (${BUSINESS_COUNT} documents)."
@@ -171,13 +171,13 @@ fi
 USER_COUNT=$(curl -s "${ELASTICSEARCH_URL}/users/_count" 2>/dev/null | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "0")
 if [ "${USER_COUNT:-0}" -lt "100" ] 2>/dev/null; then
     echo "  Loading user data..."
-    if [ -f "${WORKSHOP_DIR}/data/users.ndjson" ]; then
+    if [ -f "${WORKSHOP_DIR}/data/processed/users.ndjson" ]; then
         curl -s -X POST "${ELASTICSEARCH_URL}/users/_bulk" \
             -H "Content-Type: application/x-ndjson" \
-            --data-binary "@${WORKSHOP_DIR}/data/users.ndjson" > /dev/null
+            --data-binary "@${WORKSHOP_DIR}/data/processed/users.ndjson" > /dev/null
         echo "  Users loaded from file."
     else
-        echo "  Note: Sample data file not found. Data may need to be loaded separately."
+        echo "  Note: data/processed/users.ndjson not found. Run admin/generate_philly_dataset.py first."
     fi
 else
     echo "  Users already loaded (${USER_COUNT} documents)."
@@ -187,13 +187,13 @@ fi
 REVIEW_COUNT=$(curl -s "${ELASTICSEARCH_URL}/reviews/_count" 2>/dev/null | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "0")
 if [ "${REVIEW_COUNT:-0}" -lt "100" ] 2>/dev/null; then
     echo "  Loading review data..."
-    if [ -f "${WORKSHOP_DIR}/data/reviews.ndjson" ]; then
+    if [ -f "${WORKSHOP_DIR}/data/processed/reviews.ndjson" ]; then
         curl -s -X POST "${ELASTICSEARCH_URL}/reviews/_bulk" \
             -H "Content-Type: application/x-ndjson" \
-            --data-binary "@${WORKSHOP_DIR}/data/reviews.ndjson" > /dev/null
+            --data-binary "@${WORKSHOP_DIR}/data/processed/reviews.ndjson" > /dev/null
         echo "  Reviews loaded from file."
     else
-        echo "  Note: Sample data file not found. Data may need to be loaded separately."
+        echo "  Note: data/processed/reviews.ndjson not found. Run admin/generate_philly_dataset.py first."
     fi
 else
     echo "  Reviews already loaded (${REVIEW_COUNT} documents)."
