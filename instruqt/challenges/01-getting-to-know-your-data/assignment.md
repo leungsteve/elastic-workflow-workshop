@@ -37,9 +37,22 @@ The **text_semantic** field uses ELSER (Elastic Learned Sparse Encoder) to enabl
 
 ## Tasks
 
-### Task 1: Explore the Businesses Index (3 min)
+### Task 1: Explore ElasticEats (2 min)
 
-Let's start by understanding what businesses are on the platform.
+Before diving into queries, let's see the platform you're protecting. ElasticEats is a consumer-facing restaurant review site — think Yelp for Philadelphia. Your workshop environment is running a live instance.
+
+1. Open the **ElasticEats** tab (or navigate to `http://localhost:8000/elasticeats`)
+2. Browse the home page — you'll see top-rated Philadelphia restaurants with star ratings, review counts, and categories
+3. Click on a business (try **Reading Terminal Market** or **Zahav**) to see its detail page with individual reviews
+4. Notice the information available: star ratings, review text, reviewer names, and dates. This is what real users see — and what attackers try to manipulate
+
+**Keep this tab open** throughout the workshop. As you explore the data with ES|QL in the next tasks, you'll recognize the same businesses and reviews you just browsed. In later challenges, you'll watch an attack unfold on this very interface.
+
+---
+
+### Task 2: Explore the Businesses Index (3 min)
+
+Now let's look at the same data from the analyst's perspective using ES|QL in Kibana.
 
 1. Open **Kibana** in the browser tab
 2. Navigate to **Discover** (Menu > Analytics > Discover)
@@ -75,11 +88,11 @@ FROM businesses
 | LIMIT 10
 ```
 
-**What to notice:** Businesses with high ratings AND many reviews have built strong reputations - exactly what attackers want to destroy.
+**What to notice:** Businesses with high ratings AND many reviews have built strong reputations - exactly what attackers want to destroy. You may recognize some of these names from browsing ElasticEats in Task 1.
 
 ---
 
-### Task 2: Understand User Trust Scores (3 min)
+### Task 3: Understand User Trust Scores (3 min)
 
 The `trust_score` field is crucial for detecting fake reviewers. Let's explore its distribution.
 
@@ -134,7 +147,7 @@ FROM users
 
 ---
 
-### Task 3: Examine Review Patterns (4 min)
+### Task 4: Examine Review Patterns (4 min)
 
 Now let's look at the reviews themselves.
 
@@ -173,7 +186,7 @@ FROM reviews
 
 ---
 
-### Task 4: Explore Semantic Search (3 min)
+### Task 5: Explore Semantic Search (3 min)
 
 The reviews index has a `text_semantic` field that enables searching by meaning, not just keywords. This is powered by ELSER (Elastic Learned Sparse Encoder). **You can do semantic search directly in ES|QL using the `:` operator!**
 
@@ -227,7 +240,7 @@ FROM reviews METADATA _score
 
 ---
 
-### Task 5: Use LOOKUP JOIN for Enrichment (5 min)
+### Task 6: Use LOOKUP JOIN for Enrichment (5 min)
 
 The real power of ES|QL comes from **LOOKUP JOIN** - the ability to combine data across indices in a single query. This is essential for correlating reviews with user trust scores.
 
@@ -297,7 +310,7 @@ Using what you've learned, write a query that identifies potential review fraud 
 - At least 5 suspicious reviews per business
 - Include the business name and city
 
-**Hint:** Combine the patterns from Task 5, adjusting the time window and thresholds.
+**Hint:** Combine the patterns from Task 6, adjusting the time window and thresholds.
 
 <details>
 <summary>Click to reveal solution</summary>
@@ -328,6 +341,7 @@ FROM reviews
 
 Before proceeding to the next challenge, verify you can:
 
+- [ ] Browse ElasticEats and view business detail pages with reviews
 - [ ] Query all three indices (businesses, users, reviews)
 - [ ] Understand the trust_score distribution and what low scores indicate
 - [ ] Use semantic search to find reviews by meaning, not just keywords
