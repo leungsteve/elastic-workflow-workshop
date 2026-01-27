@@ -35,7 +35,7 @@ from admin.utils.elasticsearch import get_es_client
 DEFAULT_MAPPINGS_DIR = Path(__file__).parent.parent / "mappings"
 
 # ELSER inference endpoint ID
-ELSER_INFERENCE_ID = ".elser-2-elastic"
+ELSER_INFERENCE_ID = ".elser-2-elasticsearch"
 
 
 def load_mapping(mapping_path: Path) -> dict:

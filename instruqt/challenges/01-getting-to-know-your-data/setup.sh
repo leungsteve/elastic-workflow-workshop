@@ -244,10 +244,10 @@ echo ""
 echo "[2/7] Checking ELSER inference endpoint..."
 
 ELSER_AVAILABLE=false
-ELSER_RESPONSE=$(es_curl "${ELASTICSEARCH_URL}/_inference/.elser-2-elastic" 2>/dev/null)
+ELSER_RESPONSE=$(es_curl "${ELASTICSEARCH_URL}/_inference/.elser-2-elasticsearch" 2>/dev/null)
 if echo "$ELSER_RESPONSE" | grep -q '"inference_id"'; then
     ELSER_AVAILABLE=true
-    echo "  ELSER (.elser-2-elastic) is available - semantic search will be enabled"
+    echo "  ELSER (.elser-2-elasticsearch) is available - semantic search will be enabled"
 else
     echo "  ELSER not available - reviews index will be created without semantic search"
     echo "  (Semantic search can be added later by reindexing after deploying ELSER)"
