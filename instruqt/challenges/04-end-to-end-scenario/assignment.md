@@ -49,18 +49,18 @@ This simulates how your system would protect real businesses from coordinated at
 
 ## Tasks
 
-> **Target Business:** This challenge uses **Reading Terminal Market** (`ytynqOUb3hjKeJfRj5Tshw`), a famous Philadelphia landmark with a 4.6 star rating and 1,860+ reviews - a realistic high-value target for attackers.
+> **Target Business:** This challenge uses **Reading Terminal Market** (`ytynqOUb3hjKeJfRj5Tshw`), a famous Philadelphia landmark with a 4.5 star rating and 5,700+ reviews - a realistic high-value target for attackers.
 
-### Open the FreshEats Consumer UI
+### Open the ElasticEats Consumer UI
 
-Before we begin, open the **FreshEats** consumer interface - this is a Yelp-like UI where you can browse businesses and see reviews just like a real user would.
+Before we begin, open the **ElasticEats** consumer interface - this is a Yelp-like UI where you can browse businesses and see reviews just like a real user would.
 
-1. Open **FreshEats** in a new browser tab: `http://localhost:8000/fresheats`
+1. Open **ElasticEats** in a new browser tab: `http://localhost:8000/elasticeats`
 2. Search for "Reading Terminal Market" or browse the **Restaurants** category
 3. Click on **Reading Terminal Market** to view its business page
 4. Keep this tab open - you'll use it throughout this challenge to see the attack unfold visually
 
-**Direct link to target business:** `http://localhost:8000/fresheats/biz/ytynqOUb3hjKeJfRj5Tshw`
+**Direct link to target business:** `http://localhost:8000/elasticeats/biz/ytynqOUb3hjKeJfRj5Tshw`
 
 ---
 
@@ -79,7 +79,7 @@ Before the attack, verify the target business is in a normal state.
 
    **Expected result:**
    - Name: "Reading Terminal Market"
-   - Rating: 4.6 stars
+   - Rating: 4.5 stars
    - `rating_protected`: false (not under protection)
 
 3. Verify no active incidents exist for this business:
@@ -124,8 +124,8 @@ Now you'll launch a simulated review fraud attack against the target business.
 
 3. Click **Launch Attack**
 
-4. **Watch the attack in FreshEats:**
-   - Switch to your FreshEats tab with Reading Terminal Market
+4. **Watch the attack in ElasticEats:**
+   - Switch to your ElasticEats tab with Reading Terminal Market
    - **Refresh the page** to see the attack reviews appear
    - Notice the negative reviews with **SIMULATED** badges
    - See the **Low Trust** badges on attacker accounts
@@ -154,7 +154,7 @@ Your workflow should detect the attack automatically. Let's observe it in action
 
 3. Click on the workflow to see its details and execution history
 
-4. Wait for the next scheduled execution (runs every 5 minutes)
+4. Wait for the next scheduled execution (runs every 1 minute)
    - Or click the **Play/Run** button to trigger immediately
 
 5. Watch the execution steps:
@@ -164,13 +164,13 @@ Your workflow should detect the attack automatically. Let's observe it in action
    - Business is protected
    - Incident is created
 
-6. **See the response in FreshEats:**
-   - Switch to your FreshEats tab and **refresh the page**
+6. **See the response in ElasticEats:**
+   - Switch to your ElasticEats tab and **refresh the page**
    - You should now see:
      - **"Rating Protected"** badge in the business header
      - **Orange incident alert banner** below the header
      - Attack reviews now show **"HELD"** badges with yellow background
-     - The 4.6 star rating is preserved (protected from the attack!)
+     - The 4.5 star rating is preserved (protected from the attack!)
 
 7. Verify the response with these queries:
 
@@ -382,12 +382,12 @@ You've completed a full attack lifecycle:
 
 Verify you have completed all phases:
 
-- [ ] Opened FreshEats and viewed the target business
+- [ ] Opened ElasticEats and viewed the target business
 - [ ] Checked baseline state of target business
 - [ ] Launched attack via simulator
-- [ ] Saw attack reviews appear in FreshEats (SIMULATED badges)
+- [ ] Saw attack reviews appear in ElasticEats (SIMULATED badges)
 - [ ] Observed workflow detection and response
-- [ ] Saw protection badge and held reviews in FreshEats
+- [ ] Saw protection badge and held reviews in ElasticEats
 - [ ] Reviews were automatically held
 - [ ] Business was automatically protected
 - [ ] Incident was automatically created
@@ -401,7 +401,7 @@ Verify you have completed all phases:
 ## Key Takeaways
 
 1. **Real-time protection** - Workflows can respond in minutes, not hours
-2. **Visual feedback** - FreshEats UI shows protection badges and held reviews instantly
+2. **Visual feedback** - ElasticEats UI shows protection badges and held reviews instantly
 3. **Minimal false positives** - Multiple signals (trust score, rating, volume) reduce errors
 4. **Business continuity** - Rating protection prevents immediate reputation damage
 5. **Semantic understanding** - ELSER reveals what attackers claim, beyond just keywords

@@ -59,7 +59,8 @@ async def list_notifications(
             query=query,
             from_=from_offset,
             size=page_size,
-            sort=[{"created_at": "desc"}]
+            sort=[{"created_at": "desc"}],
+            track_total_hits=True
         )
 
         notifications = []

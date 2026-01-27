@@ -13,7 +13,7 @@ Explore the review platform data, understand the data model, and write detection
 
 ## Background
 
-You are a Trust & Safety analyst at a popular review platform called "FreshEats" - a restaurant discovery site where diners leave reviews for local businesses.
+You are a Trust & Safety analyst at a popular review platform called "ElasticEats" - a restaurant discovery site where diners leave reviews for local businesses.
 
 Recently, your platform has been experiencing **review fraud attacks** - coordinated campaigns where bad actors flood a business with fake negative reviews to damage its reputation. These attacks can devastate small businesses overnight.
 
@@ -51,7 +51,7 @@ FROM businesses
 | STATS count = COUNT(*)
 ```
 
-**Expected output:** You should see a count of businesses (approximately 5,000-20,000 depending on the dataset).
+**Expected output:** You should see a count of **100 businesses** (all located in Philadelphia).
 
 5. Now explore the top-rated restaurants:
 
@@ -63,7 +63,7 @@ FROM businesses
 | LIMIT 5
 ```
 
-**What to notice:** This shows which cities have the most highly-rated restaurants. These successful businesses are prime targets for review frauds.
+**What to notice:** All businesses in our dataset are in Philadelphia. These successful businesses are prime targets for review frauds.
 
 6. Find specific high-profile targets:
 
@@ -96,9 +96,9 @@ FROM users
 ```
 
 **Expected output:**
-- Average trust score should be around 0.5-0.7
-- Min should be close to 0.0
-- Max should be close to 1.0
+- Average trust score: approximately **0.43**
+- Min: approximately **0.20**
+- Max: **1.0**
 
 2. See the distribution of trust scores:
 
@@ -115,7 +115,7 @@ FROM users
 | SORT trust_bucket ASC
 ```
 
-**What to notice:** Most legitimate users should be in the Medium to Very High buckets. A suspicious spike in "Very Low" or "Low" buckets could indicate synthetic attack accounts.
+**What to notice:** The majority of users fall in the Low (0.2-0.4) bucket, with smaller populations in Medium through Very High. This distribution is normal for this dataset — the trust score reflects account age, review history, and engagement. Users in the Low bucket aren't necessarily attackers, but during an attack, synthetic accounts will cluster at the very bottom of this range.
 
 3. Look at characteristics of low-trust accounts:
 
@@ -130,7 +130,7 @@ FROM users
 | EVAL avg_reviews = ROUND(avg_reviews, 1)
 ```
 
-**What to notice:** Low-trust accounts typically have newer accounts and fewer reviews - classic signs of fake accounts created for attacks.
+**What to notice:** Low-trust accounts tend to have fewer reviews compared to high-trust accounts. When an attack is simulated, the synthetic attacker accounts will have very low trust scores AND very new accounts — making them stand out from the existing low-trust population.
 
 ---
 

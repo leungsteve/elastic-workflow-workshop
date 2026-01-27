@@ -61,7 +61,8 @@ async def list_incidents(
             query=query,
             from_=from_offset,
             size=page_size,
-            sort=[{"detected_at": "desc"}]
+            sort=[{"detected_at": "desc"}],
+            track_total_hits=True
         )
 
         incidents = []

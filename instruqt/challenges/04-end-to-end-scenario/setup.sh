@@ -11,7 +11,7 @@ set -e
 
 ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
 KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
-APP_URL="${APP_URL:-http://localhost:8080}"
+APP_URL="${APP_URL:-http://localhost:8000}"
 
 TARGET_BIZ_ID="ytynqOUb3hjKeJfRj5Tshw"
 TARGET_BIZ_NAME="Reading Terminal Market"
@@ -169,7 +169,7 @@ if curl -s "${APP_URL}/health" 2>/dev/null | grep -q "healthy"; then
     echo "  Attack simulator is running at ${APP_URL}"
 else
     echo "  Note: Attack simulator may need to be started."
-    echo "        Run: python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8080"
+    echo "        Run: python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
 fi
 
 # Refresh indices

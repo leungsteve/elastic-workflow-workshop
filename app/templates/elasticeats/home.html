@@ -1,16 +1,16 @@
-{% extends "fresheats/base.html" %}
+{% extends "elasticeats/base.html" %}
 
-{% block title %}FreshEats - Find Great Local Restaurants{% endblock %}
+{% block title %}ElasticEats - Find Great Local Restaurants{% endblock %}
 
 {% block content %}
 <!-- Search Hero -->
-<section class="fe-search-hero">
+<section class="ee-search-hero">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <h1 class="text-white text-center mb-4 fw-bold">Find the best local restaurants</h1>
-                <form action="/fresheats" method="get">
-                    <div class="fe-search-bar d-flex">
+                <form action="/elasticeats" method="get">
+                    <div class="ee-search-bar d-flex">
                         <div class="flex-grow-1 d-flex align-items-center">
                             <i class="bi bi-search text-muted ms-3 me-2"></i>
                             <input type="text"
@@ -58,7 +58,7 @@
 
             {% if businesses %}
                 {% for biz in businesses %}
-                <div class="fe-biz-card d-flex">
+                <div class="ee-biz-card d-flex">
                     <div class="me-3">
                         <div style="width: 120px; height: 120px; background: linear-gradient(135deg, #f5f5f5, #e0e0e0); border-radius: 6px; display: flex; align-items: center; justify-content: center;">
                             <i class="bi bi-shop text-muted" style="font-size: 2.5rem;"></i>
@@ -66,15 +66,15 @@
                     </div>
                     <div class="flex-grow-1">
                         <h3>
-                            <a href="/fresheats/biz/{{ biz.business_id }}">{{ biz.name }}</a>
+                            <a href="/elasticeats/biz/{{ biz.business_id }}">{{ biz.name }}</a>
                             {% if biz.rating_protected %}
-                            <span class="fe-protected-badge ms-2">
+                            <span class="ee-protected-badge ms-2">
                                 <i class="bi bi-shield-check"></i> Under Review
                             </span>
                             {% endif %}
                         </h3>
                         <div class="d-flex align-items-center mb-1">
-                            <span class="fe-stars me-2">
+                            <span class="ee-stars me-2">
                                 {% for i in range(biz.stars|int) %}
                                 <i class="bi bi-star-fill"></i>
                                 {% endfor %}
@@ -94,7 +94,7 @@
                         </div>
                     </div>
                     <div class="text-end">
-                        <span class="fe-rating-badge">{{ "%.1f"|format(biz.stars or 0) }}</span>
+                        <span class="ee-rating-badge">{{ "%.1f"|format(biz.stars or 0) }}</span>
                     </div>
                 </div>
                 {% endfor %}
@@ -134,14 +134,14 @@
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">Filter by Category</h6>
                     <div class="d-flex flex-wrap gap-2">
-                        <a href="/fresheats?category=Restaurants" class="btn btn-sm btn-outline-secondary">Restaurants</a>
-                        <a href="/fresheats?category=Coffee" class="btn btn-sm btn-outline-secondary">Coffee</a>
-                        <a href="/fresheats?category=Bars" class="btn btn-sm btn-outline-secondary">Bars</a>
-                        <a href="/fresheats?category=Pizza" class="btn btn-sm btn-outline-secondary">Pizza</a>
-                        <a href="/fresheats?category=Mexican" class="btn btn-sm btn-outline-secondary">Mexican</a>
-                        <a href="/fresheats?category=Chinese" class="btn btn-sm btn-outline-secondary">Chinese</a>
-                        <a href="/fresheats?category=Italian" class="btn btn-sm btn-outline-secondary">Italian</a>
-                        <a href="/fresheats?category=Sandwiches" class="btn btn-sm btn-outline-secondary">Sandwiches</a>
+                        <a href="/elasticeats?category=Restaurants" class="btn btn-sm btn-outline-secondary">Restaurants</a>
+                        <a href="/elasticeats?category=Coffee" class="btn btn-sm btn-outline-secondary">Coffee</a>
+                        <a href="/elasticeats?category=Bars" class="btn btn-sm btn-outline-secondary">Bars</a>
+                        <a href="/elasticeats?category=Pizza" class="btn btn-sm btn-outline-secondary">Pizza</a>
+                        <a href="/elasticeats?category=Mexican" class="btn btn-sm btn-outline-secondary">Mexican</a>
+                        <a href="/elasticeats?category=Chinese" class="btn btn-sm btn-outline-secondary">Chinese</a>
+                        <a href="/elasticeats?category=Italian" class="btn btn-sm btn-outline-secondary">Italian</a>
+                        <a href="/elasticeats?category=Sandwiches" class="btn btn-sm btn-outline-secondary">Sandwiches</a>
                     </div>
                 </div>
             </div>
@@ -149,7 +149,7 @@
             <div class="card">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">
-                        <i class="bi bi-info-circle text-fe-red"></i> Workshop Info
+                        <i class="bi bi-info-circle text-ee-primary"></i> Workshop Info
                     </h6>
                     <p class="small text-muted mb-2">
                         This is a demo for the Review Fraud Detection Workshop.
@@ -166,52 +166,52 @@
     {% else %}
     <!-- Browse Categories -->
     <h2 class="mb-4">Browse by Category</h2>
-    <div class="fe-category-grid mb-5">
-        <a href="/fresheats?category=Restaurants" class="fe-category-card">
+    <div class="ee-category-grid mb-5">
+        <a href="/elasticeats?category=Restaurants" class="ee-category-card">
             <i class="bi bi-cup-hot"></i>
             <span>Restaurants</span>
         </a>
-        <a href="/fresheats?category=Coffee" class="fe-category-card">
+        <a href="/elasticeats?category=Coffee" class="ee-category-card">
             <i class="bi bi-cup"></i>
             <span>Coffee & Tea</span>
         </a>
-        <a href="/fresheats?category=Bars" class="fe-category-card">
+        <a href="/elasticeats?category=Bars" class="ee-category-card">
             <i class="bi bi-cup-straw"></i>
             <span>Bars</span>
         </a>
-        <a href="/fresheats?category=Pizza" class="fe-category-card">
+        <a href="/elasticeats?category=Pizza" class="ee-category-card">
             <i class="bi bi-circle"></i>
             <span>Pizza</span>
         </a>
-        <a href="/fresheats?category=Mexican" class="fe-category-card">
+        <a href="/elasticeats?category=Mexican" class="ee-category-card">
             <i class="bi bi-fire"></i>
             <span>Mexican</span>
         </a>
-        <a href="/fresheats?category=Chinese" class="fe-category-card">
+        <a href="/elasticeats?category=Chinese" class="ee-category-card">
             <i class="bi bi-box"></i>
             <span>Chinese</span>
         </a>
-        <a href="/fresheats?category=Italian" class="fe-category-card">
+        <a href="/elasticeats?category=Italian" class="ee-category-card">
             <i class="bi bi-heart"></i>
             <span>Italian</span>
         </a>
-        <a href="/fresheats?category=Sandwiches" class="fe-category-card">
+        <a href="/elasticeats?category=Sandwiches" class="ee-category-card">
             <i class="bi bi-basket"></i>
             <span>Sandwiches</span>
         </a>
-        <a href="/fresheats?category=Breakfast" class="fe-category-card">
+        <a href="/elasticeats?category=Breakfast" class="ee-category-card">
             <i class="bi bi-sunrise"></i>
             <span>Breakfast</span>
         </a>
-        <a href="/fresheats?category=Desserts" class="fe-category-card">
+        <a href="/elasticeats?category=Desserts" class="ee-category-card">
             <i class="bi bi-cake2"></i>
             <span>Desserts</span>
         </a>
-        <a href="/fresheats?category=Seafood" class="fe-category-card">
+        <a href="/elasticeats?category=Seafood" class="ee-category-card">
             <i class="bi bi-water"></i>
             <span>Seafood</span>
         </a>
-        <a href="/fresheats?category=Burgers" class="fe-category-card">
+        <a href="/elasticeats?category=Burgers" class="ee-category-card">
             <i class="bi bi-stack"></i>
             <span>Burgers</span>
         </a>
@@ -221,7 +221,7 @@
     <h2 class="mb-4">Popular in Philadelphia</h2>
     <div class="row" id="popularBusinesses">
         <div class="col-12 text-center py-5">
-            <div class="spinner-border text-danger" role="status">
+            <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
         </div>
@@ -242,13 +242,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (data.businesses && data.businesses.length > 0) {
             container.innerHTML = data.businesses.map(biz => `
                 <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="fe-biz-card h-100">
+                    <div class="ee-biz-card h-100">
                         <h3 style="font-size: 1.1rem;">
-                            <a href="/fresheats/biz/${biz.business_id}">${biz.name}</a>
-                            ${biz.rating_protected ? '<span class="fe-protected-badge ms-1"><i class="bi bi-shield-check"></i></span>' : ''}
+                            <a href="/elasticeats/biz/${biz.business_id}">${biz.name}</a>
+                            ${biz.rating_protected ? '<span class="ee-protected-badge ms-1"><i class="bi bi-shield-check"></i></span>' : ''}
                         </h3>
                         <div class="d-flex align-items-center mb-1">
-                            <span class="fe-stars me-2">${renderStars(biz.stars || 0)}</span>
+                            <span class="ee-stars me-2">${renderStars(biz.stars || 0)}</span>
                             <span class="text-muted small">${biz.review_count || 0}</span>
                         </div>
                         <div class="category small">${biz.categories || 'Restaurant'}</div>

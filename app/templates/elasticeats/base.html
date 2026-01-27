@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}FreshEats{% endblock %}</title>
+    <title>{% block title %}ElasticEats{% endblock %}</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,19 +15,19 @@
     <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
-    <!-- FreshEats Styles (Yelp-like) -->
+    <!-- ElasticEats Styles -->
     <style>
         :root {
-            --fe-red: #d32323;
-            --fe-red-dark: #af1f1f;
-            --fe-red-light: #ff4d4d;
-            --fe-gray-dark: #333;
-            --fe-gray: #666;
-            --fe-gray-light: #999;
-            --fe-gray-bg: #f5f5f5;
-            --fe-star: #ff8c00;
-            --fe-green: #41a700;
-            --fe-blue: #0073bb;
+            --ee-primary: #00BFB3;
+            --ee-primary-dark: #019B8F;
+            --ee-primary-light: #00D4C8;
+            --ee-accent: #00A9E5;
+            --ee-dark: #353535;
+            --ee-gray: #666;
+            --ee-gray-light: #999;
+            --ee-gray-bg: #f5f5f5;
+            --ee-star: #FED10A;
+            --ee-green: #41a700;
         }
 
         * {
@@ -36,82 +36,82 @@
 
         body {
             background-color: #fff;
-            color: var(--fe-gray-dark);
+            color: var(--ee-dark);
         }
 
         /* Header */
-        .fe-header {
-            background: var(--fe-red);
+        .ee-header {
+            background: var(--ee-primary);
             padding: 0;
         }
 
-        .fe-header .navbar-brand {
+        .ee-header .navbar-brand {
             font-weight: 700;
             font-size: 1.75rem;
             color: white !important;
             letter-spacing: -0.5px;
         }
 
-        .fe-header .navbar-brand span {
-            color: #ffd700;
+        .ee-header .navbar-brand span {
+            color: #FED10A;
         }
 
-        .fe-header .nav-link {
+        .ee-header .nav-link {
             color: rgba(255,255,255,0.9) !important;
             font-weight: 500;
         }
 
-        .fe-header .nav-link:hover {
+        .ee-header .nav-link:hover {
             color: white !important;
         }
 
         /* Search Bar */
-        .fe-search-hero {
-            background: linear-gradient(135deg, var(--fe-red) 0%, var(--fe-red-dark) 100%);
+        .ee-search-hero {
+            background: linear-gradient(135deg, var(--ee-primary) 0%, var(--ee-primary-dark) 100%);
             padding: 2rem 0;
         }
 
-        .fe-search-bar {
+        .ee-search-bar {
             background: white;
             border-radius: 8px;
             padding: 8px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.15);
         }
 
-        .fe-search-bar input {
+        .ee-search-bar input {
             border: none;
             font-size: 1rem;
         }
 
-        .fe-search-bar input:focus {
+        .ee-search-bar input:focus {
             box-shadow: none;
         }
 
-        .fe-search-bar .btn {
-            background: var(--fe-red);
+        .ee-search-bar .btn {
+            background: var(--ee-primary);
             border: none;
             padding: 10px 24px;
             font-weight: 600;
         }
 
-        .fe-search-bar .btn:hover {
-            background: var(--fe-red-dark);
+        .ee-search-bar .btn:hover {
+            background: var(--ee-primary-dark);
         }
 
         /* Star Ratings */
-        .fe-stars {
-            color: var(--fe-star);
+        .ee-stars {
+            color: var(--ee-star);
             font-size: 1rem;
             letter-spacing: 1px;
         }
 
-        .fe-stars-large {
+        .ee-stars-large {
             font-size: 1.5rem;
         }
 
-        .fe-rating-badge {
+        .ee-rating-badge {
             display: inline-block;
-            background: var(--fe-star);
+            background: var(--ee-star);
             color: white;
             padding: 4px 10px;
             border-radius: 4px;
@@ -120,7 +120,7 @@
         }
 
         /* Business Cards */
-        .fe-biz-card {
+        .ee-biz-card {
             background: white;
             border: 1px solid #e6e6e6;
             border-radius: 8px;
@@ -129,45 +129,45 @@
             transition: box-shadow 0.2s;
         }
 
-        .fe-biz-card:hover {
+        .ee-biz-card:hover {
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        .fe-biz-card img {
+        .ee-biz-card img {
             width: 120px;
             height: 120px;
             object-fit: cover;
             border-radius: 6px;
         }
 
-        .fe-biz-card h3 {
+        .ee-biz-card h3 {
             font-size: 1.25rem;
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
 
-        .fe-biz-card h3 a {
-            color: var(--fe-blue);
+        .ee-biz-card h3 a {
+            color: var(--ee-accent);
             text-decoration: none;
         }
 
-        .fe-biz-card h3 a:hover {
+        .ee-biz-card h3 a:hover {
             text-decoration: underline;
         }
 
-        .fe-biz-card .category {
-            color: var(--fe-gray-light);
+        .ee-biz-card .category {
+            color: var(--ee-gray-light);
             font-size: 0.85rem;
         }
 
-        .fe-biz-card .review-snippet {
-            color: var(--fe-gray);
+        .ee-biz-card .review-snippet {
+            color: var(--ee-gray);
             font-size: 0.9rem;
             margin-top: 0.5rem;
         }
 
         /* Protection Badge */
-        .fe-protected-badge {
+        .ee-protected-badge {
             display: inline-flex;
             align-items: center;
             background: #fff3cd;
@@ -179,48 +179,48 @@
             border: 1px solid #ffc107;
         }
 
-        .fe-protected-badge i {
+        .ee-protected-badge i {
             margin-right: 4px;
         }
 
         /* Review Cards */
-        .fe-review {
+        .ee-review {
             border-bottom: 1px solid #e6e6e6;
             padding: 1.25rem 0;
         }
 
-        .fe-review:last-child {
+        .ee-review:last-child {
             border-bottom: none;
         }
 
-        .fe-review .user-avatar {
+        .ee-review .user-avatar {
             width: 50px;
             height: 50px;
             border-radius: 4px;
-            background: var(--fe-gray-bg);
+            background: var(--ee-gray-bg);
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            color: var(--fe-gray);
+            color: var(--ee-gray);
         }
 
-        .fe-review .user-name {
+        .ee-review .user-name {
             font-weight: 600;
-            color: var(--fe-gray-dark);
+            color: var(--ee-dark);
         }
 
-        .fe-review .review-meta {
-            color: var(--fe-gray-light);
+        .ee-review .review-meta {
+            color: var(--ee-gray-light);
             font-size: 0.85rem;
         }
 
-        .fe-review .review-text {
-            color: var(--fe-gray-dark);
+        .ee-review .review-text {
+            color: var(--ee-dark);
             line-height: 1.6;
         }
 
-        .fe-review.held {
+        .ee-review.held {
             opacity: 0.6;
             background: #fff8e1;
             margin: 0 -1rem;
@@ -228,7 +228,7 @@
             border-radius: 4px;
         }
 
-        .fe-held-badge {
+        .ee-held-badge {
             display: inline-flex;
             align-items: center;
             background: #ffcdd2;
@@ -240,13 +240,13 @@
         }
 
         /* Categories */
-        .fe-category-grid {
+        .ee-category-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 1rem;
         }
 
-        .fe-category-card {
+        .ee-category-card {
             background: white;
             border: 1px solid #e6e6e6;
             border-radius: 8px;
@@ -254,67 +254,67 @@
             text-align: center;
             transition: all 0.2s;
             text-decoration: none;
-            color: var(--fe-gray-dark);
+            color: var(--ee-dark);
         }
 
-        .fe-category-card:hover {
-            border-color: var(--fe-red);
-            box-shadow: 0 2px 8px rgba(211, 35, 35, 0.1);
+        .ee-category-card:hover {
+            border-color: var(--ee-primary);
+            box-shadow: 0 2px 8px rgba(0, 191, 179, 0.15);
             transform: translateY(-2px);
         }
 
-        .fe-category-card i {
+        .ee-category-card i {
             font-size: 2rem;
-            color: var(--fe-red);
+            color: var(--ee-primary);
             margin-bottom: 0.5rem;
         }
 
-        .fe-category-card span {
+        .ee-category-card span {
             display: block;
             font-weight: 500;
             font-size: 0.9rem;
         }
 
         /* Footer */
-        .fe-footer {
-            background: var(--fe-gray-bg);
+        .ee-footer {
+            background: var(--ee-gray-bg);
             padding: 2rem 0;
             margin-top: 3rem;
             border-top: 1px solid #e6e6e6;
         }
 
-        .fe-footer a {
-            color: var(--fe-gray);
+        .ee-footer a {
+            color: var(--ee-gray);
             text-decoration: none;
         }
 
-        .fe-footer a:hover {
-            color: var(--fe-red);
+        .ee-footer a:hover {
+            color: var(--ee-primary);
         }
 
         /* Utility */
-        .text-fe-red { color: var(--fe-red) !important; }
-        .bg-fe-red { background-color: var(--fe-red) !important; }
+        .text-ee-primary { color: var(--ee-primary) !important; }
+        .bg-ee-primary { background-color: var(--ee-primary) !important; }
 
         /* Business Detail Header */
-        .fe-biz-header {
-            background: var(--fe-gray-bg);
+        .ee-biz-header {
+            background: var(--ee-gray-bg);
             padding: 2rem 0;
             border-bottom: 1px solid #e6e6e6;
         }
 
-        .fe-biz-header h1 {
+        .ee-biz-header h1 {
             font-size: 2rem;
             font-weight: 700;
             margin-bottom: 0.5rem;
         }
 
-        .fe-biz-header .location {
-            color: var(--fe-gray);
+        .ee-biz-header .location {
+            color: var(--ee-gray);
         }
 
         /* Incident Alert */
-        .fe-incident-alert {
+        .ee-incident-alert {
             background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
             border: 1px solid #ffb74d;
             border-radius: 8px;
@@ -322,7 +322,7 @@
             margin-bottom: 1.5rem;
         }
 
-        .fe-incident-alert.critical {
+        .ee-incident-alert.critical {
             background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
             border-color: #ef5350;
         }
@@ -332,10 +332,10 @@
 </head>
 <body>
     <!-- Header -->
-    <nav class="navbar navbar-expand-lg fe-header">
+    <nav class="navbar navbar-expand-lg ee-header">
         <div class="container">
-            <a class="navbar-brand" href="/fresheats">
-                Fresh<span>Eats</span>
+            <a class="navbar-brand" href="/elasticeats">
+                Elastic<span>Eats</span>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -343,7 +343,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="/fresheats">
+                        <a class="nav-link" href="/elasticeats">
                             <i class="bi bi-house-door"></i> Home
                         </a>
                     </li>
@@ -373,11 +373,11 @@
     </main>
 
     <!-- Footer -->
-    <footer class="fe-footer">
+    <footer class="ee-footer">
         <div class="container">
             <div class="row">
                 <div class="col-md-4">
-                    <h5 class="text-fe-red fw-bold">FreshEats</h5>
+                    <h5 class="text-ee-primary fw-bold">ElasticEats</h5>
                     <p class="text-muted small">
                         Find the best local restaurants, cafes, and more.
                         Powered by real reviews from real people.
@@ -386,9 +386,9 @@
                 <div class="col-md-4">
                     <h6 class="fw-bold">Explore</h6>
                     <ul class="list-unstyled small">
-                        <li><a href="/fresheats?category=Restaurants">Restaurants</a></li>
-                        <li><a href="/fresheats?category=Coffee">Coffee & Tea</a></li>
-                        <li><a href="/fresheats?category=Bars">Bars</a></li>
+                        <li><a href="/elasticeats?category=Restaurants">Restaurants</a></li>
+                        <li><a href="/elasticeats?category=Coffee">Coffee & Tea</a></li>
+                        <li><a href="/elasticeats?category=Bars">Bars</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
@@ -565,8 +565,10 @@
                     resultDiv.innerHTML = html;
 
                     resetButton.innerHTML = '<i class="bi bi-check"></i> Done';
+                    resetButton.disabled = false;
                     resetButton.classList.remove('btn-danger');
                     resetButton.classList.add('btn-success');
+                    resetButton.setAttribute('data-bs-dismiss', 'modal');
                 } else {
                     resultDiv.innerHTML = '<div class="alert alert-danger"><i class="bi bi-x-circle"></i> Reset failed: ' + result.message + '</div>';
                     resetButton.innerHTML = originalText;

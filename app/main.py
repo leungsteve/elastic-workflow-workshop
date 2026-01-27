@@ -168,11 +168,11 @@ async def notifications_page(request: Request):
 
 
 # ============================================================
-# FreshEats Consumer UI (Yelp-like interface)
+# ElasticEats Consumer UI
 # ============================================================
 
-@app.get("/fresheats", response_class=HTMLResponse)
-async def fresheats_home(
+@app.get("/elasticeats", response_class=HTMLResponse)
+async def elasticeats_home(
     request: Request,
     q: str = None,
     category: str = None,
@@ -180,7 +180,7 @@ async def fresheats_home(
     page: int = 1,
 ):
     """
-    Serve the FreshEats home/search page (Yelp-like interface).
+    Serve the ElasticEats home/search page.
     """
     from app.dependencies import get_es_client, get_app_settings
 
@@ -223,7 +223,8 @@ async def fresheats_home(
                     query=query,
                     from_=from_offset,
                     size=page_size,
-                    sort=[{"review_count": "desc"}]
+                    sort=[{"review_count": "desc"}],
+                    track_total_hits=True
                 )
 
                 for hit in response["hits"]["hits"]:
@@ -237,7 +238,7 @@ async def fresheats_home(
             print(f"Search error: {e}")
 
     return templates.TemplateResponse(
-        "fresheats/home.html",
+        "elasticeats/home.html",
         {
             "request": request,
             "query": q,
@@ -251,14 +252,14 @@ async def fresheats_home(
     )
 
 
-@app.get("/fresheats/biz/{business_id}", response_class=HTMLResponse)
-async def fresheats_business(
+@app.get("/elasticeats/biz/{business_id}", response_class=HTMLResponse)
+async def elasticeats_business(
     request: Request,
     business_id: str,
     filter: str = None,
 ):
     """
-    Serve the FreshEats business detail page with reviews.
+    Serve the ElasticEats business detail page with reviews.
     """
     from app.dependencies import get_es_client, get_app_settings
 
@@ -288,7 +289,7 @@ async def fresheats_business(
 
             if not business:
                 return templates.TemplateResponse(
-                    "fresheats/home.html",
+                    "elasticeats/home.html",
                     {"request": request, "error": f"Business {business_id} not found"},
                     status_code=404
                 )
@@ -398,13 +399,13 @@ async def fresheats_business(
     except Exception as e:
         print(f"Business page error: {e}")
         return templates.TemplateResponse(
-            "fresheats/home.html",
+            "elasticeats/home.html",
             {"request": request, "error": str(e)},
             status_code=500
         )
 
     return templates.TemplateResponse(
-        "fresheats/business.html",
+        "elasticeats/business.html",
         {
             "request": request,
             "business": business,

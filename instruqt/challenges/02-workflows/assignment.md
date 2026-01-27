@@ -22,7 +22,7 @@ In Challenge 1, you learned to identify suspicious review patterns using ES|QL q
 - Create audit trails and notifications
 
 In this challenge, you'll create a workflow that:
-1. Runs every 5 minutes
+1. Runs every 1 minute
 2. Detects businesses under review fraud attack
 3. Holds suspicious reviews for manual review
 4. Protects targeted businesses
@@ -36,14 +36,14 @@ Workflows are defined in YAML and consist of:
 
 | Component | Description | Example |
 |-----------|-------------|---------|
-| **Triggers** | When the workflow runs | Schedule (every 5 min), Document change, Webhook |
+| **Triggers** | When the workflow runs | Schedule (every 1 min), Document change, Webhook |
 | **Steps** | What the workflow does | ES|QL queries, Updates, Conditionals |
 | **Actions** | Effects on your data | Hold reviews, Create incidents, Send alerts |
 
 ```
 +-------------------+     +----------------------+     +------------------+
 |  Schedule Trigger |---->|  ES|QL Detection     |---->|  For Each Attack |
-|  (Every 5 min)    |     |  Query               |     |                  |
+|  (Every 1 min)    |     |  Query               |     |                  |
 +-------------------+     +----------------------+     +--------+---------+
                                                                |
                          +-------------------------------------+
@@ -95,7 +95,7 @@ enabled: true
 triggers:
   - type: scheduled
     with:
-      every: 5m
+      every: 1m
 
 steps:
   - name: detect_review_frauds
@@ -184,10 +184,10 @@ enabled: true
 triggers:
   - type: scheduled
     with:
-      every: 5m
+      every: 1m
 ```
 - `type: scheduled` runs automatically at intervals
-- `every: 5m` means every 5 minutes
+- `every: 1m` means every 1 minute
 - Other trigger types: `manual` (on-demand), `alert` (from detection rules)
 
 #### Detection Query (ES|QL)
@@ -220,10 +220,9 @@ triggers:
 
 #### Response Actions
 Each action in the loop:
-1. **log_attack** - Logs what's being processed (type: `console`)
-2. **protect_business** - Updates business document (type: `elasticsearch.update`)
-3. **create_incident** - Indexes incident document (type: `elasticsearch.bulk`)
-4. **create_notification** - Creates alert (type: `elasticsearch.bulk`)
+1. **protect_business** - Updates business document (type: `elasticsearch.update`)
+2. **create_incident** - Indexes incident document (type: `elasticsearch.bulk`)
+3. **create_notification** - Creates alert (type: `elasticsearch.bulk`)
 
 #### Template Variables
 Access data using Liquid-style templates:
@@ -243,7 +242,7 @@ Access data using Liquid-style templates:
 2. Click on the workflow to view its details
 3. Verify the status shows "Enabled"
 
-**Execute the workflow manually (without waiting 5 minutes):**
+**Execute the workflow manually (without waiting for the next scheduled run):**
 1. Click on your workflow to open it
 2. Click the **Run** button (or "Execute" / "Test")
 3. Watch the execution progress
@@ -402,7 +401,7 @@ Here are the key step types you can use in workflows:
 | Trigger Type | Description |
 |--------------|-------------|
 | `manual` | Run on-demand via UI or API |
-| `scheduled` | Run at intervals using `every:` (e.g., `5m`, `1h`, `1d`) |
+| `scheduled` | Run at intervals using `every:` (e.g., `1m`, `5m`, `1h`, `1d`) |
 | `alert` | Triggered by detection rules |
 
 ---

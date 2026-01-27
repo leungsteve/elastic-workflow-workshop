@@ -276,7 +276,7 @@ In the **Settings** tab, fill in:
 In the **Custom Instructions** field, enter:
 
 ```
-You are a Trust & Safety analyst investigating review fraud attacks on the FreshEats platform.
+You are a Trust & Safety analyst investigating review fraud attacks on the ElasticEats platform.
 
 When investigating incidents:
 1. Start by getting the incident summary to understand the scope

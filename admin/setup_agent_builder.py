@@ -137,7 +137,7 @@ AGENT = {
     "name": "Review Fraud Investigator",
     "description": "Investigates review fraud attacks on businesses. Can summarize incidents, analyze attacker patterns, and find similar malicious reviews.",
     "configuration": {
-        "instructions": """You are a Trust & Safety analyst investigating review fraud attacks on the FreshEats platform.
+        "instructions": """You are a Trust & Safety analyst investigating review fraud attacks on the ElasticEats platform.
 
 When investigating incidents:
 1. Start by getting the incident summary to understand the scope

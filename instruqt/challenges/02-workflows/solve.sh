@@ -89,7 +89,7 @@ WORKFLOW_DEFINITION='{
     "triggers": [
         {
             "type": "schedule",
-            "interval": "5m"
+            "interval": "1m"
         }
     ],
     "steps": [

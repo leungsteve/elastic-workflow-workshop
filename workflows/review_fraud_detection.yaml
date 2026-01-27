@@ -32,7 +32,7 @@ config:
 
 triggers:
   - type: schedule
-    interval: 5m
+    interval: 1m
   # Also trigger when webhook is called
   - type: webhook
     path: /workflow/review-fraud-detection/trigger

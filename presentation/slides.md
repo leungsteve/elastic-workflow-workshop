@@ -147,7 +147,7 @@ Note: Compare to Lambda/Azure Functions but built into Elastic
 ```yaml
 triggers:
   - type: schedule
-    interval: 5m
+    interval: 1m
 
 steps:
   - id: detect

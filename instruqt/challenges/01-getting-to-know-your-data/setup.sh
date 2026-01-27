@@ -222,7 +222,7 @@ bulk_load() {
 # ==============================================================================
 # Step 1: Wait for Elasticsearch
 # ==============================================================================
-echo "[1/7] Waiting for Elasticsearch..."
+echo "[1/8] Waiting for Elasticsearch..."
 MAX_RETRIES=60
 RETRY_COUNT=0
 
@@ -241,7 +241,7 @@ echo "  Elasticsearch is ready!"
 # Step 2: Check ELSER availability
 # ==============================================================================
 echo ""
-echo "[2/7] Checking ELSER inference endpoint..."
+echo "[2/8] Checking ELSER inference endpoint..."
 
 ELSER_AVAILABLE=false
 ELSER_RESPONSE=$(es_curl "${ELASTICSEARCH_URL}/_inference/.elser-2-elasticsearch" 2>/dev/null)
@@ -257,7 +257,7 @@ fi
 # Step 3: Create indices from mapping files
 # ==============================================================================
 echo ""
-echo "[3/7] Creating indices..."
+echo "[3/8] Creating indices..."
 
 # Create lookup indices (businesses, users) and operational indices (incidents, notifications)
 for index in businesses users incidents notifications; do
@@ -284,7 +284,7 @@ fi
 # Step 4: Load data from NDJSON files
 # ==============================================================================
 echo ""
-echo "[4/7] Loading data..."
+echo "[4/8] Loading data..."
 
 # Check that data files exist
 MISSING_FILES=0
@@ -333,7 +333,7 @@ fi
 # Step 5: Refresh indices
 # ==============================================================================
 echo ""
-echo "[5/7] Refreshing indices..."
+echo "[5/8] Refreshing indices..."
 es_curl -X POST "${ELASTICSEARCH_URL}/_refresh" > /dev/null
 echo "  Indices refreshed."
 
@@ -341,7 +341,7 @@ echo "  Indices refreshed."
 # Step 6: Wait for Kibana
 # ==============================================================================
 echo ""
-echo "[6/7] Waiting for Kibana..."
+echo "[6/8] Waiting for Kibana..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
@@ -360,7 +360,7 @@ echo "  Kibana is ready!"
 # Step 7: Enable Elastic Workflows
 # ==============================================================================
 echo ""
-echo "[7/7] Enabling Elastic Workflows..."
+echo "[7/8] Enabling Elastic Workflows..."
 
 WORKFLOWS_RESPONSE=$(curl -s -w "\n%{http_code}" \
     -X POST "${KIBANA_URL}/internal/kibana/settings" \
@@ -377,6 +377,36 @@ else
     echo "  You can enable it manually in Kibana Dev Tools:"
     echo "    POST kbn://internal/kibana/settings"
     echo '    {"changes": {"workflows:ui:enabled": true}}'
+fi
+
+# ==============================================================================
+# Step 8: Start the FastAPI application
+# ==============================================================================
+echo ""
+echo "[8/8] Starting the FastAPI application..."
+
+cd ${WORKSHOP_DIR}
+pip install -r requirements.txt > /tmp/pip_install.log 2>&1
+echo "  Dependencies installed."
+
+nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 > /tmp/app.log 2>&1 &
+
+# Wait for app to be ready
+APP_RETRIES=0
+APP_MAX_RETRIES=30
+until curl -s http://localhost:8000/health > /dev/null 2>&1; do
+    APP_RETRIES=$((APP_RETRIES + 1))
+    if [ $APP_RETRIES -ge $APP_MAX_RETRIES ]; then
+        echo "  Warning: App did not become ready in time. Check /tmp/app.log for details."
+        break
+    fi
+    sleep 2
+done
+
+if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+    echo "  FastAPI application is running at http://localhost:8000"
+else
+    echo "  Warning: App may still be starting. Check /tmp/app.log"
 fi
 
 # ==============================================================================
@@ -406,6 +436,13 @@ else
     echo "Workflows UI:    NOT ENABLED (enable manually via Dev Tools)"
 fi
 
+echo ""
+if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+    echo "FastAPI App:     RUNNING (http://localhost:8000)"
+    echo "ElasticEats UI:  http://localhost:8000/elasticeats"
+else
+    echo "FastAPI App:     NOT RUNNING (check /tmp/app.log)"
+fi
 echo ""
 echo "You can now begin exploring the data in Kibana!"
 echo ""

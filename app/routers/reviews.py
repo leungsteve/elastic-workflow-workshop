@@ -184,7 +184,8 @@ async def list_reviews(
             query=query,
             from_=from_offset,
             size=page_size,
-            sort=[{"date": "desc"}]
+            sort=[{"date": "desc"}],
+            track_total_hits=True
         )
 
         reviews = []

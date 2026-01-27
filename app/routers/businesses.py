@@ -70,7 +70,8 @@ async def list_businesses(
             query=query,
             from_=from_offset,
             size=page_size,
-            sort=[{"review_count": "desc"}]
+            sort=[{"review_count": "desc"}],
+            track_total_hits=True
         )
 
         businesses = []
