@@ -1,6 +1,6 @@
 {
   "name": "workshop.similar_reviews",
-  "description": "Find reviews semantically similar to a given phrase using ELSER. Use this tool when investigating review frauds to find reviews with similar language patterns, themes, or sentiment - even if they use different words.",
+  "description": "Find reviews semantically similar to a given phrase using ELSER. Use this tool when investigating review bombs to find reviews with similar language patterns, themes, or sentiment - even if they use different words.",
   "parameters": {
     "search_text": {
       "type": "string",

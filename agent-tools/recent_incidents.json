@@ -1,6 +1,6 @@
 {
   "name": "recent_incidents",
-  "description": "List recent review fraud incidents, optionally filtered by status. Use this to see what incidents need attention.",
+  "description": "List recent negative review campaign incidents, optionally filtered by status. Use this to see what incidents need attention.",
   "parameters": {
     "status": {
       "type": "string",

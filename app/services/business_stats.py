@@ -1,4 +1,4 @@
-"""Business stats update service for Review Fraud Workshop."""
+"""Business stats update service for Review Campaign Detection Workshop."""
 
 from elasticsearch import AsyncElasticsearch
 

@@ -26,7 +26,7 @@ curl -s -X POST "${ELASTICSEARCH_URL}/businesses/_update/${TARGET_BIZ_ID}" \
     -d '{
         "doc": {
             "rating_protected": true,
-            "protection_reason": "review_fraud_detected",
+            "protection_reason": "review_bomb_detected",
             "protected_since": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
         }
     }' > /dev/null 2>&1
@@ -96,7 +96,7 @@ for i in {1..12}; do
             "funny": 0,
             "cool": 0,
             "status": "held",
-            "held_reason": "review_fraud_detection",
+            "held_reason": "review_bomb_detection",
             "held_at": "'${TIMESTAMP}'",
             "synthetic": true
         }' > /dev/null 2>&1
@@ -115,7 +115,7 @@ curl -s -X POST "${ELASTICSEARCH_URL}/incidents/_doc" \
     -H "Content-Type: application/json" \
     -d '{
         "incident_id": "'${INCIDENT_ID}'",
-        "incident_type": "review_fraud",
+        "incident_type": "review_bomb",
         "status": "detected",
         "severity": "high",
         "business_id": "'${TARGET_BIZ_ID}'",

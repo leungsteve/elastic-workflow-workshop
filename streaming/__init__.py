@@ -1,4 +1,4 @@
-"""Streaming module for Review Fraud Workshop."""
+"""Streaming module for Review Campaign Detection Workshop."""
 
 from .review_streamer import ReviewStreamer
 

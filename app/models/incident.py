@@ -1,4 +1,4 @@
-"""Incident models for Review Fraud Workshop."""
+"""Incident models for Negative Review Campaign Detection Workshop."""
 
 from datetime import datetime
 from enum import Enum
@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 
 class IncidentStatus(str, Enum):
-    """Status of a review fraud incident."""
+    """Status of a negative review campaign incident."""
 
     DETECTED = "detected"
     INVESTIGATING = "investigating"
@@ -28,7 +28,7 @@ class IncidentSeverity(str, Enum):
 
 
 class IncidentMetrics(BaseModel):
-    """Metrics associated with a review fraud incident."""
+    """Metrics associated with a negative review campaign incident."""
 
     review_count: int = Field(default=0, description="Number of suspicious reviews")
     unique_attackers: int = Field(default=0, description="Number of unique attacker profiles")
@@ -39,7 +39,7 @@ class IncidentMetrics(BaseModel):
 
 
 class Incident(BaseModel):
-    """Review fraud incident model."""
+    """Negative review campaign incident model."""
 
     incident_id: str = Field(..., description="Unique incident identifier")
     business_id: str = Field(..., description="Affected business ID")
@@ -75,7 +75,7 @@ class Incident(BaseModel):
                 "status": "detected",
                 "severity": "high",
                 "detected_at": "2024-01-15T10:30:00Z",
-                "description": "Coordinated review fraud attack detected",
+                "description": "Coordinated negative review campaign detected",
                 "metrics": {
                     "review_count": 45,
                     "unique_attackers": 12,

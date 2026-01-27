@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Partition reviews into historical and streaming sets for the Review Fraud Workshop.
+Partition reviews into historical and streaming sets for the Review Campaign Detection Workshop.
 
 Splits reviews that match our filtered businesses into:
 - Historical reviews (80%): Pre-loaded into Elasticsearch

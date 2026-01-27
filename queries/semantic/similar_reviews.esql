@@ -1,7 +1,7 @@
 // Similar Reviews Query (Semantic Search)
 //
 // Purpose: Find reviews semantically similar to a given text pattern for
-// investigation of coordinated review frauding campaigns.
+// investigation of coordinated review bombing campaigns.
 //
 // Syntax: Uses the ES|QL `:` operator on semantic_text fields
 //   - text_semantic: "query" performs semantic search

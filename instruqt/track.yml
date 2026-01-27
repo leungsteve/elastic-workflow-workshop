@@ -1,14 +1,14 @@
 # Instruqt Track Configuration
-# Review Fraud Detection Workshop
+# Negative Review Campaign Detection Workshop
 
-slug: review-fraud-workshop
-id: review-fraud-workshop
+slug: review-bomb-workshop
+id: review-bomb-workshop
 type: track
-title: Review Fraud Detection with Elastic Workflows
+title: Negative Review Campaign Detection with Elastic Workflows
 teaser: Learn to detect and respond to coordinated review attacks using ES|QL, Workflows, and Agent Builder
 description: |
   In this hands-on workshop, you'll build an automated detection and response system
-  to protect businesses from coordinated "review fraud" attacks.
+  to protect businesses from coordinated negative review campaigns (review bombs).
 
   You'll learn how to:
   - Write detection queries using ES|QL and LOOKUP JOIN
@@ -58,10 +58,10 @@ challenges:
     notes:
       - type: text
         contents: |
-          # Welcome to the Review Fraud Workshop!
+          # Welcome to the Negative Review Campaign Detection Workshop!
 
           In this workshop, you'll learn how to detect and respond to
-          coordinated "review fraud" attacks using Elastic's powerful
+          coordinated negative review campaigns (review bombs) using Elastic's powerful
           data analysis and automation tools.
 
           ## What You'll Build
@@ -97,7 +97,7 @@ challenges:
 
           You'll create a workflow that:
           - Runs on a schedule
-          - Detects review frauds with ES|QL
+          - Detects negative review campaigns with ES|QL
           - Automatically responds to protect businesses
     tabs:
       - title: Kibana
@@ -150,7 +150,7 @@ challenges:
           # Putting It All Together
 
           Time for the grand finale! You'll:
-          - Launch a simulated review fraud attack
+          - Launch a simulated negative review campaign (review bomb)
           - Watch your workflow detect and respond
           - Investigate with Agent Builder
           - Resolve the incident

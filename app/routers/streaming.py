@@ -1,4 +1,4 @@
-"""Streaming API router for Review Fraud Workshop."""
+"""Streaming API router for Review Campaign Detection Workshop."""
 
 import asyncio
 from datetime import datetime
@@ -126,7 +126,7 @@ async def start_streaming(
     Start streaming simulated attack reviews to a business.
 
     This creates a background task that continuously generates
-    and indexes negative reviews to simulate a review fraud attack.
+    and indexes negative reviews to simulate a negative review campaign.
 
     - **business_id**: Target business for the attack
     - **interval_seconds**: Time between review batches

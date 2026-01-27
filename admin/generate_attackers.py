@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Generate synthetic attacker accounts and attack reviews for the Review Fraud Workshop.
+Generate synthetic attacker accounts and attack reviews for the Review Campaign Detection Workshop.
 
 Creates attacker users with low trust scores and generates negative reviews
 targeting a selected business from the filtered dataset.
 
-The attack data simulates a coordinated review frauding scenario where multiple
+The attack data simulates a coordinated review bomb scenario where multiple
 new accounts post negative reviews within a short time window.
 """
 
@@ -314,7 +314,7 @@ def main(
 
     Creates a set of fake attacker users with low trust scores and
     generates negative reviews targeting a selected business. This
-    simulates a coordinated review frauding attack for workshop demos.
+    simulates a coordinated review bomb attack for workshop demos.
 
     The generated data is suitable for injection during the workshop
     to demonstrate the detection workflow.

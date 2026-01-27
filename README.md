@@ -1,10 +1,10 @@
-# Review Integrity & Fraud Detection Workshop
+# Negative Review Campaign Detection Workshop
 
 **What's New in Elastic 9.3: Simplify, Optimize, Innovate with AI**
 
-A hands-on workshop demonstrating how to protect review integrity using Elastic's latest features. Participants learn to detect coordinated fake reviews, automate protective responses, and investigate incidents using AI—applicable to any review system (Yelp, Amazon, App Store, etc.).
+A hands-on workshop demonstrating how to detect negative review campaigns using Elastic's latest features. Participants learn to detect coordinated fake reviews, automate protective responses, and investigate incidents using AI—applicable to any review system (Yelp, Amazon, App Store, etc.).
 
-> **Key Message:** "Protecting review integrity at scale—detect fraud, automate response, investigate with AI."
+> **Key Message:** "Protecting review integrity at scale—detect negative review campaigns, automate response, investigate with AI."
 
 ---
 
@@ -20,9 +20,9 @@ A hands-on workshop demonstrating how to protect review integrity using Elastic'
 
 ## Overview
 
-Review fraud is a universal problem affecting any platform with user-generated reviews—restaurants on Yelp, products on Amazon, apps in the App Store, hotels on TripAdvisor. Bad actors create fake accounts and submit coordinated fake reviews to manipulate ratings, damaging businesses and eroding consumer trust.
+Negative review campaigns are a universal problem affecting any platform with user-generated reviews—restaurants on Yelp, products on Amazon, apps in the App Store, hotels on TripAdvisor. Bad actors create fake accounts and submit coordinated fake reviews to manipulate ratings, damaging businesses and eroding consumer trust.
 
-This workshop teaches participants to build a complete fraud detection and response system using Elastic's latest features. **The same patterns work for any review system.**
+This workshop teaches participants to build a complete negative review campaign detection and response system using Elastic's latest features. **The same patterns work for any review system.**
 
 **Workshop Duration:** 90 minutes
 
@@ -45,7 +45,7 @@ This workshop teaches participants to build a complete fraud detection and respo
 | Getting to Know Your Data | 15 min | SIMPLIFY | ES\|QL queries, LOOKUP JOIN, detection logic |
 | Workflows | 20 min | SIMPLIFY + OPTIMIZE | Automated detection and response pipelines |
 | Agent Builder | 10 min | INNOVATE WITH AI | Natural language investigation tools |
-| End-to-End Scenario | 15 min | All Three | Full fraud lifecycle simulation |
+| End-to-End Scenario | 15 min | All Three | Full review bombing lifecycle simulation |
 
 ---
 
@@ -71,7 +71,7 @@ This workshop teaches participants to build a complete fraud detection and respo
 
 ### Universal Applicability
 
-The fraud detection patterns in this workshop apply to ANY review system:
+The negative review campaign detection patterns in this workshop apply to ANY review system:
 
 - 🍽️ **Restaurants:** Yelp, Google Business, TripAdvisor
 - 🛒 **E-commerce:** Amazon, Home Depot, Walmart, Target
@@ -81,10 +81,10 @@ The fraud detection patterns in this workshop apply to ANY review system:
 
 ### Automated Response Actions
 
-When fraud is detected, the workflow automatically:
+When a negative review campaign is detected, the workflow automatically:
 - **Protects business ratings** - Sets `rating_protected: true` to freeze displayed rating
-- **Holds suspicious reviews** - Marks fraudulent reviews as `status: "held"` for manual review
-- **Creates incidents** - Logs fraud with severity classification (critical/high/medium/low)
+- **Holds suspicious reviews** - Marks campaign reviews as `status: "held"` for manual review
+- **Creates incidents** - Logs the campaign with severity classification (critical/high/medium/low)
 - **Records actions** - Tracks all response actions taken for audit purposes
 
 ---
@@ -92,7 +92,7 @@ When fraud is detected, the workflow automatically:
 ## Repository Structure
 
 ```
-review-fraud-workshop/
+elastic-workflow-workshop/
 ├── admin/                    # Pre-workshop setup scripts
 │   ├── prepare_data.sh       # Master setup script
 │   ├── filter_businesses.py  # Filter Yelp data by city/category
@@ -123,7 +123,7 @@ review-fraud-workshop/
 │   └── investigation/
 │
 ├── workflows/                # Workflow definitions (YAML)
-│   ├── review-fraud-detection.yaml
+│   ├── review-bomb-detection.yaml
 │   ├── reviewer-flagging.yaml
 │   └── incident-resolution.yaml
 │
@@ -171,8 +171,8 @@ review-fraud-workshop/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/elastic/review-fraud-workshop.git
-cd review-fraud-workshop
+git clone https://github.com/elastic/elastic-workflow-workshop.git
+cd elastic-workflow-workshop
 ```
 
 ### 2. Set Up Python Environment
@@ -298,7 +298,7 @@ This creates:
 - **incident_summary** tool - ES|QL query for incident details
 - **reviewer_analysis** tool - Attacker pattern analysis with risk levels
 - **similar_reviews** tool - ELSER semantic search for attack narratives
-- **Review Fraud Investigator** agent - Custom agent with all tools assigned
+- **Review Campaign Investigator** agent - Custom agent with all tools assigned
 
 Options:
 ```bash
@@ -343,7 +343,7 @@ CATEGORIES = ["Restaurants", "Food", "Bars"]
 
 ### Adjusting Detection Thresholds
 
-Edit `workflows/review-fraud-detection.yaml`:
+Edit `workflows/review-bomb-detection.yaml`:
 
 ```yaml
 # Adjust these thresholds based on your data volume
@@ -388,7 +388,7 @@ See `instruqt/README.md` for detailed deployment instructions.
 
 | Document                                       | Description                       |
 | ---------------------------------------------- | --------------------------------- |
-| [Specification](docs/review-fraud-workshop-spec.md)  | Complete technical specification  |
+| [Specification](docs/review-bomb-workshop-spec.md)  | Complete technical specification  |
 | [Admin Setup Guide](docs/admin-setup-guide.md) | Detailed facilitator instructions |
 | [Talk Track](docs/talk-track.md)               | Presenter speaking notes          |
 | [Troubleshooting](docs/troubleshooting.md)     | Common issues and solutions       |
@@ -452,6 +452,6 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Support
 
-- **Issues:** [GitHub Issues](https://github.com/elastic/review-fraud-workshop/issues)
+- **Issues:** [GitHub Issues](https://github.com/elastic/elastic-workflow-workshop/issues)
 - **Discussions:** [Elastic Community](https://discuss.elastic.co/)
 - **Slack:** [Elastic Community Slack](https://ela.st/slack)

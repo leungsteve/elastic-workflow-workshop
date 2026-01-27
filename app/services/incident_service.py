@@ -1,6 +1,6 @@
-"""Incident management service for Review Fraud Workshop.
+"""Incident management service for Negative Review Campaign Detection Workshop.
 
-This service handles auto-creation of incidents when review fraud attacks are detected,
+This service handles auto-creation of incidents when negative review campaigns are detected,
 with deduplication to avoid creating multiple incidents for the same ongoing attack.
 """
 
@@ -21,7 +21,7 @@ from app.models.business import BusinessStats
 
 
 class IncidentService:
-    """Service for managing review fraud incidents."""
+    """Service for managing negative review campaign incidents."""
 
     def __init__(self, es_client: AsyncElasticsearch, settings: Settings):
         self.es = es_client
@@ -196,9 +196,9 @@ class IncidentService:
         parts = []
 
         if auto_created:
-            parts.append("Automatically detected review fraud attack.")
+            parts.append("Negative review campaign detected automatically.")
         else:
-            parts.append("Review fraud attack detected.")
+            parts.append("Negative review campaign detected.")
 
         parts.append(f"Business '{stats.name}' received {stats.recent_review_count} reviews recently.")
 
@@ -256,7 +256,7 @@ class IncidentService:
                 id=business_id,
                 doc={
                     "rating_protected": True,
-                    "protection_reason": "review_fraud_detected",
+                    "protection_reason": "review_bomb_detected",
                     "protected_since": datetime.utcnow().isoformat(),
                 },
                 refresh=True
@@ -292,7 +292,7 @@ class IncidentService:
                     }
                 },
                 script={
-                    "source": "ctx._source.status = 'held'; ctx._source.held_at = params.timestamp; ctx._source.hold_reason = 'review_fraud_detected'",
+                    "source": "ctx._source.status = 'held'; ctx._source.held_at = params.timestamp; ctx._source.hold_reason = 'review_bomb_detected'",
                     "params": {
                         "timestamp": datetime.utcnow().isoformat()
                     }

@@ -1,4 +1,4 @@
-# Review Integrity & Fraud Detection Workshop - Talk Track
+# Negative Review Campaign Detection Workshop - Talk Track
 
 ## Speaker Notes and Demo Script
 
@@ -8,7 +8,7 @@
 
 **Three Themes:** Simplify | Optimize | Innovate with AI
 
-**Key Message:** "Protecting review integrity at scale—detect fraud, automate response, investigate with AI."
+**Key Message:** "Protecting review integrity at scale—detect negative review campaigns, automate response, investigate with AI."
 
 ---
 
@@ -25,7 +25,7 @@
 - Quick overview: 30 min presentation, then 60 min hands-on
 
 **Say:**
-> "Welcome to 'What's New in Elastic 9.3.' Today we're going to build a complete review fraud detection system. Everything we cover today maps to three themes that run through all of Elastic's innovations: Simplify operations, Optimize costs and performance, and Innovate with AI. By the end, you'll have a working fraud detection system that demonstrates all three."
+> "Welcome to 'What's New in Elastic 9.3.' Today we're going to build a complete negative review campaign detection system. Everything we cover today maps to three themes that run through all of Elastic's innovations: Simplify operations, Optimize costs and performance, and Innovate with AI. By the end, you'll have a working detection system that demonstrates all three."
 
 **Do:**
 - Ask participants to raise hands if they've used Elasticsearch before
@@ -43,21 +43,21 @@
 - These themes will be reinforced throughout
 
 **Say:**
-> "Let me share three themes that run through everything we'll cover today. First, SIMPLIFY - ES|QL makes complex queries readable, Workflows makes automation visual and no-code. Second, OPTIMIZE - LOOKUP JOIN reduces ten queries to one, automated response runs 24/7 without analyst fatigue. Third, INNOVATE WITH AI - Agent Builder lets analysts ask questions in English, ELSER semantic search finds fraud by meaning, not just keywords. By the end of this workshop, you'll see how these three themes come together in a real fraud detection system."
+> "Let me share three themes that run through everything we'll cover today. First, SIMPLIFY - ES|QL makes complex queries readable, Workflows makes automation visual and no-code. Second, OPTIMIZE - LOOKUP JOIN reduces ten queries to one, automated response runs 24/7 without analyst fatigue. Third, INNOVATE WITH AI - Agent Builder lets analysts ask questions in English, ELSER semantic search finds review bombing by meaning, not just keywords. By the end of this workshop, you'll see how these three themes come together in a real negative review campaign detection system."
 
 ---
 
-### Slide: The Problem - Review Fraud
+### Slide: The Problem - Negative Review Campaigns
 
 **Time:** 2:00 - 3:30
 
 **Key Points:**
-- Define review fraud (broader than just "bombing")
+- Define negative review campaigns (coordinated "review bombing")
 - Make it relatable - this applies to ALL review systems
 - Set up why this matters for review integrity
 
 **Say:**
-> "Let me start with a question - have you ever looked at reviews on Amazon, Yelp, or the App Store and wondered if they were real? Review fraud is a massive problem. Bad actors create fake accounts and submit coordinated fake reviews to manipulate ratings. It affects restaurants on Yelp, products on Amazon, apps in the App Store, hotels on TripAdvisor - anywhere user reviews influence purchasing decisions. The pattern we're building today works for ALL of these."
+> "Let me start with a question - have you ever looked at reviews on Amazon, Yelp, or the App Store and wondered if they were real? Negative review campaigns - sometimes called 'review bombing' - are a massive problem. Bad actors create fake accounts and submit coordinated fake reviews to manipulate ratings. It affects restaurants on Yelp, products on Amazon, apps in the App Store, hotels on TripAdvisor - anywhere user reviews influence purchasing decisions. The pattern we're building today works for ALL of these."
 
 **Engagement:**
 - Ask if anyone has personally seen suspicious reviews
@@ -77,22 +77,29 @@
 - Explain platform and consumer risks
 - Frame as an integrity problem, not just a security problem
 
+**Speaker Notes - Why Negative Review Campaigns Matter:**
+- **Revenue impact:** Businesses lose 5-9% of revenue for every star they drop. A coordinated campaign can wipe out a star in minutes.
+- **Consumer trust:** Consumers make purchasing decisions based on reviews. Fake negative reviews steer people away from good businesses and erode confidence in the platform.
+- **Platform credibility:** Platforms that cannot detect and stop review bombing lose credibility with both businesses and consumers. Businesses leave, consumers disengage.
+- **Speed of attack:** Without automated detection, a negative review campaign succeeds in minutes - long before a human moderator notices. By the time someone investigates, the damage is done.
+- **Legal and compliance exposure:** Platforms face increasing regulatory scrutiny around review authenticity. Failure to act on known manipulation can create legal liability.
+
 **Say:**
-> "The impact is very real. Businesses can lose 5-9% of revenue for each star they drop. For platforms, it's about trust - if users see fake reviews everywhere, they stop trusting the platform entirely. But most importantly, it's about consumers - they make purchasing decisions based on reviews. Fake reviews mean people waste money on bad products or miss great businesses. This is why we call it review integrity - it's about preserving trust in the entire ecosystem."
+> "The impact is very real. Businesses can lose 5-9% of revenue for each star they drop - and a coordinated negative review campaign can wipe out a star in minutes. For platforms, it's about credibility - if users see fake reviews everywhere, they stop trusting the platform entirely. Businesses leave, consumers disengage. But most importantly, it's about consumers - they make purchasing decisions based on reviews. Fake reviews mean people waste money on bad products or miss great businesses. And here's the kicker: without automated detection, these campaigns succeed in minutes - long before any human moderator notices. Platforms also face growing legal and compliance exposure around review authenticity. This is why we call it review integrity - it's about preserving trust in the entire ecosystem."
 
 ---
 
-### Slide: The Fraud Pattern
+### Slide: The Attack Pattern
 
 **Time:** 4:30 - 5:00
 
 **Key Points:**
-- Walk through how attacks actually work
+- Walk through how negative review campaigns actually work
 - Emphasize this pattern is universal (Yelp, Amazon, App Store)
 - Set up the detection challenge
 
 **Say:**
-> "The fraud pattern is consistent whether it's Yelp, Amazon, or the App Store. Attackers identify a target - could be a competitor's product, a controversial business, or just an extortion scheme. They create fake accounts with no history and low trust signals. Then they submit coordinated negative reviews within a short time window. The rating drops before anyone notices. Same pattern, different platforms - same detection approach."
+> "The attack pattern is consistent whether it's Yelp, Amazon, or the App Store. Attackers identify a target - could be a competitor's product, a controversial business, or just an extortion scheme. They create fake accounts with no history and low trust signals. Then they submit coordinated negative reviews within a short time window - review bombing the target. The rating drops before anyone notices. Same pattern, different platforms - same detection approach."
 
 **Transition:**
 > "So how do we detect this? That's what we're building today - and I'll show you how Elastic's new features make this simpler, more efficient, and smarter."
@@ -141,7 +148,7 @@
 - Emphasize readability
 
 **Say:**
-> "Here's what a workflow looks like. It's YAML-based, declarative, and readable. A schedule trigger, an ES|QL query for detection, and an action to respond. This workflow detects suspicious review patterns and marks reviews as held. Compare this to the Lambda code, SQS queues, and IAM policies you'd need otherwise. That's SIMPLIFY in action."
+> "Here's what a workflow looks like. It's YAML-based, declarative, and readable. A schedule trigger, an ES|QL query for detection, and an action to respond. This workflow detects negative review campaigns and marks reviews as held. Compare this to the Lambda code, SQS queues, and IAM policies you'd need otherwise. That's SIMPLIFY in action."
 
 ---
 
@@ -167,7 +174,7 @@
 - OPTIMIZE: One query replaces multiple API calls
 
 **Say:**
-> "ES|QL is our analytical detection engine, and it demonstrates both SIMPLIFY and OPTIMIZE. Look at this query - it's readable, almost like English. But here's the OPTIMIZE part: reviews don't contain user trust scores. Without LOOKUP JOIN, you'd query reviews, extract user IDs, query users, then join in application code - multiple round trips. With LOOKUP JOIN, one query does it all. That's a massive optimization."
+> "ES|QL is our analytical detection engine, and it demonstrates both SIMPLIFY and OPTIMIZE. Look at this query - it's readable, almost like English. But here's the OPTIMIZE part: reviews don't contain user trust scores. Without LOOKUP JOIN, you'd query reviews, extract user IDs, query users, then join in application code - multiple round trips. With LOOKUP JOIN, one query does it all. That's a massive optimization for detecting review bombing in real time."
 
 **Do:**
 - Walk through the query on screen
@@ -184,7 +191,7 @@
 - Enable real-time anomaly detection
 
 **Say:**
-> "Without LOOKUP JOIN, you'd have to denormalize everything into one index - data duplication, staleness, storage costs. Or multiple queries and application code - latency, complexity, maintenance. LOOKUP JOIN gives you real-time correlation at query time. One query instead of ten. That's the OPTIMIZE theme in action - and this pattern works whether you're detecting fake reviews, fraud, or security threats."
+> "Without LOOKUP JOIN, you'd have to denormalize everything into one index - data duplication, staleness, storage costs. Or multiple queries and application code - latency, complexity, maintenance. LOOKUP JOIN gives you real-time correlation at query time. One query instead of ten. That's the OPTIMIZE theme in action - and this pattern works whether you're detecting negative review campaigns, financial fraud, or security threats."
 
 ---
 
@@ -211,15 +218,15 @@
 **Time:** 12:00 - 12:30
 
 **Key Points:**
-- AI-powered content understanding for fraud detection
-- Finding attack narratives and patterns
-- Distinguishing coordinated fraud from legitimate complaints
+- AI-powered content understanding for campaign detection
+- Finding campaign narratives and patterns
+- Distinguishing coordinated negative review campaigns from legitimate complaints
 
 **Say:**
-> "Here's why this AI capability matters for fraud detection: attackers often use similar language - they're copying from a template or following a script. Semantic search finds reviews with similar meaning even when words differ. And critically, it lets us ask: are there legitimate reviews with the same complaints? That's how we distinguish a real problem from coordinated fraud. The AI does the semantic understanding - you just ask the question."
+> "Here's why this AI capability matters for detecting negative review campaigns: attackers often use similar language - they're copying from a template or following a script. Semantic search finds reviews with similar meaning even when words differ. And critically, it lets us ask: are there legitimate reviews with the same complaints? That's how we distinguish a real problem from a coordinated campaign. The AI does the semantic understanding - you just ask the question."
 
 **Transition:**
-> "Now let's see the ultimate INNOVATE WITH AI feature - Agent Builder."
+> "Now let's see the ultimate INNOVATE WITH AI feature - Agent Builder, our Review Campaign Investigator."
 
 ---
 
@@ -233,7 +240,7 @@
 - Custom tools powered by ES|QL and semantic search
 
 **Say:**
-> "Agent Builder is where all our AI innovation comes together. You create custom tools - powered by ES|QL queries and semantic search - and analysts can ask questions in plain English. Instead of learning query syntax, an analyst simply asks: 'Tell me about the fraud incident at Mario's Pizza' or 'Find reviews similar to this complaint.' The AI handles the queries, formats the response, and enables anyone to investigate - not just technical experts. That's INNOVATE WITH AI in action."
+> "Agent Builder is where all our AI innovation comes together. You create custom tools - powered by ES|QL queries and semantic search - and analysts can ask questions in plain English. Instead of learning query syntax, an analyst simply asks: 'Tell me about the review bombing incident at Mario's Pizza' or 'Find reviews similar to this complaint.' The AI handles the queries, formats the response, and enables anyone to investigate - not just technical experts. That's INNOVATE WITH AI in action."
 
 ---
 
@@ -246,7 +253,7 @@
 - Democratize investigation - anyone can investigate
 
 **Say:**
-> "Here's how it works. Analyst asks a natural language question. The AI Agent selects the appropriate tool. The tool executes an ES|QL query or semantic search. The Agent formats the response naturally. The analyst never writes a query - they just ask questions. This is how AI democratizes investigation. Your security analyst, your trust & safety team, your compliance officer - they can all investigate fraud without learning ES|QL. That's innovation with AI."
+> "Here's how it works. Analyst asks a natural language question. The AI Agent selects the appropriate tool. The tool executes an ES|QL query or semantic search. The Agent formats the response naturally. The analyst never writes a query - they just ask questions. This is how AI democratizes investigation. Your security analyst, your trust & safety team, your compliance officer - they can all investigate negative review campaigns without learning ES|QL. That's innovation with AI."
 
 **Transition:**
 > "Now let's see all three themes in action - Simplify, Optimize, Innovate with AI."
@@ -265,7 +272,7 @@
 - Set the scene
 
 **Say:**
-> "We have a review platform with real Yelp data - over 14,000 businesses, 100,000 user accounts, 1 million+ reviews from the Yelp Academic Dataset. We're going to target a famous Philadelphia landmark - Reading Terminal Market - with 4.6 stars and 1,860+ reviews, and simulate a coordinated fraud attack. Then we'll watch all three themes in action: SIMPLIFY with readable ES|QL, OPTIMIZE with automated response, and INNOVATE WITH AI for investigation. Remember - this exact same pattern works for Amazon products, App Store apps, or any review system."
+> "We have a review platform with real Yelp data - 100 Philadelphia businesses, about 76,000 user accounts, and around 149,000 reviews from the Yelp Academic Dataset. We're going to target a famous Philadelphia landmark - Reading Terminal Market - with 4.5 stars and 5,700+ reviews, and simulate a negative review campaign - a coordinated review bomb. Then we'll watch all three themes in action: SIMPLIFY with readable ES|QL, OPTIMIZE with automated response, and INNOVATE WITH AI for investigation. Remember - this exact same pattern works for Amazon products, App Store apps, or any review system."
 
 ---
 
@@ -303,12 +310,12 @@
 **Do:**
 1. Open Kibana Dev Tools
 2. Run: `FROM businesses | STATS count = COUNT(*)`
-3. Show the count (around 10K)
+3. Show the count (100 businesses)
 4. Run: `FROM users | STATS avg_trust = AVG(trust_score), min_trust = MIN(trust_score), max_trust = MAX(trust_score)`
 5. Show the trust score distribution
 
 **Say:**
-> "Let me show you the data. We have about 10,000 businesses... and our users have trust scores ranging from very low to very high. Most legitimate users cluster around 0.5 to 0.7."
+> "Let me show you the data. We have 100 Philadelphia businesses... and our users have trust scores ranging from about 0.20 to 1.0, with an average around 0.43. The majority of users fall in the low-to-medium range, which is normal for this dataset."
 
 ---
 
@@ -332,30 +339,44 @@
 
 **Do:**
 1. Navigate to Workflows in Kibana
-2. Open the Review Fraud Detection workflow
+2. Open the Negative Review Campaign Detection workflow
 3. Walk through the structure
 
 **Say:**
-> "Here's the workflow that runs every 5 minutes. First, it runs our detection query. For each suspicious business found, it holds the reviews, protects the business rating, creates an incident, and sends notifications. All automated, all native."
+> "Here's the workflow that runs every 1 minute. First, it runs our detection query. For each suspicious business found, it holds the reviews, protects the business rating, creates an incident, and sends notifications. All automated, all native."
+
+---
+
+### Demo: ElasticEats Consumer UI
+
+**Time:** 23:00 - 24:00
+
+**Do:**
+1. Open ElasticEats (`http://localhost:8000/elasticeats`)
+2. Browse the home page — show top-rated restaurants
+3. Click on **Reading Terminal Market** to view its business page
+4. Point out star ratings, reviews, reviewer names
+
+**Say:**
+> "Before we attack, let's see what we're protecting. This is ElasticEats — a Yelp-like consumer UI where diners browse restaurants and read reviews. Here's Reading Terminal Market — 4.5 stars, over 5,700 reviews. This is what a real user sees. Keep this tab open — you'll watch the attack unfold here."
 
 ---
 
 ### Demo: Launching the Attack
 
-**Time:** 23:00 - 25:00
+**Time:** 24:00 - 25:30
 
 **Do:**
-1. Open the workshop web application
-2. Search for a target business (4.5 stars)
-3. Note the current rating
-4. Generate and submit 15 attack reviews rapidly
-5. Watch the recent reviews panel update
+1. Open the Attack Simulator (`http://localhost:8000/attack`)
+2. Select Reading Terminal Market as the target
+3. Generate and submit 15 attack reviews rapidly
+4. **Switch to ElasticEats tab** — refresh to see attack reviews with SIMULATED badges
 
 **Say:**
-> "Let's launch an attack. I'll select this restaurant - currently 4.5 stars, very successful. I'll generate some fake reviews... and submit them rapidly. Watch the recent reviews panel - you can see them appearing with 'pending' status."
+> "Now let's launch a negative review campaign - a review bomb. I'll target Reading Terminal Market — currently 4.5 stars. I'll submit 15 fake reviews from low-trust accounts... Watch ElasticEats — refresh and you'll see the attack reviews appearing with SIMULATED badges and Low Trust indicators."
 
 **Tip:**
-- Use "Turbo Attack" button if available for dramatic effect
+- Show ElasticEats side-by-side with the attack simulator for maximum impact
 
 ---
 
@@ -369,9 +390,10 @@
 3. Show reviews changing to "held" status
 4. Show business now has "rating_protected: true"
 5. Show the incident in the incidents index
+6. **Switch to ElasticEats** — refresh to show "Rating Protected" badge, held reviews, and incident alert banner
 
 **Say:**
-> "Now watch the workflow respond. It's detected the anomaly... reviews are being marked as held... the business rating is protected... and an incident has been created. All within seconds of the attack."
+> "Now watch the workflow respond. It's detected the anomaly... reviews are being marked as held... the business rating is protected... and an incident has been created. All within seconds of the attack. Switch to ElasticEats and refresh — you'll see a 'Rating Protected' badge on the business, held reviews marked in yellow, and an incident alert banner. The 4.5-star rating is preserved."
 
 **Query to verify:**
 ```sql
@@ -414,7 +436,7 @@ POST reviews/_search
 > "Look at this - the attackers are all claiming food poisoning and health issues. This is the attack narrative. They're not just leaving bad reviews; they're making specific allegations designed to scare customers away."
 
 **Key Insight:**
-> "Now here's the critical question: are these legitimate complaints, or is this a coordinated attack? Let's check if there are similar complaints from high-trust users."
+> "Now here's the critical question: are these legitimate complaints, or is this a coordinated negative review campaign? Let's check if there are similar complaints from high-trust users."
 
 **Query:**
 ```sql
@@ -426,7 +448,7 @@ FROM reviews
 ```
 
 **Say:**
-> "When we look at low-star reviews from trusted users, we don't see these food poisoning claims. That tells us this is a fabricated narrative, not a real problem. Semantic search revealed what ES|QL couldn't - the content of the attack."
+> "When we look at low-star reviews from trusted users, we don't see these food poisoning claims. That tells us this is a coordinated negative review campaign, not a real problem. Semantic search revealed what ES|QL couldn't - the content of the attack."
 
 ---
 
@@ -442,7 +464,7 @@ FROM reviews
 5. Ask: "Are there legitimate reviews with similar complaints?"
 
 **Say:**
-> "Now I need to investigate. Instead of writing queries, I'll just ask. 'What incidents were detected recently?' The Agent finds the incident. 'Summarize it for me.' It gives me the details - including what the attackers are claiming. 'Find similar reviews.' It uses semantic search to find related content. 'Are there legitimate reviews with similar complaints?' It compares against high-trust user reviews. This is the power of combining analytical and semantic search."
+> "Now I need to investigate. Instead of writing queries, I'll just ask the Review Campaign Investigator. 'What incidents were detected recently?' The Agent finds the incident. 'Summarize it for me.' It gives me the details - including what the attackers are claiming. 'Find similar reviews.' It uses semantic search to find related content. 'Are there legitimate reviews with similar complaints?' It compares against high-trust user reviews. This is the power of combining analytical and semantic search."
 
 ---
 
@@ -459,7 +481,7 @@ FROM reviews
 > "To resolve, I mark it as a confirmed attack. The resolution workflow triggers - deleting the malicious reviews, removing the rating protection, notifying the business owner. The business rating is restored to its true value."
 
 **Transition:**
-> "That's the complete flow. ES|QL detected the anomaly. Semantic search revealed the narrative. Workflows automated the response. Agent Builder enabled investigation. Now it's your turn to build this."
+> "That's the complete flow. ES|QL detected the review bomb. Semantic search revealed the campaign narrative. Workflows automated the response. Agent Builder enabled investigation. Now it's your turn to build this."
 
 ---
 
@@ -494,7 +516,7 @@ FROM reviews
 > "You'll create Agent Builder tools including both analytical and semantic search tools. One to analyze incidents, one to find similar reviews."
 
 **Challenge 4:**
-> "You'll launch an attack, watch everything you built respond automatically, and use semantic search to understand what the attackers claimed."
+> "You'll launch a review bomb, watch everything you built respond automatically, and use semantic search to understand what the attackers claimed."
 
 ---
 
@@ -552,11 +574,12 @@ FROM reviews
 - Confusion about semantic_text field type
 
 **Checkpoints:**
-- At 5 minutes: Most should have run basic counts
-- At 10 minutes: Should be working on trust score analysis
+- At 3 minutes: Should have explored ElasticEats UI
+- At 8 minutes: Should be working on trust score analysis
 - At 14 minutes: Give 1-minute warning
 
 **Help Prompts:**
+- "Start by opening ElasticEats — browse a few businesses to see what you're protecting"
 - "Make sure you have a pipe before each clause"
 - "LOOKUP JOIN goes right after FROM or a WHERE"
 - "The threshold values are suggestions - feel free to experiment"
@@ -618,7 +641,7 @@ FROM reviews
 - At 12 minutes: Should be investigating with Agent and semantic search
 
 **Help Prompts:**
-- "The workflow runs every 5 minutes - you can trigger it manually"
+- "The workflow runs every 1 minute - you can trigger it manually"
 - "Refresh the web UI to see updated statuses"
 - "Resolution is done by updating the incident document"
 - "Use semantic search to understand what attackers are claiming"
@@ -641,7 +664,7 @@ FROM reviews
 
 ### Q: "What's the difference between ES|QL and semantic search?"
 
-**A:** "ES|QL is analytical - it's great for aggregations, filters, and pattern detection across structured data and metadata. Semantic search understands meaning - it finds content that's conceptually similar even when the words differ. In fraud detection, use ES|QL to find anomalies in behavior (velocity, trust scores), and semantic search to understand what's being said."
+**A:** "ES|QL is analytical - it's great for aggregations, filters, and pattern detection across structured data and metadata. Semantic search understands meaning - it finds content that's conceptually similar even when the words differ. In negative review campaign detection, use ES|QL to find anomalies in behavior (velocity, trust scores), and semantic search to understand what's being said."
 
 ---
 
@@ -651,7 +674,7 @@ FROM reviews
 
 ---
 
-### Q: "Can semantic search find attacks that ES|QL misses?"
+### Q: "Can semantic search find negative review campaigns that ES|QL misses?"
 
 **A:** "Yes! Imagine a sophisticated attacker who uses multiple trusted accounts over several days - they might not trigger velocity thresholds. But semantic search could still identify that all their reviews contain similar fabricated claims. The two approaches complement each other."
 
@@ -659,13 +682,13 @@ FROM reviews
 
 ### Q: "Can Agent Builder tools call external APIs?"
 
-**A:** "Currently, Agent Builder tools execute ES|QL queries or semantic searches. For external API calls, you'd use Workflows with HTTP actions and have the Agent reference the results via incident or notification indices."
+**A:** "Currently, Agent Builder tools execute ES|QL queries or semantic searches. For external API calls, you'd use Workflows with HTTP actions and have the Review Campaign Investigator reference the results via incident or notification indices."
 
 ---
 
 ### Q: "How do we handle false positives?"
 
-**A:** "Great question! The threshold values are tuneable. Start conservative (high thresholds), monitor false positive rates, then adjust. The resolution workflow supports 'false_positive' as a resolution type, which releases held reviews. Semantic search can also help - if attack reviews match legitimate complaints from trusted users, that's a signal to investigate further before confirming."
+**A:** "Great question! The threshold values are tuneable. Start conservative (high thresholds), monitor false positive rates, then adjust. The resolution workflow supports 'false_positive' as a resolution type, which releases held reviews. Semantic search can also help - if campaign reviews match legitimate complaints from trusted users, that's a signal to investigate further before confirming."
 
 ---
 
@@ -677,7 +700,7 @@ FROM reviews
 
 ### Q: "What about rate limiting attackers?"
 
-**A:** "Good extension idea! You could add a step to the workflow that flags attacker accounts, then have a separate workflow that monitors for flagged accounts trying to submit new reviews."
+**A:** "Good extension idea! You could add a step to the workflow that flags accounts involved in review bombing, then have a separate workflow that monitors for flagged accounts trying to submit new reviews."
 
 ---
 
@@ -693,7 +716,7 @@ FROM reviews
 5. Together: complete insight-to-action in seconds
 
 **The Story Arc:**
-> "Remember the four phases: Detect with ES|QL, Understand with semantic search, Automate with Workflows, Investigate with Agent Builder. That's the complete fraud detection pipeline."
+> "Remember the four phases: Detect with ES|QL, Understand with semantic search, Automate with Workflows, Investigate with Agent Builder. That's the complete negative review campaign detection pipeline."
 
 **Feedback Collection:**
 - Share feedback form link
@@ -707,7 +730,7 @@ FROM reviews
 - Agent Builder guide
 
 **Final Message:**
-> "Remember: Search finds the insight - ES|QL detects the anomaly, semantic search reveals the narrative. Workflows acts on it. Agent Builder explains it. You've just built a complete automated detection and response system with both analytical and semantic intelligence. Take these patterns and apply them to your own use cases - fraud detection, security, compliance, operations. Thank you for joining us today!"
+> "Remember: Search finds the insight - ES|QL detects the anomaly, semantic search reveals the narrative. Workflows acts on it. Agent Builder explains it. You've just built a complete automated negative review campaign detection and response system with both analytical and semantic intelligence. Take these patterns and apply them to your own use cases - review bombing, financial fraud, security, compliance, operations. Thank you for joining us today!"
 
 ---
 

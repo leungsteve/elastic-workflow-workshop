@@ -32,7 +32,7 @@ curl -s -X PUT "${ELASTICSEARCH_URL}/businesses/_doc/biz_sample_001" \
         "is_open": true,
         "categories": ["Italian", "Restaurant", "Pizza"],
         "rating_protected": true,
-        "protection_reason": "review_fraud_detected"
+        "protection_reason": "review_bomb_detected"
     }' > /dev/null 2>&1
 echo "  Done: Mario's Italian Kitchen created"
 
@@ -44,7 +44,7 @@ curl -s -X POST "${ELASTICSEARCH_URL}/incidents/_doc" \
     -H "Content-Type: application/json" \
     -d '{
         "incident_id": "INC-biz_sample_001-solve",
-        "incident_type": "review_fraud",
+        "incident_type": "review_bomb",
         "status": "open",
         "severity": "high",
         "business_id": "biz_sample_001",
@@ -95,7 +95,7 @@ for i in 1 2 3 4 5 6 7 8; do
             "date": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
             "text": "Terrible experience. Would not recommend.",
             "status": "held",
-            "held_reason": "review_fraud_detection",
+            "held_reason": "review_bomb_detection",
             "synthetic": true
         }' > /dev/null 2>&1
 done

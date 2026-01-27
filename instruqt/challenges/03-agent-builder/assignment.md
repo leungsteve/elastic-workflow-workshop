@@ -7,7 +7,7 @@
 > Ask questions in plain English—no query skills required. AI handles the investigation, democratizing access for all analysts.
 
 ## Objective
-Create AI-powered investigation tools and a custom agent using Agent Builder that lets analysts ask natural language questions about review fraud incidents.
+Create AI-powered investigation tools and a custom agent using Agent Builder that lets analysts ask natural language questions about negative review campaign incidents.
 
 ---
 
@@ -23,10 +23,10 @@ Automated detection is great for catching attacks quickly, but analysts still ne
 
 In this challenge, you'll create three investigation tools and an agent to use them:
 
-1. **Incident Summary** - Get an overview of a review fraud incident
+1. **Incident Summary** - Get an overview of a negative review campaign incident
 2. **Reviewer Analysis** - Analyze the attackers involved in an incident
 3. **Similar Reviews** - Find reviews with similar content using semantic search
-4. **Review Fraud Investigator Agent** - A custom agent configured to investigate attacks
+4. **Review Campaign Investigator Agent** - A custom agent configured to investigate attacks
 
 ---
 
@@ -125,7 +125,7 @@ In the **ES|QL Parameters** section, add a parameter:
 - **Tool ID:** `incident_summary`
 - **Description:**
   ```
-  Retrieves a summary of a review fraud incident including the targeted business,
+  Retrieves a summary of a negative review campaign incident including the targeted business,
   attack severity, and current status. Use this tool when asked about incident
   details, incident status, or what happened to a specific business.
   ```
@@ -191,7 +191,7 @@ Add this parameter in the **ES|QL Parameters** section:
 - **Tool ID:** `reviewer_analysis`
 - **Description:**
   ```
-  Analyzes the reviewers/attackers involved in a review fraud incident. Shows their
+  Analyzes the reviewers/attackers involved in a negative review campaign incident. Shows their
   trust scores, account ages, review patterns, and risk levels. Use this to understand
   who is behind an attack and identify coordination patterns.
   ```
@@ -252,9 +252,9 @@ Click **Save**.
 
 ---
 
-### Task 5: Create the Review Fraud Investigator Agent (3 min)
+### Task 5: Create the Review Campaign Investigator Agent (3 min)
 
-Now that you have tools, create a custom agent that uses them to investigate review fraud attacks.
+Now that you have tools, create a custom agent that uses them to investigate negative review campaigns.
 
 1. Navigate back to the **Agents** section in Agent Builder
 2. Click **New agent**
@@ -263,11 +263,11 @@ Now that you have tools, create a custom agent that uses them to investigate rev
 
 In the **Settings** tab, fill in:
 
-- **Agent ID:** `review_fraud_investigator`
-- **Display Name:** `Review Fraud Investigator`
+- **Agent ID:** `review_campaign_investigator`
+- **Display Name:** `Review Campaign Investigator`
 - **Display Description:**
   ```
-  Investigates review fraud attacks on businesses. Can summarize incidents,
+  Investigates negative review campaigns against businesses. Can summarize incidents,
   analyze attacker patterns, and find similar malicious reviews.
   ```
 
@@ -276,7 +276,7 @@ In the **Settings** tab, fill in:
 In the **Custom Instructions** field, enter:
 
 ```
-You are a Trust & Safety analyst investigating review fraud attacks on the ElasticEats platform.
+You are a Trust & Safety analyst investigating negative review campaigns on the ElasticEats platform.
 
 When investigating incidents:
 1. Start by getting the incident summary to understand the scope
@@ -318,7 +318,7 @@ Click **Save** to create the agent.
 Now test your custom agent with natural language questions.
 
 1. Click **Save and Chat** (or open the agent from the Agents list)
-2. The chat interface opens with your Review Fraud Investigator agent
+2. The chat interface opens with your Review Campaign Investigator agent
 
 3. Try these investigation queries:
 
@@ -372,7 +372,7 @@ Before proceeding, verify:
 - [ ] `incident_summary` tool is created and saved
 - [ ] `reviewer_analysis` tool is created and saved
 - [ ] `similar_reviews` tool is created and saved
-- [ ] `review_fraud_investigator` agent is created with all three tools assigned
+- [ ] `review_campaign_investigator` agent is created with all three tools assigned
 - [ ] Agent responds correctly to natural language queries
 - [ ] You can get incident details by asking in plain English
 - [ ] You can analyze attackers without writing queries manually
@@ -396,7 +396,7 @@ Before proceeding, verify:
 If you have extra time, consider creating these additional tools and adding them to your agent.
 
 **Important:** After creating each tool, you must assign it to your agent:
-1. Go to **Agents** and click on your **Review Fraud Investigator** agent
+1. Go to **Agents** and click on your **Review Campaign Investigator** agent
 2. Switch to the **Tools** tab
 3. Check the box next to your new tool
 4. Click **Save**
@@ -413,7 +413,7 @@ FROM incidents
 ```
 - **Tool ID:** `recent_incidents`
 - **Parameter:** None (or optional `hours` parameter with type `integer`)
-- **Description:** Lists recent review fraud incidents from the last 24 hours. Use this when asked about recent attacks, latest incidents, or what's happening across the platform.
+- **Description:** Lists recent negative review campaign incidents from the last 24 hours. Use this when asked about recent attacks, latest incidents, or what's happening across the platform.
 
 **Test it:** After assigning to your agent, ask: *"What attacks happened in the last 24 hours?"*
 
@@ -439,7 +439,7 @@ FROM reviews
 ```
 - **Tool ID:** `business_risk_assessment`
 - **Parameter:** `business_id` (type: `text`)
-- **Description:** Evaluates a business's vulnerability to review fraud attacks based on recent review patterns and reviewer characteristics.
+- **Description:** Evaluates a business's vulnerability to negative review campaigns based on recent review patterns and reviewer characteristics.
 
 **Test it:** After assigning to your agent, ask: *"What's the risk level for business ytynqOUb3hjKeJfRj5Tshw?"*
 

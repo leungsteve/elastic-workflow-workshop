@@ -1,4 +1,4 @@
-"""Reviews API router for Review Fraud Workshop."""
+"""Reviews API router for Negative Review Campaign Detection Workshop."""
 
 from datetime import datetime
 from typing import List, Optional
@@ -270,7 +270,7 @@ async def generate_reviews(
     Generate simulated attack reviews for a business.
 
     This endpoint is used for workshop demonstrations to simulate
-    review fraud attacks.
+    negative review campaigns.
 
     - **business_id**: Target business for the attack
     - **count**: Number of reviews to generate (1-100)

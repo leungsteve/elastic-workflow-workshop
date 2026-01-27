@@ -1,4 +1,4 @@
-"""Pydantic models for Review Fraud Workshop."""
+"""Pydantic models for Review Campaign Detection Workshop."""
 
 from app.models.business import Business, BusinessStats
 from app.models.incident import Incident, IncidentCreate, IncidentStatus

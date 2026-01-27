@@ -1,7 +1,7 @@
 .PHONY: setup install prepare-data load-data run dev clean verify help test lint format docker-build docker-run sample-data
 
 help:
-	@echo "Review Fraud Detection Workshop - Available Commands"
+	@echo "Review Campaign Detection Workshop - Available Commands"
 	@echo "====================================================="
 	@echo ""
 	@echo "Setup & Installation:"

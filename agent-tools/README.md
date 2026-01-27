@@ -1,12 +1,12 @@
-# Agent Builder Tools for Review Fraud Detection
+# Agent Builder Tools for Negative Review Campaign Detection
 
-This directory contains tool definitions for Elastic's Agent Builder feature. These tools enable AI-powered investigation of review fraud attacks using ES|QL queries.
+This directory contains tool definitions for Elastic's Agent Builder feature. These tools enable AI-powered investigation of negative review campaigns using ES|QL queries.
 
 **Key Message:** *"Search finds the insight. Workflows acts on it. Agent Builder explains it."*
 
 ## Overview
 
-Agent Builder tools allow the AI assistant to query Elasticsearch data and provide intelligent analysis of review fraud incidents. Each tool is defined as a JSON file containing:
+Agent Builder tools allow the AI assistant to query Elasticsearch data and provide intelligent analysis of negative review campaign incidents. Each tool is defined as a JSON file containing:
 
 - Tool name and description (helps the AI know when to use it)
 - Input parameters with descriptions
@@ -16,7 +16,7 @@ Agent Builder tools allow the AI assistant to query Elasticsearch data and provi
 ## Available Tools
 
 ### 1. incident-summary.json
-**Purpose:** Get a comprehensive overview of a specific review fraud incident.
+**Purpose:** Get a comprehensive overview of a specific negative review campaign incident.
 
 **Use Cases:**
 - Understanding what happened to a business
@@ -28,7 +28,7 @@ Agent Builder tools allow the AI assistant to query Elasticsearch data and provi
 
 **Example Prompts:**
 - "Tell me about incident INC-12345"
-- "What happened in the review fraud attack on Joe's Pizza?"
+- "What happened in the negative review campaign against Joe's Pizza?"
 - "Summarize the latest incident"
 
 ---
@@ -67,7 +67,7 @@ Agent Builder tools allow the AI assistant to query Elasticsearch data and provi
 **Example Prompts:**
 - "Check the health of business biz_12345"
 - "Is Joe's Pizza still under attack?"
-- "How is the restaurant recovering after the review fraud attack?"
+- "How is the restaurant recovering after the negative review campaign?"
 - "Show me the review health for the past 14 days"
 
 ---
@@ -86,13 +86,13 @@ Agent Builder tools allow the AI assistant to query Elasticsearch data and provi
 **Example Prompts:**
 - "Show me the timeline for incident INC-12345"
 - "When did the attack peak?"
-- "How did the review fraud attack unfold over time?"
+- "How did the negative review campaign unfold over time?"
 - "Were there multiple waves of attacks?"
 
 ---
 
 ### 5. recent_incidents.json
-**Purpose:** List recent review fraud incidents for triage and monitoring.
+**Purpose:** List recent negative review campaign incidents for triage and monitoring.
 
 **Use Cases:**
 - Dashboard overview of incidents
@@ -105,7 +105,7 @@ Agent Builder tools allow the AI assistant to query Elasticsearch data and provi
 
 **Example Prompts:**
 - "Show me open incidents"
-- "List recent fraud incidents"
+- "List recent negative review campaign incidents"
 - "What incidents need attention?"
 
 ---

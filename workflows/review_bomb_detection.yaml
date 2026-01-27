@@ -1,8 +1,8 @@
 version: 1
 
-name: Review Fraud Detection
+name: Negative Review Campaign Detection
 description: |
-  Detects coordinated review frauding attacks by analyzing review patterns.
+  Detects coordinated negative review campaigns (review bombs) by analyzing review patterns.
   Identifies businesses receiving suspicious clusters of low-trust, negative reviews
   and automatically creates incidents for investigation.
 
@@ -35,11 +35,11 @@ triggers:
     interval: 1m
   # Also trigger when webhook is called
   - type: webhook
-    path: /workflow/review-fraud-detection/trigger
+    path: /workflow/review-bomb-detection/trigger
 
 steps:
-  # Step 1: Detect potential review frauds using ES|QL
-  - id: detect_review_frauds
+  # Step 1: Detect potential review bombs using ES|QL
+  - id: detect_review_bombs
     type: elasticsearch.esql
     connectorId: "{{config.elasticsearch_connector_id}}"
     with:
@@ -67,7 +67,7 @@ steps:
   # Step 2: Enrich each detected business with additional context
   - id: enrich_businesses
     type: foreach
-    collection: "{{detect_review_frauds.results}}"
+    collection: "{{detect_review_bombs.results}}"
     as: attack
     steps:
       - id: get_business_details
@@ -100,7 +100,7 @@ steps:
   # Step 3: Create incident documents for each detected attack
   - id: create_incidents
     type: foreach
-    collection: "{{detect_review_frauds.results}}"
+    collection: "{{detect_review_bombs.results}}"
     as: attack
     steps:
       - id: determine_severity
@@ -136,7 +136,7 @@ steps:
           index: incidents
           document:
             incident_id: "INC-{{attack.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
-            incident_type: review_fraud
+            incident_type: review_bomb
             status: open
             severity: "{{severity}}"
             business_id: "{{attack.business_id}}"
@@ -156,7 +156,7 @@ steps:
   # Step 4: Hold affected reviews for investigation
   - id: hold_reviews
     type: foreach
-    collection: "{{detect_review_frauds.results}}"
+    collection: "{{detect_review_bombs.results}}"
     as: attack
     steps:
       - id: update_reviews_to_held
@@ -186,7 +186,7 @@ steps:
           script:
             source: |
               ctx._source.status = 'held';
-              ctx._source.held_reason = 'review_fraud_detection';
+              ctx._source.held_reason = 'review_bomb_detection';
               ctx._source.held_at = params.held_at;
             params:
               held_at: "{{execution.started_at}}"
@@ -194,7 +194,7 @@ steps:
   # Step 5: Enable rating protection on affected businesses
   - id: protect_businesses
     type: foreach
-    collection: "{{detect_review_frauds.results}}"
+    collection: "{{detect_review_bombs.results}}"
     as: attack
     steps:
       - id: enable_rating_protection
@@ -206,12 +206,12 @@ steps:
           document:
             rating_protected: true
             protection_enabled_at: "{{execution.started_at}}"
-            protection_reason: review_fraud_detected
+            protection_reason: review_bomb_detected
 
   # Step 6: Create notifications for stakeholders
   - id: create_notifications
     type: foreach
-    collection: "{{detect_review_frauds.results}}"
+    collection: "{{detect_review_bombs.results}}"
     as: attack
     steps:
       - id: create_ops_notification
@@ -221,12 +221,12 @@ steps:
           index: notifications
           document:
             notification_id: "NOTIF-{{attack.business_id}}-{{execution.started_at | date('YYYYMMDDHHmmss')}}"
-            notification_type: review_fraud_detected
+            notification_type: review_bomb_detected
             recipient_type: operations
             priority: "{{severity}}"
-            title: "Review Fraud Detected: {{attack.business_name}}"
+            title: "Negative Review Campaign Detected: {{attack.business_name}}"
             message: |
-              A potential review frauding attack has been detected.
+              A potential negative review campaign (review bomb) has been detected.
 
               Business: {{attack.business_name}}
               Location: {{attack.city}}

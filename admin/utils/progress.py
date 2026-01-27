@@ -1,5 +1,5 @@
 """
-Progress utilities for the Review Fraud Workshop.
+Progress utilities for the Review Campaign Detection Workshop.
 
 Provides progress logging with tqdm for long-running operations,
 including support for nested progress bars.

@@ -65,10 +65,10 @@ if [ "${WORKFLOW_COUNT:-0}" -gt "0" ] 2>/dev/null; then
     echo "  OK: Found ${WORKFLOW_COUNT} workflow(s) in Kibana."
 
     # Check if any workflow contains "review" or "fraud" in the title
-    if echo "$WORKFLOW_SEARCH" | grep -qi "review.*fraud\|fraud.*review\|review.fraud.detection"; then
-        echo "  OK: Found 'Review Fraud Detection' workflow."
+    if echo "$WORKFLOW_SEARCH" | grep -qi "negative.*review.*campaign\|review.*bomb\|review.bomb.detection"; then
+        echo "  OK: Found 'Negative Review Campaign Detection' workflow."
     else
-        echo "  WARN: Workflow exists but may not be named 'Review Fraud Detection'."
+        echo "  WARN: Workflow exists but may not be named 'Negative Review Campaign Detection'."
         echo "        Please verify your workflow is correctly named."
         WARNINGS=$((WARNINGS + 1))
     fi
@@ -121,10 +121,10 @@ if [ $ERRORS -gt 0 ]; then
     echo ""
     echo "Please ensure:"
     echo "  1. The incidents index exists"
-    echo "  2. You have created a workflow named 'Review Fraud Detection'"
+    echo "  2. You have created a workflow named 'Negative Review Campaign Detection'"
     echo "  3. The workflow has the required trigger and steps"
     echo ""
-    fail-message "Workflow verification failed. Please create the 'Review Fraud Detection' workflow as described in the assignment."
+    fail-message "Workflow verification failed. Please create the 'Negative Review Campaign Detection' workflow as described in the assignment."
     exit 1
 fi
 
@@ -146,7 +146,7 @@ echo "Great job! You've created the detection workflow infrastructure."
 echo ""
 echo "Your workflow should:"
 echo "  - Run on a 1-minute schedule"
-echo "  - Detect review frauds using ES|QL"
+echo "  - Detect negative review campaigns using ES|QL"
 echo "  - Hold suspicious reviews"
 echo "  - Protect targeted businesses"
 echo "  - Create incidents for investigation"

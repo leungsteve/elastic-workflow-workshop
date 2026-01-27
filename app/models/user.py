@@ -1,4 +1,4 @@
-"""User models for Review Fraud Workshop."""
+"""User models for Negative Review Campaign Detection Workshop."""
 
 from datetime import datetime
 from typing import List, Optional
@@ -37,7 +37,7 @@ class User(BaseModel):
 
 
 class AttackerProfile(BaseModel):
-    """Profile for a simulated attacker in review fraud scenarios."""
+    """Profile for a simulated attacker in negative review campaign scenarios."""
 
     attacker_id: str = Field(..., description="Unique attacker identifier")
     name: str = Field(..., description="Generated fake name")

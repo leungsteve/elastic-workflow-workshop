@@ -3,7 +3,7 @@
 // Purpose: Calculate a comprehensive risk score by combining multiple signals
 // including review velocity, ratings, user trust, and account characteristics
 //
-// This query provides a holistic view of potential review fraud attacks by
+// This query provides a holistic view of potential negative review campaign attacks by
 // weighing multiple risk factors into a single score (0.0 to 1.0).
 //
 // Risk Score Components:

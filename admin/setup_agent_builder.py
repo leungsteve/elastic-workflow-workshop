@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Setup Agent Builder tools and agent for the Review Fraud Workshop.
+Setup Agent Builder tools and agent for the Negative Review Campaign Detection Workshop.
 
 This script creates:
 - 3 investigation tools (incident_summary, reviewer_analysis, similar_reviews)
-- 1 custom agent (Review Fraud Investigator) with all tools assigned
+- 1 custom agent (Review Campaign Investigator) with all tools assigned
 
 Usage:
     python admin/setup_agent_builder.py
@@ -30,7 +30,7 @@ TOOLS = [
     {
         "id": "recent_incidents",
         "type": "esql",
-        "description": "Lists recent review fraud incidents from the last 24 hours. Use this when asked about recent attacks, latest incidents, or what's happening across the platform. No parameters required - shows the most recent incidents automatically.",
+        "description": "Lists recent negative review campaign incidents from the last 24 hours. Use this when asked about recent attacks, latest incidents, or what's happening across the platform. No parameters required - shows the most recent incidents automatically.",
         "configuration": {
             "query": """FROM incidents
 | WHERE detected_at > NOW() - 24 hours
@@ -43,7 +43,7 @@ TOOLS = [
     {
         "id": "incident_summary",
         "type": "esql",
-        "description": "Retrieves a summary of a review fraud incident including the targeted business, attack severity, and current status. Use this tool when asked about incident details, incident status, or what happened to a specific business.",
+        "description": "Retrieves a summary of a negative review campaign incident including the targeted business, attack severity, and current status. Use this tool when asked about incident details, incident status, or what happened to a specific business.",
         "configuration": {
             "query": """FROM incidents
 | WHERE incident_id == ?incident_id OR business_name == ?incident_id
@@ -73,7 +73,7 @@ TOOLS = [
     {
         "id": "reviewer_analysis",
         "type": "esql",
-        "description": "Analyzes the reviewers/attackers involved in a review fraud incident. Shows their trust scores, account ages, review patterns, and risk levels. Use this to understand who is behind an attack and identify coordination patterns.",
+        "description": "Analyzes the reviewers/attackers involved in a negative review campaign incident. Shows their trust scores, account ages, review patterns, and risk levels. Use this to understand who is behind an attack and identify coordination patterns.",
         "configuration": {
             "query": """FROM reviews
 | WHERE business_id == ?business_id
@@ -113,7 +113,7 @@ TOOLS = [
     {
         "id": "similar_reviews",
         "type": "esql",
-        "description": "Finds reviews that are semantically similar to a given text using ELSER. Use this to understand attack narratives, find common themes in malicious reviews, or discover patterns in what attackers are claiming. Works by meaning, not just keywords - 'food poisoning' will find reviews about illness even if they don't use those exact words.",
+        "description": "Finds reviews that are semantically similar to a given text using ELSER. Use this to understand attack narratives, find common themes in review bomb campaigns, or discover patterns in what attackers are claiming. Works by meaning, not just keywords - 'food poisoning' will find reviews about illness even if they don't use those exact words.",
         "configuration": {
             "query": """FROM reviews METADATA _score
 | WHERE text_semantic: ?search_text
@@ -133,11 +133,11 @@ TOOLS = [
 # Agent definition
 # Note: 'type' field is auto-assigned by the API, do not include it in the request
 AGENT = {
-    "id": "review_fraud_investigator",
-    "name": "Review Fraud Investigator",
-    "description": "Investigates review fraud attacks on businesses. Can summarize incidents, analyze attacker patterns, and find similar malicious reviews.",
+    "id": "review_campaign_investigator",
+    "name": "Review Campaign Investigator",
+    "description": "Investigates negative review campaigns on businesses. Can summarize incidents, analyze attacker patterns, and find similar malicious reviews.",
     "configuration": {
-        "instructions": """You are a Trust & Safety analyst investigating review fraud attacks on the ElasticEats platform.
+        "instructions": """You are a Trust & Safety analyst investigating negative review campaigns (review bombs) on the ElasticEats platform.
 
 When investigating incidents:
 1. Start by getting the incident summary to understand the scope
@@ -300,7 +300,7 @@ def delete_agent(kibana_url, api_key, agent_id, dry_run=False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Setup Agent Builder tools and agent for Review Fraud Workshop"
+        description="Setup Agent Builder tools and agent for Review Campaign Detection Workshop"
     )
     parser.add_argument(
         "--delete",
@@ -315,7 +315,7 @@ def main():
     args = parser.parse_args()
 
     print("=" * 60)
-    print("Agent Builder Setup for Review Fraud Workshop")
+    print("Agent Builder Setup for Review Campaign Detection Workshop")
     print("=" * 60)
 
     kibana_url = get_kibana_url()
@@ -354,7 +354,7 @@ def main():
         print()
         print("Next steps:")
         print("1. Open Kibana and navigate to Agent Builder")
-        print("2. Find the 'Review Fraud Investigator' agent")
+        print("2. Find the 'Review Campaign Investigator' agent")
         print("3. Click 'Chat' to start investigating")
         print()
         print("Try asking:")

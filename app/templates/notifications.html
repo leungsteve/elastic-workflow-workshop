@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Notifications - Review Fraud Workshop{% endblock %}
+{% block title %}Notifications - Review Campaign Detection Workshop{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
@@ -62,7 +62,7 @@
             let html = '<div class="list-group">';
             for (const notif of data.notifications) {
                 const typeIcon = {
-                    review_fraud_detected: 'bi-exclamation-triangle-fill text-danger',
+                    review_bomb_detected: 'bi-exclamation-triangle-fill text-danger',
                     reviews_held: 'bi-pause-circle text-warning',
                     business_protected: 'bi-shield-check text-success',
                     incident_created: 'bi-file-earmark-plus text-primary',

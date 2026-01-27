@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Filter Yelp business data for the Review Fraud Workshop.
+Filter Yelp business data for the Review Campaign Detection Workshop.
 
 Reads the raw Yelp business dataset and filters to businesses
 in specific cities and categories, adding workshop-specific fields.

@@ -1,4 +1,4 @@
-# Review Integrity & Fraud Detection Workshop
+# Review Integrity & Campaign Detection Workshop
 ## What's New in Elastic 9.3: Simplify, Optimize, Innovate with AI
 
 ---
@@ -21,7 +21,7 @@ Note: Welcome participants, ensure they have environment access
 | ES\|QL readable queries | LOOKUP JOIN: one query, not ten | Agent Builder: ask in English |
 | Workflows: visual, no-code | Auto-response: instant protection | ELSER: search by meaning |
 
-> **Protecting review integrity at scale—detect fraud, automate response, investigate with AI.**
+> **Protecting review integrity at scale—detect negative review campaigns, automate response, investigate with AI.**
 
 Note: These three themes run through everything in Elastic 9.3
 
@@ -40,11 +40,11 @@ Note: This is the theme that runs through everything we'll cover today
 
 ---
 
-# The Problem: Review Fraud
+# The Problem: Negative Review Campaigns
 
 [Screenshot: Example of a business with sudden rating drop]
 
-**Coordinated fake reviews** damage business reputation and erode consumer trust.
+**Coordinated negative review campaigns** — commonly called **review bombing** — damage business reputation and erode consumer trust.
 
 This pattern affects ANY review system:
 - 🍽️ **Restaurants:** Yelp, Google Business, TripAdvisor
@@ -76,7 +76,7 @@ Note: Share that a one-star drop can mean significant revenue loss
 
 ---
 
-# The Fraud Pattern
+# The Review Bomb Pattern
 
 ```
 1. Attacker identifies target (successful business/product)
@@ -92,9 +92,21 @@ Note: Walk through each step—this pattern is identical across Yelp, Amazon, Ap
 
 ---
 
+## What is a Review Bomb?
+
+A **negative review campaign** — commonly called a **review bomb** — is a coordinated attack where bad actors flood a business with fake negative reviews.
+
+**Why it matters:**
+- Businesses lose **5–9% revenue per star drop** — devastating for small businesses
+- Consumers make decisions based on reviews — fake reviews cause real harm
+- Platforms that can't detect campaigns **lose credibility** with all users
+- Without automation, campaigns succeed in **minutes** — faster than humans can respond
+
+---
+
 # What We'll Build Today
 
-A **complete fraud detection and response system:**
+A **complete review bomb detection and response system:**
 
 | Theme | What You'll Learn |
 |-------|-------------------|
@@ -245,7 +257,7 @@ Note: Explain that this turns ES|QL into natural language interfaces
 # INNOVATE: Agent Builder in Action
 
 **User asks:**
-"Summarize the fraud incident for Mario's Pizza"
+"Summarize the review bomb incident for Mario's Pizza"
 
 **Agent uses tool:**
 ```sql
@@ -272,12 +284,12 @@ Note: Show the flow from question to query to answer
 # Our Demo Scenario
 
 **Review Platform Data (Real Yelp Academic Dataset):**
-- 14,000+ businesses (Philadelphia, Tampa, Tucson)
-- 100,000+ user accounts with trust scores
-- 1,000,000+ historical reviews
+- 100 businesses (Philadelphia)
+- ~76,000 user accounts with trust scores
+- ~149,000 reviews
 
 **Target:**
-A famous Philadelphia landmark—"Reading Terminal Market" (4.6 stars, 1,860+ reviews)
+A famous Philadelphia landmark—"Reading Terminal Market" (4.5 stars, 5,700+ reviews)
 
 **Universal Pattern:** Same detection works for Amazon products, App Store apps, hotel reviews
 
@@ -338,7 +350,7 @@ FROM users
   END
 ```
 
-Note: Run these queries live, show the data shape
+Note: Run these queries live, show the data shape. 100 businesses, ~76K users, ~149K reviews. Trust scores average around 0.43.
 
 ---
 
@@ -370,9 +382,9 @@ Note: Walk through each clause, explain the logic
 
 [Screenshot: Workflow definition in Kibana]
 
-**Review Fraud Detection Workflow:**
+**Negative Review Campaign Detection Workflow:**
 
-1. Runs every 5 minutes (scheduled trigger)
+1. Runs every 1 minute (scheduled trigger)
 2. Executes ES|QL detection query (SIMPLIFY)
 3. For each anomaly detected:
    - Hold suspicious reviews ✅
@@ -386,17 +398,31 @@ Note: Show the workflow YAML structure
 
 ---
 
-# Demo: Simulating Fraud
+# Demo: ElasticEats - The Consumer UI
 
-[Screenshot: Attack UI in web application]
+[Screenshot: ElasticEats consumer UI]
 
-**Using the Workshop UI:**
+**Browse ElasticEats** (`http://localhost:8000/elasticeats`) — a Yelp-like consumer UI
+
+- See top-rated Philadelphia restaurants with ratings and reviews
+- Click **Reading Terminal Market** to view its business page
+- Notice the star ratings, review text, and reviewer names — this is what attackers manipulate
+
+Note: Show ElasticEats first so participants understand what they're protecting
+
+---
+
+# Demo: Simulating a Review Bomb
+
+[Screenshot: Attack Simulator UI]
+
+**Using the Attack Simulator:**
 1. Select target business ("Reading Terminal Market")
 2. Launch coordinated fake reviews
 3. Submit 15 low-trust reviews rapidly
-4. Watch detection and response in real-time
+4. **Switch to ElasticEats** — refresh to see attack reviews with SIMULATED badges
 
-Note: Actually simulate fraud in the live demo
+Note: Show both the attack simulator and ElasticEats side by side
 
 ---
 
@@ -409,7 +435,7 @@ Note: Actually simulate fraud in the live demo
 - Reviews change to "held" status
 - Business shows "rating_protected: true"
 - Incident appears in index
-- Notification delivered
+- **ElasticEats shows**: "Rating Protected" badge, held reviews, incident alert banner
 
 Note: Show the execution logs, timing
 
@@ -500,7 +526,7 @@ Note: This is foundational for everything else
 
 **You will:**
 - Create a new workflow
-- Add scheduled trigger (5 minutes)
+- Add scheduled trigger (1 minute)
 - Configure detection step
 - Add response actions:
   - Hold reviews
@@ -662,7 +688,7 @@ Note: Advanced query for reference
 ```json
 {
   "name": "incident_summary",
-  "description": "Summarize a review fraud incident",
+  "description": "Summarize a negative review campaign incident",
   "parameters": {
     "incident_id": {
       "type": "string",
@@ -719,7 +745,7 @@ Note: Tool definition for Agent Builder
 
 # What You Built Today
 
-✅ **Fraud Detection** - ES|QL queries that correlate reviews with user trust
+✅ **Review Bomb Detection** - ES|QL queries that correlate reviews with user trust
 ✅ **Automated Response** - Workflows that protect businesses instantly
 ✅ **AI Investigation** - Agent Builder tools for natural language analysis
 ✅ **Universal Pattern** - Applicable to any review system (Yelp, Amazon, App Store)
@@ -746,7 +772,7 @@ Note: Tool definition for Agent Builder
 
 **Apply to Your Use Case:**
 - Content moderation
-- Fraud detection
+- Negative review campaign detection
 - Security monitoring
 - Customer feedback analysis
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Bulk load data into Elasticsearch for the Review Fraud Workshop.
+Bulk load data into Elasticsearch for the Review Campaign Detection Workshop.
 
 Loads processed businesses, users, and historical reviews into their
 respective Elasticsearch indices using the bulk API.

@@ -1,7 +1,7 @@
 // Attack Narrative Analysis (Semantic Search)
 //
 // Purpose: Analyze what attack reviews are claiming - identify common themes
-// and narratives in coordinated review fraud campaigns.
+// and narratives in coordinated negative review campaigns.
 //
 // Use Case: After detecting an attack, use semantic search to understand
 // the narrative attackers are pushing (e.g., all claiming "food poisoning")

@@ -1,4 +1,4 @@
-"""Elasticsearch service helpers for Review Fraud Workshop."""
+"""Elasticsearch service helpers for Review Campaign Detection Workshop."""
 
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional

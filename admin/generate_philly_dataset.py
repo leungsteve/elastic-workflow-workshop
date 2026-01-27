@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate a self-contained Philadelphia dataset for the Review Fraud Workshop.
+Generate a self-contained Philadelphia dataset for the Review Campaign Detection Workshop.
 
 This script creates a dataset with NO orphaned reviews by:
 1. Selecting top N Philadelphia businesses by review count

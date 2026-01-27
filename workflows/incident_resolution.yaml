@@ -2,7 +2,7 @@ version: 1
 
 name: Incident Resolution
 description: |
-  Handles the resolution of review fraud incidents. Processes the final
+  Handles the resolution of negative review campaign incidents. Processes the final
   disposition of held reviews and restores business rating protection
   based on the investigation outcome.
 enabled: true
@@ -71,7 +71,7 @@ steps:
               id: "{{review.review_id}}"
               document:
                 status: deleted
-                deletion_reason: confirmed_review_fraud
+                deletion_reason: confirmed_review_bomb
                 deleted_at: "{{execution.started_at}}"
                 deleted_by_incident: "{{trigger.document.incident_id}}"
 
@@ -87,7 +87,7 @@ steps:
                 user_id: "{{review.user_id}}"
                 business_id: "{{review.business_id}}"
                 incident_id: "{{trigger.document.incident_id}}"
-                reason: confirmed_review_fraud
+                reason: confirmed_review_bomb
                 resolution: "{{trigger.document.resolution}}"
                 resolved_by: "{{trigger.document.resolved_by}}"
                 original_stars: "{{review.stars}}"
@@ -125,7 +125,7 @@ steps:
                 trust_score: "{{new_trust_score}}"
                 violation_count: "{{(get_user_current_state.results[0].violation_count or 0) + 1}}"
                 last_violation_at: "{{execution.started_at}}"
-                last_violation_type: confirmed_review_fraud
+                last_violation_type: confirmed_review_bomb
                 last_violation_incident: "{{trigger.document.incident_id}}"
 
           - id: check_suspension_threshold
@@ -141,7 +141,7 @@ steps:
                   document:
                     suspended: true
                     suspended_at: "{{execution.started_at}}"
-                    suspension_reason: repeated_review_frauding
+                    suspension_reason: repeated_review_bombing
                     suspension_incident: "{{trigger.document.incident_id}}"
 
               - id: create_suspension_notification

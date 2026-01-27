@@ -1,1 +1,1 @@
-# Review Fraud Workshop - FastAPI Application
+# Review Campaign Detection Workshop - FastAPI Application

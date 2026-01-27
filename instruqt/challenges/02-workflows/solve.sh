@@ -83,7 +83,7 @@ echo ""
 echo "Attempting to create workflow via API..."
 
 WORKFLOW_DEFINITION='{
-    "name": "Review Fraud Detection",
+    "name": "Negative Review Campaign Detection",
     "description": "Detects coordinated negative review attacks and protects targeted businesses",
     "enabled": true,
     "triggers": [
@@ -94,9 +94,9 @@ WORKFLOW_DEFINITION='{
     ],
     "steps": [
         {
-            "id": "detect_review_frauds",
+            "id": "detect_review_bombs",
             "type": "esql",
-            "name": "Detect Review Frauds",
+            "name": "Detect Review Bombs",
             "query": "FROM reviews | WHERE date > NOW() - 30 minutes | WHERE stars <= 2 | LOOKUP JOIN users ON user_id | WHERE trust_score < 0.4 | STATS review_count = COUNT(*), avg_trust = AVG(trust_score), unique_attackers = COUNT_DISTINCT(user_id) BY business_id | WHERE review_count >= 5"
         }
     ]

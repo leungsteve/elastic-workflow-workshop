@@ -1,4 +1,4 @@
-"""Configuration loading for Review Fraud Workshop."""
+"""Configuration loading for Negative Review Campaign Detection Workshop."""
 
 import os
 from functools import lru_cache
@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     )
 
     # Application settings
-    app_name: str = "Review Fraud Workshop"
+    app_name: str = "Review Campaign Detection Workshop"
     app_version: str = "1.0.0"
     debug: bool = False
 
@@ -78,12 +78,12 @@ class Settings(BaseSettings):
                 config_data["reviews_index"] = indices.get("reviews", "yelp_reviews")
                 config_data["businesses_index"] = indices.get("businesses", "yelp_businesses")
                 config_data["users_index"] = indices.get("users", "yelp_users")
-                config_data["incidents_index"] = indices.get("incidents", "review_fraud_incidents")
-                config_data["notifications_index"] = indices.get("notifications", "review_fraud_notifications")
+                config_data["incidents_index"] = indices.get("incidents", "review_bomb_incidents")
+                config_data["notifications_index"] = indices.get("notifications", "review_bomb_notifications")
 
             if "app" in yaml_config:
                 app_config = yaml_config["app"]
-                config_data["app_name"] = app_config.get("name", "Review Fraud Workshop")
+                config_data["app_name"] = app_config.get("name", "Review Campaign Detection Workshop")
                 config_data["debug"] = app_config.get("debug", False)
 
             if "streaming" in yaml_config:

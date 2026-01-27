@@ -16,13 +16,13 @@ Run a complete fraud simulation to see your detection workflow, automated respon
 You've built all the pieces:
 - **Challenge 1:** ES|QL queries to detect suspicious patterns + semantic search
 - **Challenge 2:** Automated workflow to respond to attacks
-- **Challenge 3:** Agent Builder tools and a custom **Review Fraud Investigator** agent
+- **Challenge 3:** Agent Builder tools and a custom **Review Campaign Investigator** agent
 
 Now it's time to put everything together and watch the system in action.
 
 In this challenge, you will:
 1. Verify a target business's baseline state
-2. Launch a simulated review fraud attack
+2. Launch a simulated negative review campaign
 3. Watch your workflow detect and respond automatically
 4. Use your custom agent to investigate the incident
 5. Resolve the incident and restore normal operations
@@ -107,7 +107,7 @@ Before the attack, verify the target business is in a normal state.
 
 ### Task 2: Launch the Attack (3 min)
 
-Now you'll launch a simulated review fraud attack against the target business.
+Now you'll launch a simulated negative review campaign against the target business.
 
 1. Open the **Attack Simulator** tab
    - URL: `http://localhost:8000/attack` or use the "Attack Simulator" tab in Instruqt
@@ -150,7 +150,7 @@ Your workflow should detect the attack automatically. Let's observe it in action
 
 1. Navigate to **Workflows** in Kibana
 
-2. Find your **Review Fraud Detection** workflow
+2. Find your **Negative Review Campaign Detection** workflow
 
 3. Click on the workflow to see its details and execution history
 
@@ -208,9 +208,9 @@ Your workflow should detect the attack automatically. Let's observe it in action
 
 ### Task 4: Investigate with Your Custom Agent (5 min)
 
-Now use the **Review Fraud Investigator** agent you created in Challenge 3 to understand the attack.
+Now use the **Review Campaign Investigator** agent you created in Challenge 3 to understand the attack.
 
-1. Open **Agent Builder** and select your **Review Fraud Investigator** agent
+1. Open **Agent Builder** and select your **Review Campaign Investigator** agent
    - Or click **Chat** next to your agent in the Agents list
 
 2. Ask about the incident:
@@ -333,7 +333,7 @@ Complete the incident lifecycle by resolving it.
          "source": "ctx._source.status = '\''resolved'\''; ctx._source.resolved_at = params.timestamp; ctx._source.resolution = params.notes",
          "params": {
            "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
-           "notes": "Confirmed review fraud attack. Malicious reviews held. Attacker accounts flagged."
+           "notes": "Confirmed negative review campaign. Malicious reviews held. Attacker accounts flagged."
          }
        }
      }'
@@ -412,7 +412,7 @@ Verify you have completed all phases:
 
 ## What's Next?
 
-This pattern applies to many use cases beyond review frauding:
+This pattern applies to many use cases beyond negative review campaigns:
 
 | Use Case | Detection | Response | Investigation |
 |----------|-----------|----------|---------------|
@@ -425,7 +425,7 @@ This pattern applies to many use cases beyond review frauding:
 
 ## Workshop Complete!
 
-Thank you for participating in the Review Fraud Detection Workshop.
+Thank you for participating in the Negative Review Campaign Detection Workshop.
 
 **What you learned:**
 - ES|QL with LOOKUP JOIN for cross-index correlation

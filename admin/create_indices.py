@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Create Elasticsearch indices for the Review Fraud Workshop.
+Create Elasticsearch indices for the Review Campaign Detection Workshop.
 
 Reads mapping definitions from the mappings/ directory and creates
 indices with the specified settings and mappings.

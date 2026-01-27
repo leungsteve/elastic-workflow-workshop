@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - Review Fraud Workshop{% endblock %}
+{% block title %}Dashboard - Review Campaign Detection Workshop{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col">
         <h1><i class="bi bi-speedometer2 me-2"></i>Dashboard</h1>
-        <p class="text-muted">Monitor review activity and detect potential review fraud attacks</p>
+        <p class="text-muted">Monitor review activity and detect potential negative review campaigns</p>
     </div>
     <div class="col-auto">
         <span class="badge bg-success" id="autoRefreshBadge">Auto-refresh: ON</span>
@@ -19,7 +19,7 @@
         <i class="bi bi-exclamation-triangle-fill fs-3 me-3"></i>
         <div>
             <h5 class="mb-1">Active Attack Detected!</h5>
-            <p class="mb-0" id="attackAlertText">A business is currently under review fraud attack.</p>
+            <p class="mb-0" id="attackAlertText">A business is currently under a negative review campaign.</p>
         </div>
     </div>
 </div>

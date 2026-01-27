@@ -15,7 +15,9 @@ Explore the review platform data, understand the data model, and write detection
 
 You are a Trust & Safety analyst at a popular review platform called "ElasticEats" - a restaurant discovery site where diners leave reviews for local businesses.
 
-Recently, your platform has been experiencing **review fraud attacks** - coordinated campaigns where bad actors flood a business with fake negative reviews to damage its reputation. These attacks can devastate small businesses overnight.
+Recently, your platform has been experiencing **negative review campaigns (review bombs)** — coordinated attacks that can devastate small businesses overnight.
+
+A **negative review campaign** — commonly called a **review bomb** — is a coordinated attack where bad actors flood a business with fake negative reviews to damage its reputation. These campaigns can tank a restaurant's star rating in hours, driving away customers before the business even knows what happened.
 
 Your job is to detect these attacks before they cause harm. But first, you need to understand your data.
 
@@ -76,7 +78,7 @@ FROM businesses
 | LIMIT 5
 ```
 
-**What to notice:** All businesses in our dataset are in Philadelphia. These successful businesses are prime targets for review frauds.
+**What to notice:** All businesses in our dataset are in Philadelphia. These successful businesses are prime targets for negative review campaigns.
 
 6. Find specific high-profile targets:
 
@@ -302,7 +304,7 @@ FROM reviews
 
 ## Challenge: Write Your Own Detection Query
 
-Using what you've learned, write a query that identifies potential review fraud attacks with these criteria:
+Using what you've learned, write a query that identifies potential negative review campaigns with these criteria:
 
 - Reviews from the last 30 minutes
 - Rating of 2 stars or less

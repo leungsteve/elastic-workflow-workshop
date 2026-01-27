@@ -1,4 +1,4 @@
-"""Incidents API router for Review Fraud Workshop."""
+"""Incidents API router for Negative Review Campaign Detection Workshop."""
 
 from datetime import datetime
 from typing import Optional
@@ -264,7 +264,7 @@ async def detect_attacks(
     """
     Manually trigger attack detection and incident creation.
 
-    This endpoint checks for review fraud attacks and automatically creates
+    This endpoint checks for negative review campaigns and automatically creates
     incidents for any detected attacks. It can check a specific business
     or scan all businesses with recent activity.
 

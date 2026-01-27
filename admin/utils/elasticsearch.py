@@ -1,5 +1,5 @@
 """
-Elasticsearch client utilities for the Review Fraud Workshop.
+Elasticsearch client utilities for the Review Campaign Detection Workshop.
 
 Provides sync and async Elasticsearch clients with support for both
 API key and username/password authentication.

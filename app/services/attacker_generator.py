@@ -1,4 +1,4 @@
-"""Attacker profile generator for simulating review fraud attacks."""
+"""Attacker profile generator for simulating negative review campaign attacks."""
 
 import random
 import uuid

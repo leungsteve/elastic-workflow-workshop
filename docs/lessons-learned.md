@@ -1,4 +1,4 @@
-# Lessons Learned - Review Fraud Detection Workshop
+# Lessons Learned - Negative Review Campaign Detection Workshop
 
 Patterns, gotchas, and recommendations discovered during development. Use this to accelerate future projects.
 
@@ -1168,7 +1168,7 @@ class IncidentService:
             id=business_id,
             doc={
                 "rating_protected": True,
-                "protection_reason": "review_fraud_detected",
+                "protection_reason": "review_bomb_detected",
                 "protected_since": datetime.utcnow().isoformat(),
             },
             refresh=True
@@ -1189,7 +1189,7 @@ class IncidentService:
                 }
             },
             script={
-                "source": "ctx._source.status = 'held'; ctx._source.hold_reason = 'review_fraud_detected'"
+                "source": "ctx._source.status = 'held'; ctx._source.hold_reason = 'review_bomb_detected'"
             },
             refresh=True
         )
@@ -1282,7 +1282,7 @@ This reveals the actual schema used by successful resources.
 # WRONG - Treats ES|QL results as objects
 - name: process_attacks
   type: foreach
-  foreach: "{{ steps.detect_review_frauds.output.values }}"
+  foreach: "{{ steps.detect_review_bombs.output.values }}"
   steps:
     - name: protect_business
       type: elasticsearch.update
@@ -1296,7 +1296,7 @@ This reveals the actual schema used by successful resources.
 #      [0]          [1]   [2]   [3]           [4]        [5]        [6]
 - name: process_attacks
   type: foreach
-  foreach: "{{ steps.detect_review_frauds.output.values }}"
+  foreach: "{{ steps.detect_review_bombs.output.values }}"
   steps:
     - name: protect_business
       type: elasticsearch.update

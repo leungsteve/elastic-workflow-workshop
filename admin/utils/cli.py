@@ -1,5 +1,5 @@
 """
-CLI utilities for the Review Fraud Workshop.
+CLI utilities for the Review Campaign Detection Workshop.
 
 Provides common Click options, config file loading, and environment variable
 handling for admin CLI tools.
