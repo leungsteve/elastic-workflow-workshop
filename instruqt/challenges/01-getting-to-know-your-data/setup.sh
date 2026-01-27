@@ -222,7 +222,7 @@ bulk_load() {
 # ==============================================================================
 # Step 1: Wait for Elasticsearch
 # ==============================================================================
-echo "[1/8] Waiting for Elasticsearch..."
+echo "[1/9] Waiting for Elasticsearch..."
 MAX_RETRIES=60
 RETRY_COUNT=0
 
@@ -241,7 +241,7 @@ echo "  Elasticsearch is ready!"
 # Step 2: Check ELSER availability
 # ==============================================================================
 echo ""
-echo "[2/8] Checking ELSER inference endpoint..."
+echo "[2/9] Checking ELSER inference endpoint..."
 
 ELSER_AVAILABLE=false
 ELSER_RESPONSE=$(es_curl "${ELASTICSEARCH_URL}/_inference/.elser-2-elasticsearch" 2>/dev/null)
@@ -254,10 +254,30 @@ else
 fi
 
 # ==============================================================================
-# Step 3: Create indices from mapping files
+# Step 3: Delete existing indices for a clean start
 # ==============================================================================
 echo ""
-echo "[3/8] Creating indices..."
+echo "[3/9] Deleting existing indices..."
+
+for index in businesses users reviews incidents notifications; do
+    if check_index_exists "$index"; then
+        local_http_code=$(es_curl -o /dev/null -w "%{http_code}" \
+            -X DELETE "${ELASTICSEARCH_URL}/${index}" 2>/dev/null)
+        if [ "$local_http_code" = "200" ]; then
+            echo "  Deleted index: ${index}"
+        else
+            echo "  Warning: Could not delete index '${index}' (HTTP ${local_http_code})"
+        fi
+    else
+        echo "  Index '${index}' does not exist, nothing to delete."
+    fi
+done
+
+# ==============================================================================
+# Step 4: Create indices from mapping files
+# ==============================================================================
+echo ""
+echo "[4/9] Creating indices..."
 
 # Create lookup indices (businesses, users) and operational indices (incidents, notifications)
 for index in businesses users incidents notifications; do
@@ -270,21 +290,17 @@ for index in businesses users incidents notifications; do
 done
 
 # Create reviews index (with or without ELSER)
-if ! check_index_exists "reviews"; then
-    if [ "$ELSER_AVAILABLE" = true ]; then
-        create_index_from_mapping "reviews" "${MAPPINGS_DIR}/reviews.json"
-    else
-        create_reviews_index_without_elser
-    fi
+if [ "$ELSER_AVAILABLE" = true ]; then
+    create_index_from_mapping "reviews" "${MAPPINGS_DIR}/reviews.json"
 else
-    echo "  Index 'reviews' already exists, skipping."
+    create_reviews_index_without_elser
 fi
 
 # ==============================================================================
-# Step 4: Load data from NDJSON files
+# Step 5: Load data from NDJSON files
 # ==============================================================================
 echo ""
-echo "[4/8] Loading data..."
+echo "[5/9] Loading data..."
 
 # Check that data files exist
 MISSING_FILES=0
@@ -307,41 +323,24 @@ if [ "$MISSING_FILES" -gt 0 ]; then
     exit 1
 fi
 
-# Load each dataset (skip if already loaded)
-BUSINESS_COUNT=$(get_doc_count "businesses")
-if [ "${BUSINESS_COUNT:-0}" -lt 50 ]; then
-    bulk_load "businesses" "${DATA_DIR}/businesses.ndjson"
-else
-    echo "  Businesses already loaded (${BUSINESS_COUNT} documents)"
-fi
-
-USER_COUNT=$(get_doc_count "users")
-if [ "${USER_COUNT:-0}" -lt 100 ]; then
-    bulk_load "users" "${DATA_DIR}/users.ndjson"
-else
-    echo "  Users already loaded (${USER_COUNT} documents)"
-fi
-
-REVIEW_COUNT=$(get_doc_count "reviews")
-if [ "${REVIEW_COUNT:-0}" -lt 100 ]; then
-    bulk_load "reviews" "${DATA_DIR}/reviews.ndjson"
-else
-    echo "  Reviews already loaded (${REVIEW_COUNT} documents)"
-fi
+# Load each dataset (indices were deleted and recreated, so always load)
+bulk_load "businesses" "${DATA_DIR}/businesses.ndjson"
+bulk_load "users" "${DATA_DIR}/users.ndjson"
+bulk_load "reviews" "${DATA_DIR}/reviews.ndjson"
 
 # ==============================================================================
-# Step 5: Refresh indices
+# Step 6: Refresh indices
 # ==============================================================================
 echo ""
-echo "[5/8] Refreshing indices..."
+echo "[6/9] Refreshing indices..."
 es_curl -X POST "${ELASTICSEARCH_URL}/_refresh" > /dev/null
 echo "  Indices refreshed."
 
 # ==============================================================================
-# Step 6: Wait for Kibana
+# Step 7: Wait for Kibana
 # ==============================================================================
 echo ""
-echo "[6/8] Waiting for Kibana..."
+echo "[7/9] Waiting for Kibana..."
 MAX_RETRIES=30
 RETRY_COUNT=0
 
@@ -357,10 +356,10 @@ done
 echo "  Kibana is ready!"
 
 # ==============================================================================
-# Step 7: Enable Elastic Workflows
+# Step 8: Enable Elastic Workflows
 # ==============================================================================
 echo ""
-echo "[7/8] Enabling Elastic Workflows..."
+echo "[8/9] Enabling Elastic Workflows..."
 
 WORKFLOWS_RESPONSE=$(curl -s -w "\n%{http_code}" \
     -X POST "${KIBANA_URL}/internal/kibana/settings" \
@@ -380,10 +379,10 @@ else
 fi
 
 # ==============================================================================
-# Step 8: Start the FastAPI application
+# Step 9: Start the FastAPI application
 # ==============================================================================
 echo ""
-echo "[8/8] Starting the FastAPI application..."
+echo "[9/9] Starting the FastAPI application..."
 
 cd ${WORKSHOP_DIR}
 pip install -r requirements.txt > /tmp/pip_install.log 2>&1
