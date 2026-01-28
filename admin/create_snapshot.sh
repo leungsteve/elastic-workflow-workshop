@@ -3,20 +3,33 @@
 # Create Snapshot for Workshop Fast Setup
 #
 # One-time script run against an Elastic Cloud cluster with ELSER.
-# Ingests the full 200-business dataset, waits for ELSER inference,
-# then snapshots all indices to a GCS repository.
+# Ingests the dataset, waits for ELSER inference, then snapshots
+# all indices to a GCS repository.
+#
+# IMPORTANT: The source cluster ES version must be compatible with
+# the target cluster (Instruqt). Pre-release/SNAPSHOT builds may not
+# accept snapshots from GA or Cloud builds due to metadata format
+# differences (e.g., transport_version field). Always test a small
+# restore before running the full ingestion. See docs/lessons-learned.md.
 #
 # Usage:
-#   export ELASTICSEARCH_URL="https://my-cloud-cluster:9243"
+#   export ELASTICSEARCH_URL="https://my-cloud-cluster:443"
 #   export ELASTICSEARCH_API_KEY="base64-encoded-api-key"
 #   export GCS_BUCKET="my-workshop-bucket"
 #   ./admin/create_snapshot.sh
 #
 # Prerequisites:
 #   - Elastic Cloud cluster with ELSER deployed
-#   - GCS bucket created and accessible from the cluster
+#   - GCS bucket with write access from the cluster (Storage Object User role)
 #   - GCS credentials configured in the cluster keystore
-#   - Data files generated: python -m admin.generate_philly_dataset --count 200
+#     (Cloud: Security > Keystore; ECK: secureSettings in ES CR)
+#   - Data files generated in data/processed/
+#
+# Performance notes:
+#   - ELSER inference is the bottleneck: ~500 docs/batch recommended
+#   - Bulk loads with 5000-doc batches cause 504 timeouts with ELSER
+#   - Use _id in bulk ops to make retries idempotent (avoids duplicates)
+#   - Full ingestion of ~149K reviews can take hours
 #
 # Environment variables:
 #   ELASTICSEARCH_URL       Elasticsearch endpoint (required)
@@ -43,7 +56,7 @@ MAPPINGS_DIR="${PROJECT_ROOT}/mappings"
 
 ELASTICSEARCH_URL="${ELASTICSEARCH_URL:?ELASTICSEARCH_URL must be set}"
 GCS_BUCKET="${GCS_BUCKET:?GCS_BUCKET must be set}"
-GCS_BASE_PATH="${GCS_BASE_PATH:-elastic-whats-new-9.3.0/data/snapshot}"
+GCS_BASE_PATH="${GCS_BASE_PATH:-elastic-whats-new-9.3.0/data/snapshot-v2}"
 SNAPSHOT_REPO="${SNAPSHOT_REPO:-workshop-snapshots}"
 SNAPSHOT_NAME="${SNAPSHOT_NAME:-snapshot-v1}"
 

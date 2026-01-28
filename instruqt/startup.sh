@@ -5,10 +5,20 @@
 # Runs on the kubernetes-vm to restore the workshop snapshot from GCS.
 # This replaces bulk data loading — all indices come pre-built with ELSER embeddings.
 #
+# IMPORTANT: The snapshot must be taken from an ES version that the
+# target cluster can restore. Pre-release/SNAPSHOT builds may not
+# accept snapshots from GA builds due to transport_version metadata
+# incompatibility. See docs/lessons-learned.md for details.
+#
 # Prerequisites:
 #   - ECK-managed Elasticsearch running in the default namespace
-#   - GCS credentials available via the "education" client in the ES keystore
-#   - Snapshot created via admin/create_snapshot.sh
+#   - GCS credentials available via the "sa" client in the ES keystore
+#   - Snapshot created via admin/create_snapshot.sh from a compatible ES version
+#
+# GCS client permissions needed:
+#   - storage.objects.get (read snapshot files)
+#   - storage.objects.list (enumerate snapshot contents)
+#   Minimum role: Storage Object Viewer
 #
 # Usage:
 #   ./startup.sh
@@ -24,8 +34,8 @@ ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://localhost:9200}"
 
 # Snapshot settings
 GCS_BUCKET="${GCS_BUCKET:-instruqt-workshop-snapshot-public}"
-GCS_BASE_PATH="${GCS_BASE_PATH:-elastic-whats-new-9.3.0/data/snapshot}"
-GCS_CLIENT="${GCS_CLIENT:-education}"
+GCS_BASE_PATH="${GCS_BASE_PATH:-elastic-whats-new-9.3.0/data/snapshot-v2}"
+GCS_CLIENT="${GCS_CLIENT:-sa}"
 SNAPSHOT_REPO="${SNAPSHOT_REPO:-workshop-snapshots}"
 SNAPSHOT_NAME="${SNAPSHOT_NAME:-snapshot-v1}"
 

@@ -1601,3 +1601,206 @@ const stats = await api.get(`/api/businesses/${businessId}/stats?hours=24`);
 3. **Keep it simple** - MVP that "looks enough like Yelp" is sufficient for workshop purposes
 4. **Visual feedback matters** - Badges and alerts make abstract concepts tangible
 5. **Separate concerns** - Consumer UI vs Admin UI vs Attack Simulator each have clear purposes
+
+---
+
+## GCS Snapshot/Restore for Instruqt Fast Setup
+
+### Overview
+
+The goal is to eliminate ELSER inference time during Instruqt startup by snapshotting pre-processed data to GCS and restoring it on each learner's VM.
+
+```
+Admin (once):    generate data → ingest into Cloud (ELSER processes) → snapshot → GCS
+Instruqt (each): register GCS repo → restore snapshot → done (no ELSER needed)
+```
+
+### ES Snapshot Version Compatibility with Pre-Release Builds
+
+**Problem:** Snapshots from any GA or Cloud cluster fail to restore on `9.3.0-SNAPSHOT` (pre-release) builds.
+
+**What we tried:**
+| Source Cluster | Target (Instruqt) | Result |
+|---|---|---|
+| Cloud 9.3.0 GA | 9.3.0-SNAPSHOT | `snapshot_restore_exception` — GA is "newer" than SNAPSHOT |
+| Cloud 9.2.4 | 9.3.0-SNAPSHOT | `corrupt_state_exception: checksums do not match` + suppressed `Unexpected field [transport_version]` |
+
+**Root Cause:** The `9.3.0-SNAPSHOT` build (`9.3.0-fe116a51-SNAPSHOT`, Nov 2025) predates the `transport_version` metadata field used by newer Cloud builds. The snapshot metadata written by Cloud 9.2.4 contains `transport_version`, which the older SNAPSHOT binary cannot parse, causing a checksum mismatch during restore.
+
+**Key Insight:** ES version compatibility for snapshots is normally `older → newer` (9.2 → 9.3 should work). But SNAPSHOT/pre-release builds can have metadata format gaps compared to Cloud GA builds of the same or earlier versions. The Cloud infrastructure may ship features into GA/Cloud builds that haven't landed in the open-source SNAPSHOT yet.
+
+**Solution:** The snapshot must be taken FROM the same ES build that the target cluster runs, or from a build whose metadata format the target understands. Options:
+1. Take the snapshot from the Instruqt VM itself (same build) — requires ELSER on that cluster
+2. Wait for 9.3.0 GA image availability in the Instruqt container registry
+3. Fall back to bulk loading (with optimizations)
+
+**Verification Step:** Always test `GET _snapshot/<repo>/_all` first — if listing works but restore fails, the issue is in index/shard-level metadata, not top-level snapshot metadata.
+
+### GCS Repository Setup
+
+**Registering a restore-only repository:**
+```bash
+PUT _snapshot/workshop-snapshots?verify=false
+{
+  "type": "gcs",
+  "settings": {
+    "bucket": "instruqt-workshop-snapshot-public",
+    "base_path": "elastic-whats-new-9.3.0/data/snapshot-v2",
+    "client": "sa",
+    "readonly": true
+  }
+}
+```
+
+**Key settings:**
+- `readonly: true` — Prevents accidental writes to the shared bucket
+- `verify=false` — Skips the verification step (which requires `storage.objects.list` permission that the read-only service account may not have)
+- `client` — References a named GCS client configured in the ES keystore
+
+**IAM Permissions Required:**
+| Operation | Minimum Role |
+|---|---|
+| Restore (read) | Storage Object Viewer (`roles/storage.objectViewer`) |
+| Snapshot (write) | Storage Object User (`roles/storage.objectUser`) |
+| Full management | Storage Object Admin (`roles/storage.objectAdmin`) — avoid unless necessary |
+
+**GCS Credential Setup:**
+- **Elastic Cloud:** Add via Cloud console → Security → Keystore → `gcs.client.default.credentials_file`
+- **ECK (Kubernetes):** Add via `secureSettings` referencing a Kubernetes Secret:
+  ```yaml
+  secureSettings:
+    - secretName: gcs-credentials-sa
+  ```
+- **Self-managed:** Use `elasticsearch-keystore add-file gcs.client.<name>.credentials_file /path/to/service-account.json`
+
+### GCS Stale Metadata Causes Checksum Mismatches
+
+**Problem:** After deleting a snapshot and recreating it at the same GCS `base_path`, restore fails with `corrupt_state_exception: checksums do not match`.
+
+**Root Cause:** Deleting a snapshot via the API removes the snapshot entry but may leave behind index-level metadata files in the GCS bucket (especially from a different ES version). When a new snapshot is written, the stale metadata files cause version/checksum conflicts.
+
+**Solution:** Always use a **fresh `base_path`** when recreating snapshots after version changes:
+```
+# Old (had 9.3.0 metadata residue)
+base_path: elastic-whats-new-9.3.0/data/snapshot
+
+# New (clean)
+base_path: elastic-whats-new-9.3.0/data/snapshot-v2
+```
+
+Alternatively, manually delete all files at the old GCS path before recreating.
+
+### ELSER Bulk Ingestion Performance
+
+**Problem:** Bulk loading reviews into an index with a `semantic_text` field (ELSER inference) causes 504 Gateway Timeouts with large batch sizes.
+
+**What we found:**
+| Batch Size | Result |
+|---|---|
+| 5000 docs | 504 timeout (ELSER can't keep up) |
+| 500 docs | Works reliably with occasional transient errors |
+
+**Solution:** Use 500-doc batches with retry logic:
+```bash
+# Retry on HTTP 000 (connection timeout) or 5xx errors
+MAX_RETRIES=3
+for attempt in $(seq 1 $MAX_RETRIES); do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 300 \
+        -X POST "$ES_URL/reviews/_bulk" \
+        -H "Content-Type: application/x-ndjson" \
+        --data-binary "@$BATCH_FILE")
+    if [ "$HTTP_CODE" = "200" ]; then break; fi
+    echo "Retry $attempt: HTTP $HTTP_CODE"
+    sleep 5
+done
+```
+
+**Key takeaway:** ELSER inference is the bottleneck, not the bulk API itself. Smaller batches give ELSER time to process each document. Budget significant time for ELSER ingestion at scale (~149K reviews took several hours).
+
+### Duplicate Documents from Retried Bulk Batches
+
+**Problem:** When a bulk request times out (504/000), the documents may have been partially or fully indexed. Retrying the batch creates duplicates.
+
+**Detection:** Use composite aggregation to find duplicate `review_id` values:
+```python
+# Find duplicates via composite aggregation
+aggs = {
+    "duplicates": {
+        "composite": {"sources": [{"rid": {"terms": {"field": "review_id"}}}], "size": 5000},
+        "aggs": {"doc_count": {"value_count": {"field": "_id"}}}
+    }
+}
+# Filter for buckets where doc_count > 1
+```
+
+**Cleanup:** Delete extras with `_delete_by_query`, keeping one copy per `review_id`.
+
+**Prevention (for future scripts):** Use explicit `_id` in bulk operations to make retries idempotent:
+```json
+{"index": {"_index": "reviews", "_id": "review_abc123"}}
+{"review_id": "review_abc123", "text": "...", ...}
+```
+This way, retrying the same batch overwrites rather than duplicates.
+
+### ECK GCS Keystore and Clients
+
+**Problem:** The Instruqt ECK cluster has multiple GCS clients configured via `secureSettings`, each with different IAM permissions.
+
+**What we found on the kubernetes-vm:**
+```yaml
+secureSettings:
+  - secretName: gcs-credentials-sa        # client: sa
+  - secretName: gcs-credentials-eden      # client: eden
+  - secretName: gcs-credentials-education # client: education
+  - secretName: gcs-credentials           # client: default
+```
+
+**Testing each client:**
+```bash
+# Register repo with each client and test
+curl -X PUT "$ES_URL/_snapshot/test-repo?verify=false" \
+  -d '{"type":"gcs","settings":{"bucket":"...","client":"sa","readonly":true}}'
+
+# Try listing snapshots
+curl "$ES_URL/_snapshot/test-repo/_all"
+```
+
+| Client | Read | Write | List |
+|---|---|---|---|
+| `sa` | Yes | No (403) | Yes |
+| `education` | Yes | No (403) | No (403) |
+| `default` | Varies | Varies | Varies |
+
+**Lesson:** Always test the specific operations you need (read, write, list) for each GCS client. Don't assume one working operation means all will work.
+
+### Snapshot Pipeline Efficiency Recommendations
+
+For future snapshot/restore pipeline work, follow this order to avoid wasted effort:
+
+1. **Verify target ES version FIRST** — Check the exact build/image on the target cluster:
+   ```bash
+   curl "$ES_URL" | jq '.version'
+   kubectl get pod <es-pod> -o jsonpath='{.spec.containers[0].image}'
+   ```
+
+2. **Test with a tiny snapshot** — Before ingesting 150K docs, create a 10-doc test index, snapshot it, and verify the full restore pipeline works. This catches version/permission issues in minutes instead of hours.
+
+3. **Pre-check GCS permissions from BOTH sides** — Verify read access on the target AND write access on the source before starting ingestion:
+   ```bash
+   # Source: can we write?
+   PUT _snapshot/test-repo
+   PUT _snapshot/test-repo/test-snap?wait_for_completion=true
+
+   # Target: can we read and restore?
+   GET _snapshot/test-repo/_all
+   POST _snapshot/test-repo/test-snap/_restore
+   ```
+
+4. **Use `_id` in bulk operations** — Makes retries idempotent, eliminates duplicate cleanup.
+
+5. **Use a unique `base_path` per snapshot version** — Prevents stale metadata conflicts. Include the source ES version in the path:
+   ```
+   base_path: workshop/snapshot-9.2.4-v1
+   ```
+
+6. **Match source and target ES builds exactly for pre-release targets** — If the target runs a SNAPSHOT/pre-release build, the source must be the same build or an older GA version that the target can definitively parse.

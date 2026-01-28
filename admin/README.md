@@ -124,6 +124,70 @@ This approach gives you:
 - Fast startup (~15 seconds to load data)
 - Fresh indices each session (no leftover attack data)
 
+### Snapshot/Restore (Alternative — Faster, Requires GCS)
+
+For environments with GCS access, use snapshot/restore to skip bulk loading entirely:
+
+**One-time (admin):**
+```bash
+# 1. Generate data (if not already done)
+python -m admin.generate_philly_dataset --count 100
+
+# 2. Ingest into Cloud cluster with ELSER and snapshot to GCS
+export ELASTICSEARCH_URL="https://your-cloud-cluster:443"
+export ELASTICSEARCH_API_KEY="your-api-key"
+export GCS_BUCKET="your-gcs-bucket"
+./admin/create_snapshot.sh
+```
+
+**Each workshop start (Instruqt):**
+```bash
+# Runs on kubernetes-vm — restores snapshot, no ELSER processing needed
+./instruqt/startup.sh
+```
+
+**Prerequisites:**
+- GCS bucket with service account credentials configured in both clusters
+- Source ES cluster must have ELSER deployed
+- **Critical:** Source and target ES versions must be compatible (see `docs/lessons-learned.md` for version gotchas with pre-release builds)
+
+**Current snapshot location:**
+- Bucket: `instruqt-workshop-snapshot-public`
+- Base path: `elastic-whats-new-9.3.0/data/snapshot-v2`
+- Snapshot: `snapshot-v1` (taken from ES 9.2.4, 5 indices, ~149K reviews with ELSER embeddings)
+
+**Known limitation:** The current snapshot (from ES 9.2.4) cannot restore to the Instruqt `9.3.0-SNAPSHOT` build due to a `transport_version` metadata incompatibility. See `docs/lessons-learned.md` for details and workarounds.
+
+### create_snapshot.sh
+
+One-time script to ingest data with ELSER and snapshot to GCS.
+
+```bash
+export ELASTICSEARCH_URL="https://your-cloud-cluster:443"
+export ELASTICSEARCH_API_KEY="your-api-key"
+export GCS_BUCKET="your-gcs-bucket"
+./admin/create_snapshot.sh
+```
+
+Steps:
+1. Validates prerequisites (ES reachable, ELSER deployed, data files exist)
+2. Deletes/recreates all 5 indices from `mappings/`
+3. Bulk loads businesses, users, reviews (ELSER processes reviews)
+4. Waits for ELSER inference to complete
+5. Registers GCS snapshot repository
+6. Takes snapshot of all 5 indices
+7. Waits for snapshot completion
+
+**Environment variables:**
+| Variable | Default | Description |
+|---|---|---|
+| `ELASTICSEARCH_URL` | (required) | Elasticsearch endpoint |
+| `ELASTICSEARCH_API_KEY` | (required) | API key for auth |
+| `GCS_BUCKET` | (required) | GCS bucket name |
+| `GCS_BASE_PATH` | `elastic-whats-new-9.3.0/data/snapshot-v2` | Path prefix in bucket |
+| `SNAPSHOT_REPO` | `workshop-snapshots` | Repository name |
+| `SNAPSHOT_NAME` | `snapshot-v1` | Snapshot name |
+
 ---
 
 ## Individual Scripts
