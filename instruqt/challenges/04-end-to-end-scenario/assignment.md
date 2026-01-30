@@ -320,7 +320,7 @@ Complete the incident lifecycle by resolving it.
        }
      },
      "script": {
-       "source": "ctx._source.status = 'resolved'; ctx._source.resolved_at = new Date().toISOString(); ctx._source.resolution = 'Confirmed negative review campaign. Malicious reviews held. Attacker accounts flagged.'"
+       "source": "ctx._source.status = 'resolved'; ctx._source.resolved_at = Instant.ofEpochMilli(new Date().getTime()).toString(); ctx._source.resolution = 'Confirmed negative review campaign. Malicious reviews held. Attacker accounts flagged.'"
      }
    }
    ```
