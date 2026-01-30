@@ -25,6 +25,7 @@ import sys
 import urllib.request
 import urllib.error
 
+
 # Tool definitions
 TOOLS = [
     {
@@ -178,7 +179,7 @@ def get_kibana_url():
 
 def get_api_key():
     """Get API key from environment."""
-    api_key = os.environ.get("ELASTICSEARCH_API_KEY")
+    api_key = os.environ.get("ELASTICSEARCH_API_KEY") or os.environ.get("ELASTICSEARCH_APIKEY")
     if not api_key:
         print("ERROR: ELASTICSEARCH_API_KEY environment variable not set")
         sys.exit(1)

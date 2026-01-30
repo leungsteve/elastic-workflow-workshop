@@ -54,9 +54,10 @@ In this challenge, you'll create three investigation tools and an agent to use t
 
 ## Tasks
 
-> **Quick Setup Alternative:** If you prefer to skip the manual steps, you can run a script that creates all tools and the agent automatically:
+> **Quick Setup Alternative:** If you prefer to skip the manual steps, you can run a script that creates all tools and the agent automatically. In the **Terminal** tab on host-1:
 >
 > ```bash
+> cd /workspace/workshop/elastic-workflow-workshop
 > python admin/setup_agent_builder.py
 > ```
 >

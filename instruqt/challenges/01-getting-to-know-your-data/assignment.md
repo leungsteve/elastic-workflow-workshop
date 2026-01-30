@@ -78,7 +78,7 @@ FROM businesses
 | LIMIT 5
 ```
 
-**What to notice:** All businesses in our dataset are in Philadelphia. These successful businesses are prime targets for negative review campaigns.
+**Expected output:** **84** of 100 businesses have 4+ stars, all in Philadelphia. These successful businesses are prime targets for negative review campaigns.
 
 6. Find specific high-profile targets:
 
@@ -168,23 +168,27 @@ FROM reviews
 | SORT stars DESC
 ```
 
-**What to notice:** A healthy platform has reviews across all ratings, with a slight positive skew. An attack creates an unnatural spike of 1-star reviews.
+**What to notice:** A healthy platform has reviews across all ratings, with a strong positive skew (5-star is the most common at ~67K, tapering down to ~8K one-star reviews). An attack creates an unnatural spike of 1-star reviews.
 
-3. Find recent negative review clusters (potential attacks):
+> **Tip:** In the chart visualization, drag `stars` from the vertical axis to the horizontal axis for a more intuitive bar chart.
+
+3. Find negative review clusters (potential attacks):
 
 ```esql
 FROM reviews
-| WHERE stars <= 2 AND date > NOW() - 7 days
+| WHERE stars <= 2
 | STATS
     negative_count = COUNT(*),
     unique_reviewers = COUNT_DISTINCT(user_id)
   BY business_id
 | WHERE negative_count >= 3
+| LOOKUP JOIN businesses ON business_id
+| KEEP name, business_id, negative_count, unique_reviewers
 | SORT negative_count DESC
 | LIMIT 10
 ```
 
-**What to notice:** Businesses with many negative reviews from multiple reviewers in a short time are potential attack targets.
+**What to notice:** Businesses with many negative reviews from multiple unique reviewers are potential attack targets. The LOOKUP JOIN adds the business name so you can see which restaurants are affected.
 
 ---
 
@@ -252,7 +256,6 @@ The real power of ES|QL comes from **LOOKUP JOIN** - the ability to combine data
 
 ```esql
 FROM reviews
-| WHERE date > NOW() - 24 hours
 | LOOKUP JOIN users ON user_id
 | KEEP review_id, user_id, business_id, stars, trust_score, account_age_days
 | LIMIT 10
@@ -264,7 +267,7 @@ FROM reviews
 
 ```esql
 FROM reviews
-| WHERE stars <= 2 AND date > NOW() - 24 hours
+| WHERE stars <= 2
 | LOOKUP JOIN users ON user_id
 | WHERE trust_score < 0.4
 | STATS
@@ -284,7 +287,7 @@ FROM reviews
 
 ```esql
 FROM reviews
-| WHERE stars <= 2 AND date > NOW() - 7 days
+| WHERE stars <= 2
 | LOOKUP JOIN users ON user_id
 | WHERE trust_score < 0.4
 | STATS
