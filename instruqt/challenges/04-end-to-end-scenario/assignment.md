@@ -306,49 +306,37 @@ Complete the incident lifecycle by resolving it.
    - **Flag** the attacker accounts for suspension
    - **Update** the incident status to "resolved"
 
-4. Update the incident status:
+4. Update the incident status. In **Kibana Dev Tools**, run:
 
-   First, find the incident ID:
-   ```esql
-   FROM incidents
-   | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw" AND status == "detected"
-   | KEEP incident_id
-   | LIMIT 1
    ```
-
-   Then update via the API (in Terminal):
-   ```bash
-   curl -X POST "${ELASTICSEARCH_URL}/incidents/_update_by_query" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "query": {
-         "bool": {
-           "must": [
-             { "term": { "business_id": "ytynqOUb3hjKeJfRj5Tshw" } },
-             { "term": { "status": "detected" } }
-           ]
-         }
-       },
-       "script": {
-         "source": "ctx._source.status = '\''resolved'\''; ctx._source.resolved_at = params.timestamp; ctx._source.resolution = params.notes",
-         "params": {
-           "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'",
-           "notes": "Confirmed negative review campaign. Malicious reviews held. Attacker accounts flagged."
-         }
+   POST /incidents/_update_by_query
+   {
+     "query": {
+       "bool": {
+         "must": [
+           { "term": { "business_id": "ytynqOUb3hjKeJfRj5Tshw" } },
+           { "term": { "status": "detected" } }
+         ]
        }
-     }'
+     },
+     "script": {
+       "source": "ctx._source.status = 'resolved'; ctx._source.resolved_at = new Date().toISOString(); ctx._source.resolution = 'Confirmed negative review campaign. Malicious reviews held. Attacker accounts flagged.'"
+     }
+   }
    ```
 
 5. Optionally, remove protection from the business:
-   ```bash
-   curl -X POST "${ELASTICSEARCH_URL}/businesses/_update/ytynqOUb3hjKeJfRj5Tshw" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "doc": {
-         "rating_protected": false,
-         "protection_reason": null
-       }
-     }'
+
+   ```
+   POST /businesses/_update_by_query
+   {
+     "query": {
+       "term": { "business_id": "ytynqOUb3hjKeJfRj5Tshw" }
+     },
+     "script": {
+       "source": "ctx._source.rating_protected = false; ctx._source.remove('protection_reason')"
+     }
+   }
    ```
 
 6. Verify the resolution:
