@@ -156,7 +156,7 @@ export GCS_BUCKET="your-gcs-bucket"
 - Base path: `elastic-whats-new-9.3.0/data/snapshot-v2`
 - Snapshot: `snapshot-v1` (taken from ES 9.2.4, 5 indices, ~149K reviews with ELSER embeddings)
 
-**Known limitation:** The current snapshot (from ES 9.2.4) cannot restore to the Instruqt `9.3.0-SNAPSHOT` build due to a `transport_version` metadata incompatibility. See `docs/lessons-learned.md` for details and workarounds.
+**Verified:** Snapshot (from ES 9.2.4) restores successfully to Instruqt `9.4.0-SNAPSHOT`. Note: the older `9.3.0-SNAPSHOT` (Nov 2025) build could not restore this snapshot due to a `transport_version` metadata incompatibility. See `docs/lessons-learned.md` for details.
 
 ### create_snapshot.sh
 

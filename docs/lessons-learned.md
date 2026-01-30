@@ -1617,22 +1617,20 @@ Instruqt (each): register GCS repo → restore snapshot → done (no ELSER neede
 
 ### ES Snapshot Version Compatibility with Pre-Release Builds
 
-**Problem:** Snapshots from any GA or Cloud cluster fail to restore on `9.3.0-SNAPSHOT` (pre-release) builds.
+**Problem:** Snapshots from any GA or Cloud cluster failed to restore on `9.3.0-SNAPSHOT` (pre-release) builds.
 
 **What we tried:**
 | Source Cluster | Target (Instruqt) | Result |
 |---|---|---|
-| Cloud 9.3.0 GA | 9.3.0-SNAPSHOT | `snapshot_restore_exception` — GA is "newer" than SNAPSHOT |
-| Cloud 9.2.4 | 9.3.0-SNAPSHOT | `corrupt_state_exception: checksums do not match` + suppressed `Unexpected field [transport_version]` |
+| Cloud 9.3.0 GA | 9.3.0-SNAPSHOT (Nov 2025) | `snapshot_restore_exception` — GA is "newer" than SNAPSHOT |
+| Cloud 9.2.4 | 9.3.0-SNAPSHOT (Nov 2025) | `corrupt_state_exception: checksums do not match` + suppressed `Unexpected field [transport_version]` |
+| Cloud 9.2.4 | **9.4.0-SNAPSHOT** | **Works** |
 
 **Root Cause:** The `9.3.0-SNAPSHOT` build (`9.3.0-fe116a51-SNAPSHOT`, Nov 2025) predates the `transport_version` metadata field used by newer Cloud builds. The snapshot metadata written by Cloud 9.2.4 contains `transport_version`, which the older SNAPSHOT binary cannot parse, causing a checksum mismatch during restore.
 
-**Key Insight:** ES version compatibility for snapshots is normally `older → newer` (9.2 → 9.3 should work). But SNAPSHOT/pre-release builds can have metadata format gaps compared to Cloud GA builds of the same or earlier versions. The Cloud infrastructure may ship features into GA/Cloud builds that haven't landed in the open-source SNAPSHOT yet.
+**Resolution:** Upgrading the Instruqt VM to `9.4.0-SNAPSHOT` resolved the issue. The 9.4 build can parse the `transport_version` metadata field, so the 9.2.4 snapshot restores cleanly.
 
-**Solution:** The snapshot must be taken FROM the same ES build that the target cluster runs, or from a build whose metadata format the target understands. Options:
-1. Take the snapshot from the Instruqt VM itself (same build) — requires ELSER on that cluster
-2. Wait for 9.3.0 GA image availability in the Instruqt container registry
-3. Fall back to bulk loading (with optimizations)
+**Key Insight:** ES version compatibility for snapshots is normally `older → newer` (9.2 → 9.3 should work). But SNAPSHOT/pre-release builds can have metadata format gaps compared to Cloud GA builds of the same or earlier versions. The Cloud infrastructure may ship features into GA/Cloud builds that haven't landed in the open-source SNAPSHOT yet. When this happens, upgrading the target to a newer SNAPSHOT build typically resolves it.
 
 **Verification Step:** Always test `GET _snapshot/<repo>/_all` first — if listing works but restore fails, the issue is in index/shard-level metadata, not top-level snapshot metadata.
 
