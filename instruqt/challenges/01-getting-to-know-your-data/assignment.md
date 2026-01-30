@@ -309,7 +309,6 @@ FROM reviews
 
 Using what you've learned, write a query that identifies potential negative review campaigns with these criteria:
 
-- Reviews from the last 30 minutes
 - Rating of 2 stars or less
 - From users with trust_score below 0.4
 - At least 5 suspicious reviews per business
@@ -322,7 +321,7 @@ Using what you've learned, write a query that identifies potential negative revi
 
 ```esql
 FROM reviews
-| WHERE stars <= 2 AND date > NOW() - 30 minutes
+| WHERE stars <= 2
 | LOOKUP JOIN users ON user_id
 | WHERE trust_score < 0.4
 | STATS
