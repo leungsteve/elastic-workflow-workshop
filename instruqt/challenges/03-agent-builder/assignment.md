@@ -314,38 +314,13 @@ Click **Save** to create the agent.
 
 ---
 
-### Task 6: Test Your Agent (2 min)
+### Task 6: Verify Your Agent (1 min)
 
-Now test your custom agent with natural language questions.
+1. Navigate back to the **Agents** section in Agent Builder
+2. Confirm your **Review Campaign Investigator** agent appears in the list
+3. Click on it and verify all three tools are assigned (`incident_summary`, `reviewer_analysis`, `similar_reviews`)
 
-1. Click **Save and Chat** (or open the agent from the Agents list)
-2. The chat interface opens with your Review Campaign Investigator agent
-
-3. Try these investigation queries:
-
-   **Test Incident Summary:**
-   > "What can you tell me about the most recent incident?"
-
-   > "Summarize the incident for Reading Terminal Market"
-
-   **Test Reviewer Analysis:**
-   > "Analyze the attackers who targeted ytynqOUb3hjKeJfRj5Tshw"
-
-   > "What patterns do the attackers have in common?"
-
-   **Test Similar Reviews (Semantic Search):**
-   > "Find reviews similar to 'food poisoning made me sick'"
-
-   > "What are the attackers claiming in their reviews?"
-
-   **Test Multi-Step Investigation:**
-   > "Investigate the latest attack - give me a full breakdown including who did it and what they're claiming"
-
-4. Observe how the agent:
-   - Understands your question
-   - Selects the appropriate tool(s)
-   - Chains multiple tools for complex questions
-   - Formats a helpful, analyst-friendly response
+> **Note:** There's no attack data yet, so the investigation tools won't return meaningful results. You'll use this agent in **Challenge 4** after launching a simulated attack.
 
 ---
 
@@ -371,10 +346,6 @@ Before proceeding, verify:
 - [ ] `reviewer_analysis` tool is created and saved
 - [ ] `similar_reviews` tool is created and saved
 - [ ] `review_campaign_investigator` agent is created with all three tools assigned
-- [ ] Agent responds correctly to natural language queries
-- [ ] You can get incident details by asking in plain English
-- [ ] You can analyze attackers without writing queries manually
-- [ ] You can find semantically similar reviews by describing what you're looking for
 
 ---
 
