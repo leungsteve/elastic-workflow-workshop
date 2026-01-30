@@ -43,7 +43,7 @@ The **text_semantic** field uses ELSER (Elastic Learned Sparse Encoder) to enabl
 
 Before diving into queries, let's see the platform you're protecting. ElasticEats is a consumer-facing restaurant review site — think Yelp for Philadelphia. Your workshop environment is running a live instance.
 
-1. Open the **ElasticEats** tab (or navigate to `http://localhost:8000/elasticeats`)
+1. Open the **ElasticEats** tab
 2. Browse the home page — you'll see top-rated Philadelphia restaurants with star ratings, review counts, and categories
 3. Click on a business (try **Reading Terminal Market** or **Zahav**) to see its detail page with individual reviews
 4. Notice the information available: star ratings, review text, reviewer names, and dates. This is what real users see — and what attackers try to manipulate

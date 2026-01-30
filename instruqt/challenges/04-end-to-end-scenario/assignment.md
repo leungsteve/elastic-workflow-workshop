@@ -55,12 +55,12 @@ This simulates how your system would protect real businesses from coordinated at
 
 Before we begin, open the **ElasticEats** consumer interface - this is a Yelp-like UI where you can browse businesses and see reviews just like a real user would.
 
-1. Open **ElasticEats** in a new browser tab: `http://localhost:8000/elasticeats`
+1. Open the **ElasticEats** tab
 2. Search for "Reading Terminal Market" or browse the **Restaurants** category
 3. Click on **Reading Terminal Market** to view its business page
 4. Keep this tab open - you'll use it throughout this challenge to see the attack unfold visually
 
-**Direct link to target business:** `http://localhost:8000/elasticeats/biz/ytynqOUb3hjKeJfRj5Tshw`
+**Tip:** Once in ElasticEats, search for "Reading Terminal Market" or browse to find it.
 
 ---
 
@@ -110,7 +110,7 @@ Before the attack, verify the target business is in a normal state.
 Now you'll launch a simulated negative review campaign against the target business.
 
 1. Open the **Attack Simulator** tab
-   - URL: `http://localhost:8000/attack` or use the "Attack Simulator" tab in Instruqt
+   - Use the **Attack Simulator** tab in Instruqt
 
 2. Configure the attack:
 
