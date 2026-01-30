@@ -146,13 +146,16 @@ steps:
               source: "ctx._source.status = 'held'"
 
       - name: protect_business
-        type: elasticsearch.update
+        type: elasticsearch.request
         with:
-          index: businesses
-          id: "{{ foreach.item[0] }}"
-          doc:
-            rating_protected: true
-            protection_reason: review_bomb_detected
+          method: POST
+          path: /businesses/_update_by_query
+          body:
+            query:
+              term:
+                business_id: "{{ foreach.item[0] }}"
+            script:
+              source: "ctx._source.rating_protected = true; ctx._source.protection_reason = 'review_bomb_detected'"
 
       - name: create_incident
         type: elasticsearch.bulk
@@ -244,7 +247,7 @@ triggers:
 #### Response Actions
 Each action in the loop:
 1. **hold_reviews** - Sets suspicious reviews to "held" status via `_update_by_query` (type: `elasticsearch.request`)
-2. **protect_business** - Updates business document (type: `elasticsearch.update`)
+2. **protect_business** - Flags business as protected via `_update_by_query` (type: `elasticsearch.request`)
 3. **create_incident** - Indexes incident document (type: `elasticsearch.bulk`)
 4. **create_notification** - Creates alert (type: `elasticsearch.bulk`)
 
