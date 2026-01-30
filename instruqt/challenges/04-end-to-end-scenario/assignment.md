@@ -1,4 +1,4 @@
-# End-to-End Fraud Simulation
+# End-to-End Review Bomb Simulation
 
 ## Time
 15 minutes
