@@ -30,7 +30,12 @@ ES_PASS=$(kubectl get secret elasticsearch-es-elastic-user -n default \
     -o jsonpath='{.data.elastic}' | base64 -d)
 echo "  Credentials retrieved."
 
-ES_URL="https://localhost:9200"
+# Discover ES service ClusterIP (ES runs in a pod, not on localhost)
+ES_SVC_IP=$(kubectl get svc elasticsearch-es-http -n default \
+    -o jsonpath='{.spec.clusterIP}')
+ES_URL="https://${ES_SVC_IP}:9200"
+echo "  Elasticsearch service: ${ES_URL}"
+
 CURL_ES="curl -s -k -u elastic:${ES_PASS}"
 
 # ==============================================================================
@@ -47,6 +52,9 @@ until ${CURL_ES} "${ES_URL}/_cluster/health" 2>/dev/null \
     if [ $RETRY -ge $MAX_RETRIES ]; then
         echo "  ERROR: Elasticsearch did not become ready after ${MAX_RETRIES} attempts"
         exit 1
+    fi
+    if [ $((RETRY % 5)) -eq 0 ]; then
+        echo "  Debug: $(${CURL_ES} "${ES_URL}/_cluster/health" 2>&1 | head -c 200)"
     fi
     echo "  Waiting... (attempt ${RETRY}/${MAX_RETRIES})"
     sleep 5
@@ -112,7 +120,12 @@ done
 echo ""
 echo "[7/7] Waiting for Kibana..."
 
-KIBANA_URL="https://localhost:5601"
+# Discover Kibana service ClusterIP
+KB_SVC_IP=$(kubectl get svc kibana-kb-http -n default \
+    -o jsonpath='{.spec.clusterIP}')
+KIBANA_URL="https://${KB_SVC_IP}:5601"
+echo "  Kibana service: ${KIBANA_URL}"
+
 CURL_KB="curl -s -k -u elastic:${ES_PASS}"
 MAX_RETRIES=60
 RETRY=0
