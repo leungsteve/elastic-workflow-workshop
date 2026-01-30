@@ -117,7 +117,7 @@ In the **ES|QL Parameters** section, add a parameter:
 
 | Name | Description | Type | Optional |
 |------|-------------|------|----------|
-| `incident_id` | The incident ID to look up (e.g., INC-biz123-2024). Can also accept a business name to find the latest incident. | `text` | ☐ (unchecked) |
+| `incident_id` | The incident ID to look up (e.g., INC-biz123-2024). Can also accept a business name to find the latest incident. | `string` | ☐ (unchecked) |
 
 **Tip:** You can click **Infer parameter** to automatically detect parameters from your query's `?param` syntax.
 
@@ -185,7 +185,7 @@ Add this parameter in the **ES|QL Parameters** section:
 
 | Name | Description | Type | Optional |
 |------|-------------|------|----------|
-| `business_id` | The business ID that was attacked. Can be found in incident details. | `text` | ☐ (unchecked) |
+| `business_id` | The business ID that was attacked. Can be found in incident details. | `string` | ☐ (unchecked) |
 
 #### Step 4: Fill in Details
 
@@ -233,7 +233,7 @@ Add this parameter in the **ES|QL Parameters** section:
 
 | Name | Description | Type | Optional |
 |------|-------------|------|----------|
-| `search_text` | The text to search for semantically similar reviews. Describe the content you're looking for. | `text` | ☐ (unchecked) |
+| `search_text` | The text to search for semantically similar reviews. Describe the content you're looking for. | `string` | ☐ (unchecked) |
 
 #### Step 4: Fill in Details
 
@@ -355,12 +355,9 @@ When defining parameters, choose the appropriate type:
 
 | Type | Use For | Example |
 |------|---------|---------|
-| `text` | Free-form strings, IDs, names | incident_id, business_name |
-| `keyword` | Exact match values, enums | status, severity |
-| `long` | Large integers | count thresholds |
-| `integer` | Small integers | limits, offsets |
-| `double` | Decimal numbers | scores, ratings |
-| `float` | Decimal numbers (less precision) | percentages |
+| `string` | Free-form strings, IDs, names | incident_id, business_name |
+| `integer` | Whole numbers | limits, counts |
+| `float` | Decimal numbers | scores, ratings |
 | `boolean` | True/false flags | include_resolved |
 | `date` | Timestamps | start_date, end_date |
 

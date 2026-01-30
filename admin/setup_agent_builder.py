@@ -65,7 +65,7 @@ TOOLS = [
        impact_assessment, business_original_rating""",
             "params": {
                 "incident_id": {
-                    "type": "text",
+                    "type": "string",
                     "description": "The incident ID to look up (e.g., INC-biz123-2024). Can also accept a business name to find the latest incident."
                 }
             }
@@ -105,7 +105,7 @@ TOOLS = [
 | LIMIT 20""",
             "params": {
                 "business_id": {
-                    "type": "text",
+                    "type": "string",
                     "description": "The business ID that was attacked. Can be found in incident details."
                 }
             }
@@ -123,7 +123,7 @@ TOOLS = [
 | LIMIT 10""",
             "params": {
                 "search_text": {
-                    "type": "text",
+                    "type": "string",
                     "description": "The text to search for semantically similar reviews. Describe the content you're looking for."
                 }
             }
