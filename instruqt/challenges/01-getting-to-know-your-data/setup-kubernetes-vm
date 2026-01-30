@@ -88,7 +88,7 @@ echo ""
 echo "[5/7] Restoring snapshot (this may take a minute)..."
 
 RESTORE_RESPONSE=$(${CURL_ES} -X POST \
-    "${ES_URL}/_snapshot/workshop-snapshot/_latest/_restore?wait_for_completion=true" \
+    "${ES_URL}/_snapshot/workshop-snapshot/snapshot-v1/_restore?wait_for_completion=true" \
     -H 'Content-Type: application/json' \
     -d '{
   "indices": "*",
