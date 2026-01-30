@@ -19,7 +19,7 @@ echo "[kubernetes-vm] Challenge 1 Setup"
 echo "=============================================="
 echo ""
 echo "[1/7] Running workshop bootstrap script..."
-/opt/workshops/elastic-llm.sh -m anthropic
+/opt/workshops/elastic-llm.sh
 
 # ==============================================================================
 # Step 2: Retrieve ES credentials from k8s secret
