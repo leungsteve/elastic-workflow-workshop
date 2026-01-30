@@ -122,6 +122,29 @@ steps:
     type: foreach
     foreach: "{{ steps.detect_review_bombs.output.values }}"
     steps:
+      - name: hold_reviews
+        type: elasticsearch.request
+        with:
+          method: POST
+          path: /reviews/_update_by_query
+          body:
+            query:
+              bool:
+                must:
+                  - term:
+                      business_id: "{{ foreach.item[0] }}"
+                  - range:
+                      date:
+                        gte: "now-30m"
+                  - range:
+                      stars:
+                        lte: 2
+                filter:
+                  - term:
+                      status: pending
+            script:
+              source: "ctx._source.status = 'held'"
+
       - name: protect_business
         type: elasticsearch.update
         with:
@@ -220,9 +243,10 @@ triggers:
 
 #### Response Actions
 Each action in the loop:
-1. **protect_business** - Updates business document (type: `elasticsearch.update`)
-2. **create_incident** - Indexes incident document (type: `elasticsearch.bulk`)
-3. **create_notification** - Creates alert (type: `elasticsearch.bulk`)
+1. **hold_reviews** - Sets suspicious reviews to "held" status via `_update_by_query` (type: `elasticsearch.request`)
+2. **protect_business** - Updates business document (type: `elasticsearch.update`)
+3. **create_incident** - Indexes incident document (type: `elasticsearch.bulk`)
+4. **create_notification** - Creates alert (type: `elasticsearch.bulk`)
 
 #### Template Variables
 Access data using Liquid-style templates:
