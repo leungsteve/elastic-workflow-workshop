@@ -142,7 +142,7 @@ Now you'll launch a simulated negative review campaign against the target busine
    | STATS total = COUNT(*), avg_stars = AVG(stars), avg_trust = AVG(trust_score)
    ```
 
-   **What to watch for:** Review count climbing, average stars dropping, average trust score low (below 0.4 indicates attackers).
+   **What to watch for:** The turbo attack submits all reviews at once. You should see a sudden spike in review count (e.g., 0 → 15), a low average star rating (1-2), and a low average trust score (below 0.4) — clear signs of a coordinated attack.
 
 ---
 
