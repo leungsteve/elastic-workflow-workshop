@@ -168,7 +168,6 @@ steps:
             severity: high
             business_id: "{{ foreach.item[0] }}"
             business_name: "{{ foreach.item[1] }}"
-            detected_at: "{{ execution.startedAt }}"
             metrics:
               review_count: "{{ foreach.item[3] }}"
               average_rating: "{{ foreach.item[4] }}"

@@ -98,10 +98,40 @@ RESTORE_RESPONSE=$(${CURL_ES} -X POST \
 echo "  Restore response: ${RESTORE_RESPONSE}"
 
 # ==============================================================================
-# Step 6: Verify doc counts
+# Step 6: Create default ingest pipeline for timestamps
 # ==============================================================================
 echo ""
-echo "[6/7] Verifying restored indices..."
+echo "[6/8] Setting up ingest pipeline for detected_at timestamps..."
+
+${CURL_ES} -X PUT "${ES_URL}/_ingest/pipeline/set_timestamp" \
+    -H 'Content-Type: application/json' \
+    -d '{
+  "description": "Sets detected_at to the current time on ingest",
+  "processors": [
+    {
+      "set": {
+        "field": "detected_at",
+        "value": "{{{_ingest.timestamp}}}",
+        "override": false
+      }
+    }
+  ]
+}'
+echo ""
+
+# Set as default pipeline on incidents and notifications
+for idx in incidents notifications; do
+    ${CURL_ES} -X PUT "${ES_URL}/${idx}/_settings" \
+        -H 'Content-Type: application/json' \
+        -d '{"index.default_pipeline": "set_timestamp"}'
+done
+echo "  Ingest pipeline configured."
+
+# ==============================================================================
+# Step 7: Verify doc counts
+# ==============================================================================
+echo ""
+echo "[7/8] Verifying restored indices..."
 
 get_doc_count() {
     local index="$1"
@@ -115,10 +145,10 @@ for index in businesses users reviews; do
 done
 
 # ==============================================================================
-# Step 7: Wait for Kibana
+# Step 8: Wait for Kibana
 # ==============================================================================
 echo ""
-echo "[7/7] Waiting for Kibana..."
+echo "[8/8] Waiting for Kibana..."
 
 # Discover Kibana service ClusterIP
 KB_SVC_IP=$(kubectl get svc kibana-kb-http -n default \
