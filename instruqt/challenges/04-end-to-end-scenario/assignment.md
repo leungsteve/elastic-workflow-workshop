@@ -124,14 +124,16 @@ Now you'll launch a simulated negative review campaign against the target busine
 
 3. Click **Launch Turbo Attack**
 
-4. **Watch the attack in ElasticEats:**
+4. **Observe the attack:**
+
+   **In ElasticEats:**
    - Switch to your ElasticEats tab with Reading Terminal Market
    - **Refresh the page** to see the attack reviews appear
    - Notice the negative reviews with **SIMULATED** badges
    - See the **Low Trust** badges on attacker accounts
-   - Check the "Recent Activity (24h)" sidebar - review count and velocity spike
+   - Check the "Recent Activity (24h)" sidebar — review count and velocity spike
 
-5. Monitor with this query (run every 30 seconds):
+   **In Kibana (ES|QL):**
    ```esql
    FROM reviews
    | WHERE business_id == "ytynqOUb3hjKeJfRj5Tshw"
