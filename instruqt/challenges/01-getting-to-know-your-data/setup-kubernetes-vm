@@ -1,0 +1,152 @@
+#!/bin/bash
+#
+# Setup script for Challenge 1 — runs on kubernetes-vm
+#
+# Responsibilities:
+#   1. Bootstrap ECK + Elasticsearch via the shared workshop script
+#   2. Wait for the ES cluster to be healthy
+#   3. Register a GCS snapshot repository and restore the pre-built snapshot
+#   4. Wait for Kibana and enable the Workflows UI
+#
+
+set -e
+
+# ==============================================================================
+# Step 1: Bootstrap ECK / Elasticsearch / Kibana
+# ==============================================================================
+echo "=============================================="
+echo "[kubernetes-vm] Challenge 1 Setup"
+echo "=============================================="
+echo ""
+echo "[1/7] Running workshop bootstrap script..."
+/opt/workshops/elastic-llm.sh -m anthropic
+
+# ==============================================================================
+# Step 2: Retrieve ES credentials from k8s secret
+# ==============================================================================
+echo ""
+echo "[2/7] Retrieving Elasticsearch credentials..."
+ES_PASS=$(kubectl get secret elasticsearch-es-elastic-user -n default \
+    -o jsonpath='{.data.elastic}' | base64 -d)
+echo "  Credentials retrieved."
+
+ES_URL="https://localhost:9200"
+CURL_ES="curl -s -k -u elastic:${ES_PASS}"
+
+# ==============================================================================
+# Step 3: Wait for Elasticsearch cluster health (green or yellow)
+# ==============================================================================
+echo ""
+echo "[3/7] Waiting for Elasticsearch cluster health..."
+MAX_RETRIES=60
+RETRY=0
+
+until ${CURL_ES} "${ES_URL}/_cluster/health" 2>/dev/null \
+      | grep -qE '"status"\s*:\s*"(green|yellow)"'; do
+    RETRY=$((RETRY + 1))
+    if [ $RETRY -ge $MAX_RETRIES ]; then
+        echo "  ERROR: Elasticsearch did not become ready after ${MAX_RETRIES} attempts"
+        exit 1
+    fi
+    echo "  Waiting... (attempt ${RETRY}/${MAX_RETRIES})"
+    sleep 5
+done
+echo "  Elasticsearch is healthy!"
+
+# ==============================================================================
+# Step 4: Register GCS snapshot repository
+# ==============================================================================
+echo ""
+echo "[4/7] Registering GCS snapshot repository..."
+
+${CURL_ES} -X PUT "${ES_URL}/_snapshot/workshop-snapshot?verify=false" \
+    -H 'Content-Type: application/json' \
+    -d '{
+  "type": "gcs",
+  "settings": {
+    "bucket": "instruqt-workshop-snapshot-public",
+    "base_path": "elastic-whats-new-9.3.0/data/snapshot-v2",
+    "client": "sa",
+    "readonly": true
+  }
+}'
+echo ""
+echo "  Snapshot repository registered."
+
+# ==============================================================================
+# Step 5: Restore snapshot (wait for completion)
+# ==============================================================================
+echo ""
+echo "[5/7] Restoring snapshot (this may take a minute)..."
+
+RESTORE_RESPONSE=$(${CURL_ES} -X POST \
+    "${ES_URL}/_snapshot/workshop-snapshot/_latest/_restore?wait_for_completion=true" \
+    -H 'Content-Type: application/json' \
+    -d '{
+  "indices": "*",
+  "include_global_state": false
+}')
+
+echo "  Restore response: ${RESTORE_RESPONSE}"
+
+# ==============================================================================
+# Step 6: Verify doc counts
+# ==============================================================================
+echo ""
+echo "[6/7] Verifying restored indices..."
+
+get_doc_count() {
+    local index="$1"
+    ${CURL_ES} "${ES_URL}/${index}/_count" 2>/dev/null \
+        | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "0"
+}
+
+for index in businesses users reviews; do
+    count=$(get_doc_count "$index")
+    echo "  ${index}: ${count} documents"
+done
+
+# ==============================================================================
+# Step 7: Wait for Kibana and enable Workflows UI
+# ==============================================================================
+echo ""
+echo "[7/7] Waiting for Kibana..."
+
+KIBANA_URL="https://localhost:5601"
+CURL_KB="curl -s -k -u elastic:${ES_PASS}"
+MAX_RETRIES=60
+RETRY=0
+
+until ${CURL_KB} "${KIBANA_URL}/api/status" 2>/dev/null \
+      | grep -q '"level":"available"'; do
+    RETRY=$((RETRY + 1))
+    if [ $RETRY -ge $MAX_RETRIES ]; then
+        echo "  Warning: Kibana did not become ready in time."
+        break
+    fi
+    echo "  Waiting for Kibana... (attempt ${RETRY}/${MAX_RETRIES})"
+    sleep 5
+done
+echo "  Kibana is ready!"
+
+echo "  Enabling Workflows UI..."
+WORKFLOWS_HTTP=$(curl -s -k -o /dev/null -w "%{http_code}" \
+    -X POST "${KIBANA_URL}/internal/kibana/settings" \
+    -H "Content-Type: application/json" \
+    -H "kbn-xsrf: true" \
+    -u "elastic:${ES_PASS}" \
+    -d '{"changes": {"workflows:ui:enabled": true}}')
+
+if [ "$WORKFLOWS_HTTP" = "200" ]; then
+    echo "  Workflows UI enabled successfully."
+else
+    echo "  Warning: Could not enable Workflows UI (HTTP ${WORKFLOWS_HTTP})."
+fi
+
+# ==============================================================================
+# Done
+# ==============================================================================
+echo ""
+echo "=============================================="
+echo "[kubernetes-vm] Challenge 1 setup complete!"
+echo "=============================================="
