@@ -122,7 +122,7 @@ Now you'll launch a simulated negative review campaign against the target busine
    | **Rating Range** | 1-2 stars |
    | **Attacker Profiles** | Low trust (0.1-0.3) |
 
-3. Click **Launch Attack**
+3. Click **Launch Turbo Attack**
 
 4. **Watch the attack in ElasticEats:**
    - Switch to your ElasticEats tab with Reading Terminal Market
