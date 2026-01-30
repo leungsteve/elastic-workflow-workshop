@@ -24,6 +24,30 @@ echo "[host-1] Challenge 1 Setup"
 echo "=============================================="
 
 # ==============================================================================
+# Validate / default environment variables
+# ==============================================================================
+echo ""
+echo "Checking environment variables..."
+
+ELASTICSEARCH_URL="${ELASTICSEARCH_URL:-http://kubernetes-vm:30920}"
+ELASTICSEARCH_USER="${ELASTICSEARCH_USER:-elastic}"
+ELASTICSEARCH_PASSWORD="${ELASTICSEARCH_PASSWORD:-}"
+ELASTICSEARCH_APIKEY="${ELASTICSEARCH_APIKEY:-}"
+KIBANA_URL="${KIBANA_URL:-http://kubernetes-vm:30002}"
+
+echo "  ELASTICSEARCH_URL:      ${ELASTICSEARCH_URL}"
+echo "  ELASTICSEARCH_USER:     ${ELASTICSEARCH_USER}"
+echo "  ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:+(set)}"
+echo "  ELASTICSEARCH_APIKEY:   ${ELASTICSEARCH_APIKEY:+(set)}"
+echo "  KIBANA_URL:             ${KIBANA_URL}"
+
+if [ -z "${ELASTICSEARCH_PASSWORD}" ] && [ -z "${ELASTICSEARCH_APIKEY}" ]; then
+    echo ""
+    echo "  WARNING: Neither ELASTICSEARCH_PASSWORD nor ELASTICSEARCH_APIKEY is set."
+    echo "  The app may not be able to authenticate to Elasticsearch."
+fi
+
+# ==============================================================================
 # Step 1: Clone the workshop repository
 # ==============================================================================
 echo ""
