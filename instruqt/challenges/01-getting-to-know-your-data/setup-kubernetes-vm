@@ -115,7 +115,7 @@ for index in businesses users reviews; do
 done
 
 # ==============================================================================
-# Step 7: Wait for Kibana and enable Workflows UI
+# Step 7: Wait for Kibana
 # ==============================================================================
 echo ""
 echo "[7/7] Waiting for Kibana..."
@@ -126,7 +126,7 @@ KB_SVC_IP=$(kubectl get svc kibana-kb-http -n default \
 KIBANA_URL="http://${KB_SVC_IP}:5601"
 echo "  Kibana service: ${KIBANA_URL}"
 
-CURL_KB="curl -s -k -u elastic:${ES_PASS}"
+CURL_KB="curl -s -u elastic:${ES_PASS}"
 MAX_RETRIES=60
 RETRY=0
 
@@ -142,19 +142,10 @@ until ${CURL_KB} "${KIBANA_URL}/api/status" 2>/dev/null \
 done
 echo "  Kibana is ready!"
 
-echo "  Enabling Workflows UI..."
-WORKFLOWS_HTTP=$(curl -s -k -o /dev/null -w "%{http_code}" \
-    -X POST "${KIBANA_URL}/internal/kibana/settings" \
-    -H "Content-Type: application/json" \
-    -H "kbn-xsrf: true" \
-    -u "elastic:${ES_PASS}" \
-    -d '{"changes": {"workflows:ui:enabled": true}}')
-
-if [ "$WORKFLOWS_HTTP" = "200" ]; then
-    echo "  Workflows UI enabled successfully."
-else
-    echo "  Warning: Could not enable Workflows UI (HTTP ${WORKFLOWS_HTTP})."
-fi
+# NOTE: Workflows UI must be enabled manually by attendees via Kibana Dev Tools:
+#   POST kbn:/internal/kibana/settings
+#   {"changes": {"workflows:ui:enabled": true}}
+# The settings API is not available in this Kibana configuration (9.4.0).
 
 # ==============================================================================
 # Done
