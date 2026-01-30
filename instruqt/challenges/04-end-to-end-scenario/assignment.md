@@ -325,6 +325,8 @@ Complete the incident lifecycle by resolving it.
    }
    ```
 
+   > **Note:** If you ran the workflow multiple times, there may be multiple incidents with `status: "detected"`. This command resolves all of them at once via `_update_by_query`. If ElasticEats still shows an "Active Incident" banner after resolving, run this command again to catch any remaining incidents, then refresh the page.
+
 5. Optionally, remove protection from the business:
 
    ```
