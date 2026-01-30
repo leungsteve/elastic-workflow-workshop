@@ -47,7 +47,7 @@ MAX_RETRIES=60
 RETRY=0
 
 until ${CURL_ES} "${ES_URL}/_cluster/health" 2>/dev/null \
-      | grep -qE '"status"\s*:\s*"(green|yellow)"'; do
+      | grep -q '"status":"green"\|"status":"yellow"'; do
     RETRY=$((RETRY + 1))
     if [ $RETRY -ge $MAX_RETRIES ]; then
         echo "  ERROR: Elasticsearch did not become ready after ${MAX_RETRIES} attempts"
