@@ -158,26 +158,34 @@ steps:
               source: "ctx._source.rating_protected = true; ctx._source.protection_reason = 'review_bomb_detected'"
 
       - name: create_incident
-        type: elasticsearch.bulk
+        type: elasticsearch.request
         with:
-          index: incidents
-          operations:
-            - incident_type: review_bomb
-              status: detected
-              severity: high
-              business_id: "{{ foreach.item[0] }}"
-              detected_at: "{{ execution.startedAt }}"
+          method: POST
+          path: /incidents/_doc
+          body:
+            incident_type: review_bomb
+            status: detected
+            severity: high
+            business_id: "{{ foreach.item[0] }}"
+            business_name: "{{ foreach.item[1] }}"
+            detected_at: "{{ execution.startedAt }}"
+            metrics:
+              review_count: "{{ foreach.item[3] }}"
+              average_rating: "{{ foreach.item[4] }}"
+              avg_trust: "{{ foreach.item[5] }}"
+              unique_attackers: "{{ foreach.item[6] }}"
 
       - name: create_notification
-        type: elasticsearch.bulk
+        type: elasticsearch.request
         with:
-          index: notifications
-          operations:
-            - type: review_bomb_detected
-              severity: high
-              title: "Negative Review Campaign Detected: {{ foreach.item[1] }}"
-              business_id: "{{ foreach.item[0] }}"
-              read: false
+          method: POST
+          path: /notifications/_doc
+          body:
+            type: review_bomb_detected
+            severity: high
+            title: "Negative Review Campaign Detected: {{ foreach.item[1] }}"
+            business_id: "{{ foreach.item[0] }}"
+            read: false
 
   - name: completion_log
     type: console
@@ -248,8 +256,8 @@ triggers:
 Each action in the loop:
 1. **hold_reviews** - Sets suspicious reviews to "held" status via `_update_by_query` (type: `elasticsearch.request`)
 2. **protect_business** - Flags business as protected via `_update_by_query` (type: `elasticsearch.request`)
-3. **create_incident** - Indexes incident document (type: `elasticsearch.bulk`)
-4. **create_notification** - Creates alert (type: `elasticsearch.bulk`)
+3. **create_incident** - Indexes incident document (type: `elasticsearch.request`)
+4. **create_notification** - Creates alert (type: `elasticsearch.request`)
 
 #### Template Variables
 Access data using Liquid-style templates:
