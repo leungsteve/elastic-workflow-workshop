@@ -7,7 +7,7 @@
 > **SIMPLIFY:** Readable detection queries | **OPTIMIZE:** Automated instant response | **INNOVATE WITH AI:** Natural language investigation
 
 ## Objective
-Run a complete fraud simulation to see your detection workflow, automated responses, and investigation tools working together in real-time.
+Run a complete review bomb simulation to see your detection workflow, automated responses, and investigation tools working together in real-time.
 
 ---
 
