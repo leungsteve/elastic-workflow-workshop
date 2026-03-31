@@ -103,9 +103,9 @@ async def index(request: Request):
     Serve the main UI dashboard.
     """
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "active_page": "dashboard",
         }
     )
@@ -117,9 +117,9 @@ async def businesses_page(request: Request):
     Serve the businesses page.
     """
     return templates.TemplateResponse(
+        request,
         "businesses.html",
         {
-            "request": request,
             "active_page": "businesses",
         }
     )
@@ -131,9 +131,9 @@ async def incidents_page(request: Request):
     Serve the incidents page.
     """
     return templates.TemplateResponse(
+        request,
         "incidents.html",
         {
-            "request": request,
             "active_page": "incidents",
         }
     )
@@ -145,9 +145,9 @@ async def attack_page(request: Request):
     Serve the attack simulation page.
     """
     return templates.TemplateResponse(
+        request,
         "attack.html",
         {
-            "request": request,
             "active_page": "attack",
         }
     )
@@ -159,9 +159,9 @@ async def notifications_page(request: Request):
     Serve the notifications page.
     """
     return templates.TemplateResponse(
+        request,
         "notifications.html",
         {
-            "request": request,
             "active_page": "notifications",
         }
     )
@@ -238,9 +238,9 @@ async def elasticeats_home(
             print(f"Search error: {e}")
 
     return templates.TemplateResponse(
+        request,
         "elasticeats/home.html",
         {
-            "request": request,
             "query": q,
             "category": category,
             "city": city,
@@ -289,8 +289,9 @@ async def elasticeats_business(
 
             if not business:
                 return templates.TemplateResponse(
+                    request,
                     "elasticeats/home.html",
-                    {"request": request, "error": f"Business {business_id} not found"},
+                    {"error": f"Business {business_id} not found"},
                     status_code=404
                 )
 
@@ -399,15 +400,16 @@ async def elasticeats_business(
     except Exception as e:
         print(f"Business page error: {e}")
         return templates.TemplateResponse(
+            request,
             "elasticeats/home.html",
-            {"request": request, "error": str(e)},
+            {"error": str(e)},
             status_code=500
         )
 
     return templates.TemplateResponse(
+        request,
         "elasticeats/business.html",
         {
-            "request": request,
             "business": business,
             "reviews": reviews,
             "incident": incident,
