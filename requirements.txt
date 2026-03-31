@@ -1,25 +1,26 @@
 # Core dependencies
-elasticsearch>=8.0.0,<9.0.0
-elasticsearch[async]>=8.0.0,<9.0.0
-pyyaml>=6.0
-python-dotenv>=1.0.0
-faker>=18.0.0
-tqdm>=4.65.0
+elasticsearch==8.19.3
+elasticsearch[async]==8.19.3
+pyyaml==6.0.3
+python-dotenv==1.2.2
+faker==40.12.0
+tqdm==4.67.3
 
 # Web application
-pydantic-settings>=2.0.0
-fastapi>=0.100.0
-uvicorn[standard]>=0.23.0
-jinja2>=3.1.0
-python-multipart>=0.0.6
-httpx>=0.24.0
+pydantic-settings==2.13.1
+fastapi==0.135.2
+starlette==1.0.0
+uvicorn[standard]==0.42.0
+jinja2==3.1.6
+python-multipart==0.0.22
+httpx==0.28.1
 
 # Async support
-aiofiles>=23.0.0
+aiofiles==25.1.0
 
 # CLI utilities
-click>=8.1.0
-rich>=13.0.0
+click==8.3.1
+rich==14.3.3
 
 # Data processing
-orjson>=3.9.0
+orjson==3.11.7
